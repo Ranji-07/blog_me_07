@@ -96,22 +96,27 @@ class _AboutPageState extends State<AboutPage> {
           Text(
             "About Me",
             style: TextStyle(
-              fontSize: isMobile ? 28 : 36,
+              fontSize: isMobile ? 32 : 42,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF00C6FF),
+              letterSpacing: 1.2,
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            aboutData?['bio'] ?? 'No bio available',
-            style: TextStyle(
-              fontSize: isMobile ? 14 : 18,
-              color: Colors.white70,
-              height: 1.6,
-            ),
-            textAlign: TextAlign.justify,
           ),
           const SizedBox(height: 24),
+          Container(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: Text(
+              aboutData?['bio'] ?? 'No bio available',
+              style: TextStyle(
+                fontSize: isMobile ? 15 : 18,
+                color: Colors.white.withOpacity(0.85),
+                height: 1.8,
+                letterSpacing: 0.5,
+              ),
+              textAlign: TextAlign.left,
+            ),
+          ),
+          const SizedBox(height: 48),
           isMobile ? _buildMobileLayout() : _buildDesktopLayout(),
         ],
       ),
@@ -122,17 +127,17 @@ class _AboutPageState extends State<AboutPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SkillsSection(skills: aboutData?['skills'] ?? [], isMobile: true),
-        const SizedBox(height: 24),
+        SkillsSection(skillsData: aboutData?['skills'] ?? [], isMobile: true),
+        const SizedBox(height: 40),
         const Text(
-          "Education",
+          "Education & Timeline",
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: Color(0xFF00C6FF),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 24),
         EducationTimeline(education: aboutData?['education'] ?? [], isMobile: true),
       ],
     );
@@ -147,17 +152,17 @@ class _AboutPageState extends State<AboutPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SkillsSection(skills: aboutData?['skills'] ?? [], isMobile: false),
-              const SizedBox(height: 24),
+              SkillsSection(skillsData: aboutData?['skills'] ?? [], isMobile: false),
+              const SizedBox(height: 40),
               const Text(
-                "Education",
+                "Education & Timeline",
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF00C6FF),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 24),
               EducationTimeline(education: aboutData?['education'] ?? [], isMobile: false),
             ],
           ),
@@ -192,77 +197,110 @@ class _AboutPageState extends State<AboutPage> {
 }
 
 class SkillsSection extends StatelessWidget {
-  final List<dynamic> skills;
+  final dynamic skillsData;
   final bool isMobile;
 
-  const SkillsSection({super.key, required this.skills, required this.isMobile});
+  const SkillsSection({super.key, required this.skillsData, required this.isMobile});
 
   @override
   Widget build(BuildContext context) {
-    if (skills.isEmpty) {
+    if (skillsData == null) {
       return const Text(
         'No skills data available',
         style: TextStyle(color: Colors.white70),
       );
     }
 
+    Map<String, dynamic> categories = {};
+    if (skillsData is Map) {
+      categories = Map<String, dynamic>.from(skillsData);
+    } else if (skillsData is List) {
+       categories = {'All Skills': skillsData};
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Skills",
+          "Core Competencies",
           style: TextStyle(
             fontSize: isMobile ? 24 : 28,
             fontWeight: FontWeight.bold,
             color: const Color(0xFF00C6FF),
           ),
         ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: isMobile ? 12 : 20,
-          runSpacing: isMobile ? 12 : 20,
-          children: skills.map((skill) {
-            return Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: isMobile ? 12 : 16,
-                vertical: isMobile ? 8 : 12,
-              ),
-              decoration: BoxDecoration(
-                color: const Color(0xFF00C6FF).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xFF00C6FF).withOpacity(0.3),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+        const SizedBox(height: 24),
+        ...categories.entries.map((entry) {
+          final categoryName = entry.key;
+          final categorySkills = List<dynamic>.from(entry.value);
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: GlassContainer(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Image.asset(
-                    'assets/${skill['icon']}',
-                    width: isMobile ? 28 : 40,
-                    height: isMobile ? 28 : 40,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Icon(
-                        Icons.code,
-                        size: isMobile ? 28 : 40,
-                        color: const Color(0xFF00C6FF),
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    skill['name'],
+                   Text(
+                    categoryName,
                     style: TextStyle(
-                      fontSize: isMobile ? 12 : 16,
-                      fontWeight: FontWeight.w500,
+                      fontSize: isMobile ? 18 : 20,
+                      fontWeight: FontWeight.w600,
                       color: Colors.white,
+                      letterSpacing: 1.2,
                     ),
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: isMobile ? 12 : 16,
+                    runSpacing: isMobile ? 12 : 16,
+                    children: categorySkills.map((skill) {
+                      return Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isMobile ? 12 : 16,
+                          vertical: isMobile ? 8 : 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.1),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Image.asset(
+                              'assets/${skill['icon']}',
+                              width: isMobile ? 20 : 24,
+                              height: isMobile ? 20 : 24,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(
+                                  Icons.code,
+                                  size: isMobile ? 20 : 24,
+                                  color: const Color(0xFF00C6FF),
+                                );
+                              },
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              skill['name'],
+                              style: TextStyle(
+                                fontSize: isMobile ? 13 : 15,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ],
               ),
-            );
-          }).toList(),
-        ),
+            ),
+          );
+        }).toList(),
       ],
     );
   }
@@ -274,23 +312,6 @@ class EducationTimeline extends StatelessWidget {
 
   const EducationTimeline({super.key, required this.education, required this.isMobile});
 
-  Color _getColor(String colorName) {
-    switch (colorName.toLowerCase()) {
-      case 'blue':
-        return Colors.blue;
-      case 'purple':
-        return Colors.purple;
-      case 'green':
-        return Colors.green;
-      case 'red':
-        return Colors.red;
-      case 'orange':
-        return const Color(0xFF00C6FF);
-      default:
-        return const Color(0xFF00C6FF);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     if (education.isEmpty) {
@@ -301,64 +322,83 @@ class EducationTimeline extends StatelessWidget {
     }
 
     return Column(
-      children: education.map((edu) {
-        final color = _getColor(edu['color'] ?? 'orange');
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: EdgeInsets.all(isMobile ? 12 : 16),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withOpacity(0.3)),
-          ),
+      children: List.generate(education.length, (index) {
+        final edu = education[index];
+        final bool isLast = index == education.length - 1;
+        
+        return IntrinsicHeight(
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: isMobile ? 50 : 60,
-                height: isMobile ? 50 : 60,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Text(
-                    edu['year'] ?? '',
-                    style: TextStyle(
-                      fontSize: isMobile ? 12 : 14,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+              // Timeline Node & Line
+              Column(
+                children: [
+                  Container(
+                    width: 16,
+                    height: 16,
+                    margin: const EdgeInsets.only(top: 24),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F172A),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFF00C6FF), width: 3),
                     ),
                   ),
-                ),
+                  if (!isLast)
+                    Expanded(
+                      child: Container(
+                        width: 2,
+                        color: const Color(0xFF00C6FF).withOpacity(0.3),
+                      ),
+                    ),
+                ],
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 20),
+              
+              // Education Card
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      edu['title'] ?? '',
-                      style: TextStyle(
-                        fontSize: isMobile ? 16 : 18,
-                        fontWeight: FontWeight.bold,
-                        color: color,
-                      ),
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 24.0),
+                  child: GlassContainer(
+                    padding: EdgeInsets.all(isMobile ? 16 : 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          edu['year'] ?? '',
+                          style: TextStyle(
+                            fontSize: isMobile ? 14 : 16,
+                            color: const Color(0xFF00C6FF),
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          edu['title'] ?? '',
+                          style: TextStyle(
+                            fontSize: isMobile ? 18 : 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          edu['subtitle'] ?? '',
+                          style: TextStyle(
+                            fontSize: isMobile ? 14 : 16,
+                            color: Colors.white70,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      edu['subtitle'] ?? '',
-                      style: TextStyle(
-                        fontSize: isMobile ? 12 : 14,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ],
           ),
         );
-      }).toList(),
+      }),
     );
   }
 }

@@ -31,21 +31,31 @@ def init_database():
             "Entrepreneur"
         ],
         "bio": "Hello! I'm a passionate developer specializing in Flutter and AI-driven applications. I enjoy building user-friendly and efficient applications that solve real-world problems.",
-        "is_available": True,
+        "is_available": False,
         "stats": {
-            "projects": 15,
-            "experience": 3,
+            "projects": 7,
+            "experience": 1,
             "technologies": 12
         },
         "tech_stack": ["Flutter", "Python", "FastAPI", "Docker", "TensorFlow"],
-        "skills": [
-            {"name": "Flutter & Dart", "icon": "flutter.png"},
-            {"name": "AI & ML", "icon": "Ai-ml.png"},
-            {"name": "IoT & Embedded", "icon": "iot.png"},
-            {"name": "Python", "icon": "python.png"},
-            {"name": "C++", "icon": "c-.png"},
-            {"name": "Java", "icon": "js-file.png"}
-        ],
+        "skills": {
+            "Languages": [
+                {"name": "Python", "icon": "python.png"},
+                {"name": "Dart", "icon": "dart.jpg"},
+                {"name": "C++", "icon": "c-.png"},
+                {"name": "Java", "icon": "js-file.png"}
+            ],
+            "Frameworks": [
+                {"name": "Flutter", "icon": "flutter.png"},
+                {"name": "FastAPI", "icon": "api.png"},
+                {"name": "TensorFlow", "icon": "Ai-ml.png"}
+            ],
+            "Tools & Platforms": [
+                {"name": "Docker", "icon": "docker"},
+                {"name": "Git", "icon": "git"},
+                {"name": "IoT / ESP32", "icon": "iot.png"}
+            ]
+        },
         "education": [
             {
                 "year": "2090",
