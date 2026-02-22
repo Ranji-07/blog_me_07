@@ -40,10 +40,10 @@ class _AboutPageState extends State<AboutPage> {
     }
   }
 
-  bool get isMobile => MediaQuery.of(context).size.width < 768;
-
   @override
   Widget build(BuildContext context) {
+    bool isMobile = MediaQuery.of(context).size.width < 768;
+
     if (isLoading) {
       return const Center(
         child: CircularProgressIndicator(color: Color(0xFF00C6FF)),
@@ -116,16 +116,16 @@ class _AboutPageState extends State<AboutPage> {
           ),
         ),
         const SizedBox(height: 48),
-        isMobile ? _buildMobileLayout() : _buildDesktopLayout(),
+        isMobile ? _buildMobileLayout(isMobile) : _buildDesktopLayout(isMobile),
       ],
     );
   }
 
-  Widget _buildMobileLayout() {
+  Widget _buildMobileLayout(bool isMobile) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SkillsSection(skillsData: aboutData?['skills'] ?? [], isMobile: true),
+        SkillsSection(skillsData: aboutData?['skills'] ?? [], isMobile: isMobile),
         const SizedBox(height: 40),
         const Text(
           "Education & Timeline",
@@ -136,12 +136,12 @@ class _AboutPageState extends State<AboutPage> {
           ),
         ),
         const SizedBox(height: 24),
-        EducationTimeline(education: aboutData?['education'] ?? [], isMobile: true),
+        EducationTimeline(education: aboutData?['education'] ?? [], isMobile: isMobile),
       ],
     );
   }
 
-  Widget _buildDesktopLayout() {
+  Widget _buildDesktopLayout(bool isMobile) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

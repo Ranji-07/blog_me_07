@@ -33,17 +33,18 @@ class _ProfileTemplateState extends State<ProfileTemplate> {
     super.dispose();
   }
 
-  bool get isMobile => MediaQuery.of(context).size.width < 768;
-  bool get isTablet => MediaQuery.of(context).size.width >= 768 && MediaQuery.of(context).size.width < 1024;
+  bool isMobile(BuildContext context) => MediaQuery.of(context).size.width < 768;
+  bool isTablet(BuildContext context) => MediaQuery.of(context).size.width >= 768 && MediaQuery.of(context).size.width < 1024;
 
-  double get sectionHeight {
-    if (isMobile) return MediaQuery.of(context).size.height * 1.2;
+  double getSectionHeight(BuildContext context) {
+    if (isMobile(context)) return MediaQuery.of(context).size.height * 1.2;
     return MediaQuery.of(context).size.height - 80;
   }
 
   void _onScroll() {
+    if (!mounted) return;
     final scrollPosition = _scrollController.offset;
-    final height = sectionHeight;
+    final height = getSectionHeight(context);
     
     int newIndex = 0;
     if (scrollPosition >= height * 3 - 200) {
@@ -74,7 +75,7 @@ class _ProfileTemplateState extends State<ProfileTemplate> {
       _selectedIndex = index;
     });
 
-    if (isMobile) {
+    if (isMobile(context)) {
       Navigator.of(context).pop();
     }
   }
@@ -99,7 +100,7 @@ class _ProfileTemplateState extends State<ProfileTemplate> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      drawer: isMobile ? _buildDrawer() : null,
+      drawer: isMobile(context) ? _buildDrawer() : null,
       body: Container(
         width: MediaQuery.of(context).size.width,
         height: MediaQuery.of(context).size.height,
@@ -112,7 +113,7 @@ class _ProfileTemplateState extends State<ProfileTemplate> {
         ),
         child: Column(
           children: [
-            _buildHeader(),
+            _buildHeader(context),
             Expanded(
               child: SingleChildScrollView(
                 controller: _scrollController,
@@ -134,23 +135,23 @@ class _ProfileTemplateState extends State<ProfileTemplate> {
 
   Widget _buildSection(Widget child, int index) {
     return Container(
-      constraints: BoxConstraints(minHeight: sectionHeight),
+      constraints: BoxConstraints(minHeight: getSectionHeight(context)),
       padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 16 : 48,
+        horizontal: isMobile(context) ? 16 : 48,
         vertical: 24,
       ),
       child: child,
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return ClipRRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
         child: Container(
           padding: EdgeInsets.symmetric(
-            horizontal: isMobile ? 16 : 24,
-            vertical: isMobile ? 12 : 20,
+            horizontal: isMobile(context) ? 16 : 24,
+            vertical: isMobile(context) ? 12 : 20,
           ),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.05),
@@ -168,7 +169,7 @@ class _ProfileTemplateState extends State<ProfileTemplate> {
               ),
             ],
           ),
-          child: isMobile ? _buildMobileHeader() : _buildDesktopHeader(),
+          child: isMobile(context) ? _buildMobileHeader() : _buildDesktopHeader(context),
         ),
       ),
     );
@@ -194,7 +195,7 @@ class _ProfileTemplateState extends State<ProfileTemplate> {
     );
   }
 
-  Widget _buildDesktopHeader() {
+  Widget _buildDesktopHeader(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -210,13 +211,13 @@ class _ProfileTemplateState extends State<ProfileTemplate> {
         Row(
           children: [
             _navItem("About", 0),
-            SizedBox(width: isTablet ? 12 : 24),
+            SizedBox(width: isTablet(context) ? 12 : 24),
             _navItem("Projects", 1),
-            SizedBox(width: isTablet ? 12 : 24),
+            SizedBox(width: isTablet(context) ? 12 : 24),
             _navItem("Experience", 2),
-            SizedBox(width: isTablet ? 12 : 24),
+            SizedBox(width: isTablet(context) ? 12 : 24),
             _navItem("Contact", 3),
-            SizedBox(width: isTablet ? 24 : 48),
+            SizedBox(width: isTablet(context) ? 24 : 48),
             _resumeButton(),
           ],
         ),
