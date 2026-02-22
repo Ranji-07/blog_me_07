@@ -89,21 +89,27 @@ class _HomePageState extends State<HomePage> {
           const Positioned.fill(
             child: CinematicBackground(),
           ),
+          // Scrollable Foreground
           SizedBox(
             width: MediaQuery.of(context).size.width,
             height: MediaQuery.of(context).size.height,
-            child: isLoading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF00C6FF)))
-                : Center(
-                    child: Wrap(
-                  alignment: WrapAlignment.center,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 60,
-                  runSpacing: 40,
-                  children: [
+            child: SingleChildScrollView(
+              child: Container(
+                constraints: BoxConstraints(
+                  minHeight: MediaQuery.of(context).size.height,
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 60),
+                child: isLoading
+                    ? const Center(child: CircularProgressIndicator(color: Color(0xFF00C6FF)))
+                    : Center(
+                        child: Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: 40,
+                          runSpacing: 40,
+                          children: [
                     SizedBox(
-                      width: MediaQuery.of(context).size.width > 800 ? 500 : MediaQuery.of(context).size.width * 0.9,
-                      height: MediaQuery.of(context).size.width > 800 ? 650 : 450,
+                      width: MediaQuery.of(context).size.width > 800 ? 450 : MediaQuery.of(context).size.width * 0.85,
+                      height: MediaQuery.of(context).size.width > 800 ? 600 : MediaQuery.of(context).size.width * 1.1,
                       child: Stack(
                         alignment: Alignment.center,
                         clipBehavior: Clip.none,
@@ -123,13 +129,13 @@ class _HomePageState extends State<HomePage> {
                               borderRadius: BorderRadius.circular(80),
                               child: Image.asset(
                                 'assets/images.png',
-                                width: MediaQuery.of(context).size.width > 800 ? 400 : MediaQuery.of(context).size.width * 0.9,
-                                height: MediaQuery.of(context).size.width > 800 ? 600 : 400,
+                                width: MediaQuery.of(context).size.width > 800 ? 400 : MediaQuery.of(context).size.width * 0.85,
+                                height: MediaQuery.of(context).size.width > 800 ? 550 : MediaQuery.of(context).size.width * 1.05,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
                                   return Container(
-                                    width: MediaQuery.of(context).size.width > 800 ? 400 : MediaQuery.of(context).size.width * 0.9,
-                                    height: MediaQuery.of(context).size.width > 800 ? 600 : 400,
+                                    width: MediaQuery.of(context).size.width > 800 ? 400 : MediaQuery.of(context).size.width * 0.85,
+                                    height: MediaQuery.of(context).size.width > 800 ? 550 : MediaQuery.of(context).size.width * 1.05,
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(80),
                                       color: const Color(0xFF1E293B),
@@ -145,7 +151,10 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                     GlassContainer(
-                      padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 40),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: MediaQuery.of(context).size.width > 800 ? 50 : 20, 
+                        vertical: MediaQuery.of(context).size.width > 800 ? 40 : 30
+                      ),
                       width: MediaQuery.of(context).size.width > 800 ? 600 : MediaQuery.of(context).size.width * 0.9,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -233,8 +242,10 @@ class _HomePageState extends State<HomePage> {
                           gradientText3(bio),
                           const SizedBox(height: 40),
                           if (aboutData?['stats'] != null) ...[
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            Wrap(
+                              alignment: WrapAlignment.center,
+                              spacing: 20,
+                              runSpacing: 15,
                               children: [
                                 _buildStatCard("Projects", aboutData!['stats']['projects']?.toString() ?? "10+"),
                                 _buildStatCard("Experience", "${aboutData!['stats']['experience']?.toString() ?? '1+'} Yrs"),
@@ -302,6 +313,7 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
               ),
+            ),
           ),
         ],
       ),

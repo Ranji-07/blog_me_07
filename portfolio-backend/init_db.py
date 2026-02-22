@@ -114,7 +114,7 @@ def init_database():
     }
     
     experience_data = {
-        "experiences": [
+        "careers": [
             {
                 "company": "TechNova Solutions",
                 "logo": "Ai-ml.png",
@@ -122,12 +122,14 @@ def init_database():
                     {
                         "position": "Senior Full Stack Engineer",
                         "startDate": "Jan 2022",
-                        "endDate": "Present"
+                        "endDate": "Present",
+                        "description": "Architected the microservices backend leading to a 40% reduction in cloud cost. Mentored a team of 5 junior developers."
                     },
                     {
                         "position": "Software Engineer II",
                         "startDate": "Mar 2020",
-                        "endDate": "Dec 2021"
+                        "endDate": "Dec 2021",
+                        "description": "Developed dynamic React-based dashboards and optimized PostgreSQL queries."
                     }
                 ]
             },
@@ -138,10 +140,13 @@ def init_database():
                     {
                         "position": "Backend Developer",
                         "startDate": "Jun 2018",
-                        "endDate": "Feb 2020"
+                        "endDate": "Feb 2020",
+                        "description": "Implemented robust REST APIs and integrated third-party payment gateways ensuring high availability."
                     }
                 ]
-            },
+            }
+        ],
+        "internships": [
             {
                 "company": "InnoVentures Startup",
                 "logo": "js-file.png",
@@ -149,9 +154,40 @@ def init_database():
                     {
                         "position": "Software Engineering Intern",
                         "startDate": "May 2017",
-                        "endDate": "Aug 2017"
+                        "endDate": "Aug 2017",
+                        "description": "Prototyped a scalable authentication service and automated internal CI/CD pipelines."
                     }
                 ]
+            }
+        ],
+        "certifications": [
+            {
+                "title": "AWS Certified Solutions Architect",
+                "issuer": "Amazon Web Services",
+                "date": "Nov 2022",
+                "icon": "certificate"
+            },
+            {
+                "title": "Google Professional Cloud Developer",
+                "issuer": "Google Cloud",
+                "date": "Jul 2021",
+                "icon": "workspace_premium"
+            }
+        ],
+        "academic": [
+            {
+                "title": "National Hackathon Winner",
+                "institution": "TechFest 2023",
+                "date": "March 2023",
+                "description": "Led team of 4 to build an AI-powered accessibility tool.",
+                "icon": "emoji_events"
+            },
+            {
+                "title": "NCC 'C' Certificate",
+                "institution": "National Cadet Corps",
+                "date": "2021",
+                "description": "Achieved 'A' grade. Cultivated leadership, discipline, and teamwork.",
+                "icon": "military_tech"
             }
         ]
     }

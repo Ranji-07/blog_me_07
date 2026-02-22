@@ -89,37 +89,35 @@ class _AboutPageState extends State<AboutPage> {
       );
     }
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "About Me",
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "About Me",
+          style: TextStyle(
+            fontSize: isMobile ? 32 : 42,
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF00C6FF),
+            letterSpacing: 1.2,
+          ),
+        ),
+        const SizedBox(height: 24),
+        Container(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: Text(
+            aboutData?['bio'] ?? 'No bio available',
             style: TextStyle(
-              fontSize: isMobile ? 32 : 42,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF00C6FF),
-              letterSpacing: 1.2,
+              fontSize: isMobile ? 15 : 18,
+              color: Colors.white.withOpacity(0.85),
+              height: 1.8,
+              letterSpacing: 0.5,
             ),
+            textAlign: TextAlign.left,
           ),
-          const SizedBox(height: 24),
-          Container(
-            constraints: const BoxConstraints(maxWidth: 800),
-            child: Text(
-              aboutData?['bio'] ?? 'No bio available',
-              style: TextStyle(
-                fontSize: isMobile ? 15 : 18,
-                color: Colors.white.withOpacity(0.85),
-                height: 1.8,
-                letterSpacing: 0.5,
-              ),
-              textAlign: TextAlign.left,
-            ),
-          ),
-          const SizedBox(height: 48),
-          isMobile ? _buildMobileLayout() : _buildDesktopLayout(),
-        ],
-      ),
+        ),
+        const SizedBox(height: 48),
+        isMobile ? _buildMobileLayout() : _buildDesktopLayout(),
+      ],
     );
   }
 

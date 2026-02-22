@@ -118,78 +118,77 @@ class _ProjectPageState extends State<ProjectPage> {
       );
     }
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 15),
-          const Text(
-            "My Work",
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF00C6FF),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 15),
+        const Text(
+          "My Work",
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF00C6FF),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.all(8),
+          width: MediaQuery.of(context).size.width,
+          height: MediaQuery.of(context).size.height * .79,
+          child: CarouselSlider(
+            items: projects.map((project) {
+              return buildProject(
+                context,
+                project['title'] ?? 'Untitled Project',
+                project['description'] ?? 'No description',
+                _getIcon(project['icon'] ?? 'code'),
+                List<String>.from(project['technologies'] ?? []),
+              );
+            }).toList(),
+            options: CarouselOptions(
+              autoPlay: true,
+              enlargeCenterPage: true,
+              aspectRatio: 16 / 9,
+              viewportFraction: 1,
+              autoPlayInterval: const Duration(seconds: 5),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(8),
-            width: MediaQuery.of(context).size.width,
-            height: MediaQuery.of(context).size.height * .79,
-            child: CarouselSlider(
-              items: projects.map((project) {
-                return buildProject(
-                  project['title'] ?? 'Untitled Project',
-                  project['description'] ?? 'No description',
-                  _getIcon(project['icon'] ?? 'code'),
-                  List<String>.from(project['technologies'] ?? []),
-                );
-              }).toList(),
-              options: CarouselOptions(
-                autoPlay: true,
-                enlargeCenterPage: true,
-                aspectRatio: 16 / 9,
-                viewportFraction: 1,
-                autoPlayInterval: const Duration(seconds: 5),
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget buildProject(
+    BuildContext context,
     String title,
     String description,
     IconData icon,
     List<String> technologies,
   ) {
+    bool isMobile = MediaQuery.of(context).size.width < 800;
+
     return GlassContainer(
-      padding: const EdgeInsets.all(32),
+      padding: EdgeInsets.all(isMobile ? 20 : 32),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF00C6FF).withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 80, color: const Color(0xFF00C6FF)),
-              ),
-              const SizedBox(width: 30),
-              Expanded(
-                child: Column(
+          isMobile
+              ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00C6FF).withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(icon, size: 40, color: const Color(0xFF00C6FF)),
+                    ),
+                    const SizedBox(height: 16),
                     Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 36,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                         letterSpacing: 1.1,
@@ -199,24 +198,63 @@ class _ProjectPageState extends State<ProjectPage> {
                     Text(
                       description,
                       style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 14,
                         color: Colors.white70,
                         height: 1.5,
                       ),
                     ),
                   ],
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00C6FF).withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(icon, size: 80, color: const Color(0xFF00C6FF)),
+                    ),
+                    const SizedBox(width: 30),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontSize: 36,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 1.1,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            description,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              color: Colors.white70,
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 30),
+          SizedBox(height: isMobile ? 20 : 30),
           if (technologies.isNotEmpty)
             Wrap(
-              spacing: 12,
-              runSpacing: 12,
+              spacing: isMobile ? 8 : 12,
+              runSpacing: isMobile ? 8 : 12,
               children: technologies.map((tech) {
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 12 : 16, 
+                    vertical: isMobile ? 6 : 8
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF00C6FF).withOpacity(0.15),
                     borderRadius: BorderRadius.circular(20),
@@ -226,9 +264,10 @@ class _ProjectPageState extends State<ProjectPage> {
                   ),
                   child: Text(
                     tech,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w500,
+                      fontSize: isMobile ? 12 : 14,
                     ),
                   ),
                 );
