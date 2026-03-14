@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:portfolio/core/app_theme.dart';
+import 'package:portfolio/core/app_buttons.dart';
 
+/// Reusable contact form section.
+/// Uses [AppColors] and [AppButton] for consistent theming.
 class DetailSection extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
@@ -22,64 +26,49 @@ class DetailSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildTextField('Your name', nameController),
-        const SizedBox(height: 16),
-        _buildTextField('Your email', emailController),
-        const SizedBox(height: 16),
-        _buildTextField('Your Contact', contactController),
-        const SizedBox(height: 16),
-        _buildTextField('Message', messageController, maxLines: 5),
+        _field(context, 'Your name',    nameController),
+        const SizedBox(height: 14),
+        _field(context, 'Your email',   emailController),
+        const SizedBox(height: 14),
+        _field(context, 'Your contact', contactController),
+        const SizedBox(height: 14),
+        _field(context, 'Message',      messageController, maxLines: 5),
         const SizedBox(height: 24),
-        ElevatedButton(
+        AppButton(
+          label: text,
           onPressed: onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: onPressed == null ? Colors.grey.withOpacity(0.5) : const Color(0xFF00C6FF),
-            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 18),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
-            ),
-            elevation: 8,
-            shadowColor: const Color(0xFF00C6FF).withOpacity(0.5),
-          ),
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 18,
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.1,
-            ),
-          ),
+          style: AppButtonStyle.primary,
+          icon: Icons.send_rounded,
+          width: double.infinity,
+          height: 52,
         ),
       ],
     );
   }
 
-  Widget _buildTextField(
-    String label,
-    TextEditingController? controller, {
-    int maxLines = 1,
-  }) {
+  Widget _field(BuildContext context, String label, TextEditingController? ctrl, {int maxLines = 1}) {
+    final t = AppTheme.of(context);
     return TextField(
-      controller: controller,
-      cursorColor: Colors.white,
+      controller: ctrl,
+      cursorColor: t.primary,
       maxLines: maxLines,
-      style: const TextStyle(color: Colors.white),
+      style: TextStyle(color: t.text),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+        labelStyle: TextStyle(color: t.textMuted),
         enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: t.border),
+          borderRadius: BorderRadius.circular(14),
         ),
         focusedBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: Color(0xFF00C6FF), width: 2),
-          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: t.primary, width: 2),
+          borderRadius: BorderRadius.circular(14),
         ),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.05),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        fillColor: t.card,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       ),
     );
   }

@@ -6,20 +6,18 @@ class ApiService {
   // For local testing: http://localhost:8000/api
   // For production: https://your-api-domain.com/api
   static const String baseUrl = 'http://localhost:8000';
-  
+
   // Timeout duration
   static const Duration timeout = Duration(seconds: 10);
-  
+
   // Get About Me data
   static Future<Map<String, dynamic>> getAbout() async {
     try {
-      final response = await http
-          .get(
-            Uri.parse('$baseUrl/api/portfolio/about'),
-            headers: {'Content-Type': 'application/json'},
-          )
-          .timeout(timeout);
-      
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/portfolio/about'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(timeout);
+
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else if (response.statusCode == 404) {
@@ -31,17 +29,15 @@ class ApiService {
       throw Exception('Error loading about: $e');
     }
   }
-  
+
   // Get Projects data
   static Future<Map<String, dynamic>> getProjects() async {
     try {
-      final response = await http
-          .get(
-            Uri.parse('$baseUrl/api/portfolio/projects'),
-            headers: {'Content-Type': 'application/json'},
-          )
-          .timeout(timeout);
-      
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/portfolio/projects'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(timeout);
+
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else if (response.statusCode == 404) {
@@ -53,17 +49,15 @@ class ApiService {
       throw Exception('Error loading projects: $e');
     }
   }
-  
+
   // Get Experience data
   static Future<Map<String, dynamic>> getExperience() async {
     try {
-      final response = await http
-          .get(
-            Uri.parse('$baseUrl/api/portfolio/experience'),
-            headers: {'Content-Type': 'application/json'},
-          )
-          .timeout(timeout);
-      
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/portfolio/experience'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(timeout);
+
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else if (response.statusCode == 404) {
@@ -75,17 +69,15 @@ class ApiService {
       throw Exception('Error loading experience: $e');
     }
   }
-  
+
   // Get Contact data
   static Future<Map<String, dynamic>> getContact() async {
     try {
-      final response = await http
-          .get(
-            Uri.parse('$baseUrl/api/portfolio/contact'),
-            headers: {'Content-Type': 'application/json'},
-          )
-          .timeout(timeout);
-      
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/portfolio/contact'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(timeout);
+
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else if (response.statusCode == 404) {
@@ -97,7 +89,7 @@ class ApiService {
       throw Exception('Error loading contact: $e');
     }
   }
-  
+
   // Submit contact form
   static Future<bool> submitContactForm({
     required String name,
@@ -106,26 +98,23 @@ class ApiService {
     required String message,
   }) async {
     try {
-      final response = await http
-          .post(
-            Uri.parse('$baseUrl/api/portfolio/contact-form'),
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: {
-              'name': name,
-              'email': email,
-              'contact': contact,
-              'message': message,
-            },
-          )
-          .timeout(timeout);
-      
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/portfolio/contact-form'),
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: {
+          'name': name,
+          'email': email,
+          'contact': contact,
+          'message': message,
+        },
+      ).timeout(timeout);
+
       return response.statusCode == 200;
     } catch (e) {
-      print('Error submitting form: $e');
       return false;
     }
   }
-  
+
   // Health check
   static Future<bool> checkApiHealth() async {
     try {

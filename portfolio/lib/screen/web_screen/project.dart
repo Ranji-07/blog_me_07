@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:carousel_slider/carousel_slider.dart';
+import 'package:portfolio/core/app_theme.dart';
+import 'package:portfolio/core/animations.dart';
+import 'package:portfolio/core/responsive.dart';
 import 'package:portfolio/services/api_service.dart';
-import 'package:portfolio/widgets/glass_container.dart';
+import 'package:portfolio/models/project_model.dart';
+import 'package:portfolio/widgets/project_card.dart';
 
 class ProjectPage extends StatefulWidget {
   const ProjectPage({super.key});
@@ -10,15 +13,41 @@ class ProjectPage extends StatefulWidget {
   State<ProjectPage> createState() => _ProjectPageState();
 }
 
-class _ProjectPageState extends State<ProjectPage> {
-  Map<String, dynamic>? projectData;
+class _ProjectPageState extends State<ProjectPage>
+    with TickerProviderStateMixin {
+  List<ProjectModel> projects = [];
   bool isLoading = true;
   String? error;
+
+  late AnimationController _headerController;
+  late Animation<double> _headerFadeAnimation;
+  late Animation<Offset> _headerSlideAnimation;
 
   @override
   void initState() {
     super.initState();
+
+    _headerController = AnimationController(
+      vsync: this,
+      duration: AppAnimations.entranceSlide,
+    );
+
+    _headerFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _headerController, curve: AppCurves.smoothDecelerate),
+    );
+
+    _headerSlideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.05),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _headerController, curve: AppCurves.smoothDecelerate));
+
     loadProjectData();
+  }
+
+  @override
+  void dispose() {
+    _headerController.dispose();
+    super.dispose();
   }
 
   Future<void> loadProjectData() async {
@@ -29,251 +58,344 @@ class _ProjectPageState extends State<ProjectPage> {
 
     try {
       final data = await ApiService.getProjects();
+      final List<dynamic> projectList = data['projects'] ?? [];
+
       setState(() {
-        projectData = data;
+        projects = projectList.map((p) => ProjectModel.fromJson(p)).toList();
+        // If no projects from API, use sample projects
+        if (projects.isEmpty) {
+          projects = SampleProjects.projects;
+        }
         isLoading = false;
       });
+
+      _headerController.forward();
     } catch (e) {
       setState(() {
-        error = e.toString();
+        // Use sample projects on error
+        projects = SampleProjects.projects;
         isLoading = false;
       });
-    }
-  }
-
-  IconData _getIcon(String iconName) {
-    switch (iconName.toLowerCase()) {
-      case 'camera':
-        return Icons.camera;
-      case 'agriculture':
-        return Icons.agriculture;
-      case 'delete':
-        return Icons.delete;
-      case 'code':
-        return Icons.code;
-      case 'computer':
-        return Icons.computer;
-      case 'phone':
-        return Icons.phone_android;
-      default:
-        return Icons.work;
+      _headerController.forward();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: Color(0xFF00C6FF)),
-      );
-    }
+    final t = AppTheme.of(context);
+    final isMobile = Responsive.isMobile(context);
 
-    if (error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section header
+        AnimatedBuilder(
+          animation: _headerController,
+          builder: (context, child) {
+            return Transform.translate(
+              offset: Offset(
+                0,
+                _headerSlideAnimation.value.dy * 50,
+              ),
+              child: Opacity(
+                opacity: _headerFadeAnimation.value,
+                child: child,
+              ),
+            );
+          },
+          child: _buildHeader(context, t, isMobile),
+        ),
+        SizedBox(height: isMobile ? 24 : 40),
+        // Project grid
+        if (isLoading)
+          ProjectGrid(projects: const [], isLoading: true)
+        else if (error != null)
+          _buildErrorView(t)
+        else
+          ProjectGrid(projects: projects),
+      ],
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, AppThemeData t, bool isMobile) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    t.primary.withValues(alpha: 0.2),
+                    t.primary.withValues(alpha: 0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: t.primary.withValues(alpha: 0.2)),
+              ),
+              child: Icon(
+                Icons.work_rounded,
+                size: 24,
+                color: t.primary,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ShaderMask(
+                    shaderCallback: (bounds) =>
+                        t.primaryGradient.createShader(bounds),
+                    blendMode: BlendMode.srcIn,
+                    child: Text(
+                      'My Projects',
+                      style: TextStyle(
+                        fontSize: isMobile ? 28 : 36,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'A showcase of my technical work and creative solutions',
+                    style: TextStyle(
+                      fontSize: isMobile ? 13 : 15,
+                      color: t.textMuted,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        // Category filter chips (optional enhancement)
+        _buildCategoryFilters(t),
+      ],
+    );
+  }
+
+  Widget _buildCategoryFilters(AppThemeData t) {
+    final categories = ['All', 'IoT', 'AI/ML', 'Web', 'Mobile'];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: categories.asMap().entries.map((entry) {
+          final index = entry.key;
+          final category = entry.value;
+          final isSelected = index == 0; // Default to "All"
+
+          return Padding(
+            padding: EdgeInsets.only(right: index < categories.length - 1 ? 10 : 0),
+            child: EntranceAnimation(
+              delay: Duration(milliseconds: 200 + (index * 50)),
+              child: _CategoryChip(
+                label: category,
+                isSelected: isSelected,
+                theme: t,
+                onTap: () {
+                  // Filter logic can be added here
+                },
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildErrorView(AppThemeData t) {
+    return Center(
+      child: EntranceAnimation(
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: t.card,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: t.border),
+          ),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, size: 60, color: Colors.red),
-              const SizedBox(height: 20),
-              const Text(
-                'Error Loading Projects',
+              Icon(
+                Icons.error_outline_rounded,
+                size: 48,
+                color: t.accent,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Unable to Load Projects',
                 style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: t.text,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Text(
-                error!,
-                style: const TextStyle(fontSize: 14, color: Colors.white70),
+                error ?? 'An unexpected error occurred',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: t.textMuted,
+                ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 20),
-              ElevatedButton.icon(
-                onPressed: loadProjectData,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF00C6FF),
-                  foregroundColor: Colors.white,
+              const SizedBox(height: 24),
+              _RetryButton(
+                theme: t,
+                onTap: loadProjectData,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryChip extends StatefulWidget {
+  final String label;
+  final bool isSelected;
+  final AppThemeData theme;
+  final VoidCallback onTap;
+
+  const _CategoryChip({
+    required this.label,
+    required this.isSelected,
+    required this.theme,
+    required this.onTap,
+  });
+
+  @override
+  State<_CategoryChip> createState() => _CategoryChipState();
+}
+
+class _CategoryChipState extends State<_CategoryChip> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.theme;
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: AppAnimations.fast,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          decoration: BoxDecoration(
+            gradient: widget.isSelected ? t.primaryGradient : null,
+            color: widget.isSelected
+                ? null
+                : (_isHovered
+                    ? t.primary.withValues(alpha: 0.15)
+                    : t.primary.withValues(alpha: 0.08)),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(
+              color: widget.isSelected
+                  ? Colors.transparent
+                  : (_isHovered
+                      ? t.primary.withValues(alpha: 0.5)
+                      : t.primary.withValues(alpha: 0.15)),
+            ),
+            boxShadow: widget.isSelected
+                ? [
+                    BoxShadow(
+                      color: t.primary.withValues(alpha: 0.35),
+                      blurRadius: 12,
+                      spreadRadius: -2,
+                    ),
+                  ]
+                : [],
+          ),
+          child: Text(
+            widget.label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: widget.isSelected
+                  ? Colors.white
+                  : (_isHovered ? t.primary : t.text),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RetryButton extends StatefulWidget {
+  final AppThemeData theme;
+  final VoidCallback onTap;
+
+  const _RetryButton({
+    required this.theme,
+    required this.onTap,
+  });
+
+  @override
+  State<_RetryButton> createState() => _RetryButtonState();
+}
+
+class _RetryButtonState extends State<_RetryButton> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.theme;
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: AppAnimations.fast,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          decoration: BoxDecoration(
+            gradient: t.primaryGradient,
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: [
+              BoxShadow(
+                color: t.primary.withValues(alpha: _isHovered ? 0.5 : 0.3),
+                blurRadius: _isHovered ? 20 : 12,
+                spreadRadius: _isHovered ? 0 : -2,
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.refresh_rounded,
+                size: 18,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Retry',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
                 ),
               ),
             ],
           ),
         ),
-      );
-    }
-
-    List<dynamic> projects = projectData?['projects'] ?? [];
-
-    if (projects.isEmpty) {
-      return const Center(
-        child: Text(
-          'No projects available',
-          style: TextStyle(fontSize: 18, color: Colors.white),
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 15),
-        const Text(
-          "My Work",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF00C6FF),
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.all(8),
-          width: MediaQuery.of(context).size.width,
-          height: MediaQuery.of(context).size.height * .79,
-          child: CarouselSlider(
-            items: projects.map((project) {
-              return buildProject(
-                context,
-                project['title'] ?? 'Untitled Project',
-                project['description'] ?? 'No description',
-                _getIcon(project['icon'] ?? 'code'),
-                List<String>.from(project['technologies'] ?? []),
-              );
-            }).toList(),
-            options: CarouselOptions(
-              autoPlay: true,
-              enlargeCenterPage: true,
-              aspectRatio: 16 / 9,
-              viewportFraction: 1,
-              autoPlayInterval: const Duration(seconds: 5),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget buildProject(
-    BuildContext context,
-    String title,
-    String description,
-    IconData icon,
-    List<String> technologies,
-  ) {
-    bool isMobile = MediaQuery.of(context).size.width < 800;
-
-    return GlassContainer(
-      padding: EdgeInsets.all(isMobile ? 20 : 32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          isMobile
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF00C6FF).withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(icon, size: 40, color: const Color(0xFF00C6FF)),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 1.1,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      description,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.white70,
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
-                )
-              : Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF00C6FF).withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(icon, size: 80, color: const Color(0xFF00C6FF)),
-                    ),
-                    const SizedBox(width: 30),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: const TextStyle(
-                              fontSize: 36,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 1.1,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            description,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              color: Colors.white70,
-                              height: 1.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-          SizedBox(height: isMobile ? 20 : 30),
-          if (technologies.isNotEmpty)
-            Wrap(
-              spacing: isMobile ? 8 : 12,
-              runSpacing: isMobile ? 8 : 12,
-              children: technologies.map((tech) {
-                return Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isMobile ? 12 : 16, 
-                    vertical: isMobile ? 6 : 8
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00C6FF).withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: const Color(0xFF00C6FF).withOpacity(0.3),
-                    ),
-                  ),
-                  child: Text(
-                    tech,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                      fontSize: isMobile ? 12 : 14,
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-        ],
       ),
     );
   }
