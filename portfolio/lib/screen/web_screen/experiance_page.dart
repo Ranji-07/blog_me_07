@@ -3,7 +3,6 @@ import 'package:portfolio/core/app_theme.dart';
 import 'package:portfolio/core/animations.dart';
 import 'package:portfolio/core/responsive.dart';
 import 'package:portfolio/services/api_service.dart';
-import 'package:portfolio/widgets/glass_container.dart';
 
 class ExperiancePage extends StatefulWidget {
   const ExperiancePage({super.key});
@@ -42,11 +41,6 @@ class _ExperiancePageState extends State<ExperiancePage>
   }
 
   Future<void> loadExperienceData() async {
-    setState(() {
-      isLoading = true;
-      error = null;
-    });
-
     try {
       final data = await ApiService.getExperience();
       setState(() {
@@ -59,17 +53,17 @@ class _ExperiancePageState extends State<ExperiancePage>
         error = e.toString();
         isLoading = false;
       });
+      _fadeController.forward();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
+    final isMobile = Responsive.isMobile(context);
 
     if (isLoading) {
-      return Center(
-        child: CircularProgressIndicator(color: t.primary),
-      );
+      return Center(child: CircularProgressIndicator(color: t.primary));
     }
 
     if (error != null) {
@@ -81,398 +75,399 @@ class _ExperiancePageState extends State<ExperiancePage>
     final certifications = experienceData?['certifications'] as List<dynamic>? ?? [];
     final academic = experienceData?['academic'] as List<dynamic>? ?? [];
 
-    if (careers.isEmpty && internships.isEmpty && certifications.isEmpty && academic.isEmpty) {
-      return Center(
-        child: Text(
-          'No experience timeline data available',
-          style: TextStyle(fontSize: 18, color: t.text),
-        ),
-      );
-    }
-
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (careers.isNotEmpty) ...[
-            _buildCategoryHeader(context, "Professional Experience", Icons.work),
-            _buildCompanyTimeline(context, careers),
-            const SizedBox(height: 40),
-          ],
-          if (internships.isNotEmpty) ...[
-            _buildCategoryHeader(context, "Internships", Icons.handshake),
-            _buildCompanyTimeline(context, internships),
-            const SizedBox(height: 40),
-          ],
-          if (certifications.isNotEmpty) ...[
-            _buildCategoryHeader(context, "Certifications", Icons.workspace_premium),
-            _buildAchievementTimeline(context, certifications),
-            const SizedBox(height: 40),
-          ],
-          if (academic.isNotEmpty) ...[
-            _buildCategoryHeader(context, "Academic Highlights", Icons.school),
-            _buildAchievementTimeline(context, academic),
-            const SizedBox(height: 40),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryHeader(BuildContext context, String title, IconData icon) {
-    final t = AppTheme.of(context);
-    final isMobile = Responsive.isMobile(context);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24.0, left: 8.0),
-      child: Row(
-        children: [
-          Icon(icon, color: t.primary, size: isMobile ? 24 : 28),
-          const SizedBox(width: 12),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: isMobile ? 22 : 26,
-              fontWeight: FontWeight.bold,
-              color: t.text,
-              letterSpacing: 1.1,
+          // Professional Experience
+          if (careers.isNotEmpty || internships.isNotEmpty) ...[
+            _SectionHeader(
+              title: 'Professional Experience',
+              subtitle: 'My career journey and work history',
+              icon: Icons.work_rounded,
             ),
-          ),
+            SizedBox(height: isMobile ? 24 : 32),
+            _ExperienceTimeline(
+              careers: careers,
+              internships: internships,
+              isMobile: isMobile,
+            ),
+            SizedBox(height: isMobile ? 48 : 64),
+          ],
+
+          // Certifications
+          if (certifications.isNotEmpty) ...[
+            _SectionHeader(
+              title: 'Certifications',
+              subtitle: 'Professional credentials and achievements',
+              icon: Icons.workspace_premium_rounded,
+            ),
+            SizedBox(height: isMobile ? 24 : 32),
+            _CertificationsGrid(
+              certifications: certifications,
+              isMobile: isMobile,
+            ),
+            SizedBox(height: isMobile ? 48 : 64),
+          ],
+
+          // Academic Highlights
+          if (academic.isNotEmpty) ...[
+            _SectionHeader(
+              title: 'Academic Highlights',
+              subtitle: 'Awards, publications, and achievements',
+              icon: Icons.emoji_events_rounded,
+            ),
+            SizedBox(height: isMobile ? 24 : 32),
+            _AcademicHighlights(
+              achievements: academic,
+              isMobile: isMobile,
+            ),
+          ],
         ],
       ),
-    );
-  }
-
-  Widget _buildCompanyTimeline(BuildContext context, List<dynamic> items) {
-    return Column(
-      children: List.generate(items.length, (index) {
-        final companyData = items[index];
-        final bool isLast = index == items.length - 1;
-
-        return EntranceAnimation(
-          delay: Duration(milliseconds: 100 + (index * 80)),
-          child: TimelineNode(
-            isLast: isLast,
-            child: CompanyExperienceCard(data: companyData),
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _buildAchievementTimeline(BuildContext context, List<dynamic> items) {
-    final t = AppTheme.of(context);
-
-    return Column(
-      children: List.generate(items.length, (index) {
-        final achievementData = items[index];
-        final bool isLast = index == items.length - 1;
-
-        return EntranceAnimation(
-          delay: Duration(milliseconds: 100 + (index * 80)),
-          child: TimelineNode(
-            isLast: isLast,
-            nodeColor: t.accent,
-            child: AchievementCard(data: achievementData),
-          ),
-        );
-      }),
     );
   }
 }
 
-class TimelineNode extends StatelessWidget {
-  final Widget child;
-  final bool isLast;
-  final Color? nodeColor;
+// ─────────────────────────────────────────────────────────────────────────────
+// Section Header
+// ─────────────────────────────────────────────────────────────────────────────
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
 
-  const TimelineNode({
-    super.key,
-    required this.child,
-    this.isLast = false,
-    this.nodeColor,
+  const _SectionHeader({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
-    final color = nodeColor ?? t.primary;
-
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Column(
-            children: [
-              Container(
-                width: 20,
-                height: 20,
-                margin: const EdgeInsets.only(top: 32, left: 8, right: 8),
-                decoration: BoxDecoration(
-                  color: t.background,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: color, width: 4),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.5),
-                      blurRadius: 8,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-              ),
-              if (!isLast)
-                Expanded(
-                  child: Container(
-                    width: 2,
-                    color: color.withValues(alpha: 0.3),
-                    margin: const EdgeInsets.only(top: 8, bottom: 8),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 32.0),
-              child: child,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class CompanyExperienceCard extends StatelessWidget {
-  final Map<String, dynamic> data;
-
-  const CompanyExperienceCard({super.key, required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    final t = AppTheme.of(context);
     final isMobile = Responsive.isMobile(context);
 
-    final String companyName = data['company'] ?? 'Unknown Company';
-    final String companyLogo = data['logo'] ?? 'default.png';
-    final List<dynamic> positions = data['positions'] ?? [];
-
-    return GlassContainer(
-      padding: EdgeInsets.all(isMobile ? 20.0 : 32.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.asset(
-                    'assets/$companyLogo',
-                    width: isMobile ? 40 : 50,
-                    height: isMobile ? 40 : 50,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: isMobile ? 40 : 50,
-                        height: isMobile ? 40 : 50,
-                        decoration: BoxDecoration(
-                          color: t.card,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(Icons.business, color: t.textMuted),
-                      );
-                    },
-                  ),
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: t.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  companyName,
-                  style: TextStyle(
-                    fontSize: isMobile ? 20 : 24,
-                    fontWeight: FontWeight.bold,
-                    color: t.text,
-                    letterSpacing: 1.1,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (positions.isNotEmpty) const SizedBox(height: 24),
-          ...List.generate(positions.length, (index) {
-            final pos = positions[index];
-            final bool isLastPos = index == positions.length - 1;
-
-            return IntrinsicHeight(
-              child: Row(
+              child: Icon(icon, color: t.primary, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Column(
-                    children: [
-                      Container(
-                        margin: const EdgeInsets.only(top: 6, left: 16, right: 16),
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: t.primary,
-                          shape: BoxShape.circle,
-                        ),
+                  ShaderMask(
+                    shaderCallback: (bounds) =>
+                        t.primaryGradient.createShader(bounds),
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: isMobile ? 24 : 32,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: -0.5,
                       ),
-                      if (!isLastPos)
-                        Expanded(
-                          child: Container(
-                            width: 1,
-                            color: t.border,
-                            margin: const EdgeInsets.only(top: 4, bottom: 4),
-                          ),
-                        ),
-                    ],
+                    ),
                   ),
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(bottom: isLastPos ? 0 : 24.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            pos['position'] ?? 'Role',
-                            style: TextStyle(
-                              fontSize: isMobile ? 16 : 18,
-                              fontWeight: FontWeight.w600,
-                              color: t.primary,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "${pos['startDate'] ?? ''} - ${pos['endDate'] ?? ''}",
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: t.textMuted,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          if (pos['description'] != null) ...[
-                            const SizedBox(height: 12),
-                            Text(
-                              pos['description'],
-                              style: TextStyle(
-                                fontSize: isMobile ? 14 : 15,
-                                color: t.text.withValues(alpha: 0.85),
-                                height: 1.6,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: isMobile ? 13 : 15,
+                      color: t.textMuted,
                     ),
                   ),
                 ],
               ),
-            );
-          }),
-        ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Experience Timeline
+// ─────────────────────────────────────────────────────────────────────────────
+class _ExperienceTimeline extends StatelessWidget {
+  final List<dynamic> careers;
+  final List<dynamic> internships;
+  final bool isMobile;
+
+  const _ExperienceTimeline({
+    required this.careers,
+    required this.internships,
+    required this.isMobile,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final allExperience = [...careers, ...internships];
+
+    return Column(
+      children: List.generate(allExperience.length, (index) {
+        final company = allExperience[index] as Map<String, dynamic>;
+        final isLast = index == allExperience.length - 1;
+        final isInternship = index >= careers.length;
+
+        return EntranceAnimation(
+          delay: Duration(milliseconds: 100 + (index * 80)),
+          child: _CompanyCard(
+            company: company,
+            isLast: isLast,
+            isInternship: isInternship,
+            isMobile: isMobile,
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class _CompanyCard extends StatefulWidget {
+  final Map<String, dynamic> company;
+  final bool isLast;
+  final bool isInternship;
+  final bool isMobile;
+
+  const _CompanyCard({
+    required this.company,
+    required this.isLast,
+    required this.isInternship,
+    required this.isMobile,
+  });
+
+  @override
+  State<_CompanyCard> createState() => _CompanyCardState();
+}
+
+class _CompanyCardState extends State<_CompanyCard> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTheme.of(context);
+    final companyName = widget.company['company'] ?? 'Company';
+    final positions = widget.company['positions'] as List? ?? [];
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Timeline indicator
+            SizedBox(
+              width: widget.isMobile ? 40 : 60,
+              child: Column(
+                children: [
+                  AnimatedContainer(
+                    duration: AppAnimations.fast,
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: _hovered ? t.primary : t.card,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: widget.isInternship ? t.accent : t.primary,
+                        width: 3,
+                      ),
+                      boxShadow: _hovered
+                          ? [
+                              BoxShadow(
+                                color: t.primary.withValues(alpha: 0.4),
+                                blurRadius: 10,
+                              ),
+                            ]
+                          : [],
+                    ),
+                  ),
+                  if (!widget.isLast)
+                    Expanded(
+                      child: Container(
+                        width: 2,
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              t.primary.withValues(alpha: 0.4),
+                              t.border,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            // Content
+            Expanded(
+              child: AnimatedContainer(
+                duration: AppAnimations.fast,
+                margin: const EdgeInsets.only(bottom: 24),
+                padding: EdgeInsets.all(widget.isMobile ? 16 : 24),
+                decoration: BoxDecoration(
+                  color: _hovered ? t.cardHover : t.card,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  border: Border.all(
+                    color: _hovered ? t.primary.withValues(alpha: 0.3) : t.border,
+                  ),
+                  boxShadow: _hovered ? [t.cardShadowHover] : [],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Company header
+                    Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(AppRadius.md - 2),
+                            child: Image.asset(
+                              'assets/${widget.company['logo'] ?? 'default.png'}',
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: t.card,
+                                child: Icon(
+                                  Icons.business_rounded,
+                                  color: t.textMuted,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                companyName,
+                                style: TextStyle(
+                                  fontSize: widget.isMobile ? 18 : 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: t.text,
+                                ),
+                              ),
+                              if (widget.isInternship)
+                                Container(
+                                  margin: const EdgeInsets.only(top: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: t.accent.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                                  ),
+                                  child: Text(
+                                    'Internship',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: t.accent,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (positions.isNotEmpty) const SizedBox(height: 20),
+                    // Positions
+                    ...positions.asMap().entries.map((entry) {
+                      final pos = entry.value as Map<String, dynamic>;
+                      return _PositionItem(
+                        position: pos,
+                        isMobile: widget.isMobile,
+                      );
+                    }),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class AchievementCard extends StatelessWidget {
-  final Map<String, dynamic> data;
+class _PositionItem extends StatelessWidget {
+  final Map<String, dynamic> position;
+  final bool isMobile;
 
-  const AchievementCard({super.key, required this.data});
-
-  IconData _getIconData(String? iconName) {
-    switch (iconName) {
-      case 'certificate':
-        return Icons.card_membership;
-      case 'workspace_premium':
-        return Icons.workspace_premium;
-      case 'emoji_events':
-        return Icons.emoji_events;
-      case 'military_tech':
-        return Icons.military_tech;
-      default:
-        return Icons.star;
-    }
-  }
+  const _PositionItem({required this.position, required this.isMobile});
 
   @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
-    final isMobile = Responsive.isMobile(context);
 
-    return GlassContainer(
-      padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.only(top: 8, left: 4, right: 16),
+            width: 8,
+            height: 8,
             decoration: BoxDecoration(
-              color: t.accent.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: t.accent.withValues(alpha: 0.3)),
-            ),
-            child: Icon(
-              _getIconData(data['icon']),
-              size: 32,
-              color: t.accent,
+              color: t.primary,
+              shape: BoxShape.circle,
             ),
           ),
-          const SizedBox(width: 20),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  data['title'] ?? 'Achievement',
+                  position['position'] ?? 'Role',
                   style: TextStyle(
-                    fontSize: isMobile ? 18 : 22,
-                    fontWeight: FontWeight.bold,
-                    color: t.text,
+                    fontSize: isMobile ? 15 : 16,
+                    fontWeight: FontWeight.w600,
+                    color: t.primary,
                   ),
                 ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Text(
-                      data['issuer'] ?? data['institution'] ?? 'Organization',
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: t.accent,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Text("•", style: TextStyle(color: t.textMuted)),
-                    ),
-                    Text(
-                      data['date'] ?? '',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: t.textMuted,
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 4),
+                Text(
+                  '${position['startDate'] ?? ''} - ${position['endDate'] ?? ''}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: t.textMuted,
+                  ),
                 ),
-                if (data['description'] != null) ...[
-                  const SizedBox(height: 12),
+                if (position['description'] != null) ...[
+                  const SizedBox(height: 8),
                   Text(
-                    data['description'],
+                    position['description'],
                     style: TextStyle(
-                      fontSize: isMobile ? 14 : 15,
+                      fontSize: isMobile ? 13 : 14,
                       color: t.text.withValues(alpha: 0.85),
-                      height: 1.5,
+                      height: 1.6,
                     ),
                   ),
                 ],
@@ -485,6 +480,295 @@ class AchievementCard extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Certifications Grid
+// ─────────────────────────────────────────────────────────────────────────────
+class _CertificationsGrid extends StatelessWidget {
+  final List<dynamic> certifications;
+  final bool isMobile;
+
+  const _CertificationsGrid({
+    required this.certifications,
+    required this.isMobile,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final crossAxisCount = isMobile ? 1 : 2;
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: isMobile ? 3.0 : 2.8,
+      ),
+      itemCount: certifications.length,
+      itemBuilder: (context, index) {
+        final cert = certifications[index] as Map<String, dynamic>;
+        return EntranceAnimation(
+          delay: Duration(milliseconds: 100 + (index * 60)),
+          child: _CertificationCard(certification: cert),
+        );
+      },
+    );
+  }
+}
+
+class _CertificationCard extends StatefulWidget {
+  final Map<String, dynamic> certification;
+
+  const _CertificationCard({required this.certification});
+
+  @override
+  State<_CertificationCard> createState() => _CertificationCardState();
+}
+
+class _CertificationCardState extends State<_CertificationCard> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTheme.of(context);
+    final cert = widget.certification;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: AppAnimations.fast,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: _hovered ? t.cardHover : t.card,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(
+            color: _hovered ? t.accent.withValues(alpha: 0.4) : t.border,
+          ),
+          boxShadow: _hovered ? [t.cardShadowHover] : [],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: t.accent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: Icon(
+                Icons.workspace_premium_rounded,
+                color: t.accent,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    cert['title'] ?? 'Certification',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: t.text,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    cert['issuer'] ?? 'Issuer',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: t.accent,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    cert['date'] ?? '',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: t.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Academic Highlights
+// ─────────────────────────────────────────────────────────────────────────────
+class _AcademicHighlights extends StatelessWidget {
+  final List<dynamic> achievements;
+  final bool isMobile;
+
+  const _AcademicHighlights({
+    required this.achievements,
+    required this.isMobile,
+  });
+
+  IconData _getIcon(String? iconName) {
+    switch (iconName) {
+      case 'emoji_events':
+        return Icons.emoji_events_rounded;
+      case 'code':
+        return Icons.code_rounded;
+      case 'workspace_premium':
+        return Icons.workspace_premium_rounded;
+      case 'military_tech':
+        return Icons.military_tech_rounded;
+      default:
+        return Icons.star_rounded;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: List.generate(achievements.length, (index) {
+        final achievement = achievements[index] as Map<String, dynamic>;
+        return EntranceAnimation(
+          delay: Duration(milliseconds: 100 + (index * 60)),
+          child: _AchievementCard(
+            achievement: achievement,
+            icon: _getIcon(achievement['icon']),
+            isMobile: isMobile,
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class _AchievementCard extends StatefulWidget {
+  final Map<String, dynamic> achievement;
+  final IconData icon;
+  final bool isMobile;
+
+  const _AchievementCard({
+    required this.achievement,
+    required this.icon,
+    required this.isMobile,
+  });
+
+  @override
+  State<_AchievementCard> createState() => _AchievementCardState();
+}
+
+class _AchievementCardState extends State<_AchievementCard> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTheme.of(context);
+    final ach = widget.achievement;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: AppAnimations.fast,
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: EdgeInsets.all(widget.isMobile ? 16 : 20),
+        decoration: BoxDecoration(
+          color: _hovered ? t.cardHover : t.card,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(
+            color: _hovered ? t.accentAlt.withValues(alpha: 0.4) : t.border,
+          ),
+          boxShadow: _hovered ? [t.cardShadowHover] : [],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: t.accentAlt.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: Icon(widget.icon, color: t.accentAlt, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          ach['title'] ?? 'Achievement',
+                          style: TextStyle(
+                            fontSize: widget.isMobile ? 16 : 18,
+                            fontWeight: FontWeight.w700,
+                            color: t.text,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: t.accentAlt.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                        ),
+                        child: Text(
+                          ach['date'] ?? '',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: t.accentAlt,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    ach['institution'] ?? '',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: t.accent,
+                    ),
+                  ),
+                  if (ach['description'] != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      ach['description'],
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: t.textMuted,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Error View
+// ─────────────────────────────────────────────────────────────────────────────
 class _ErrorView extends StatelessWidget {
   final String error;
   final VoidCallback onRetry;
@@ -496,50 +780,41 @@ class _ErrorView extends StatelessWidget {
     final t = AppTheme.of(context);
 
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
+      child: Container(
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: t.card,
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          border: Border.all(color: t.border),
+        ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 60, color: t.accent),
-            const SizedBox(height: 20),
+            Icon(Icons.error_outline_rounded, size: 48, color: t.accentAlt),
+            const SizedBox(height: 16),
             Text(
-              'Error Loading Experience',
+              'Failed to load experience',
               style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
                 color: t.text,
               ),
             ),
-            const SizedBox(height: 10),
-            Text(
-              error,
-              style: TextStyle(fontSize: 14, color: t.textMuted),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             GestureDetector(
               onTap: onRetry,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 decoration: BoxDecoration(
                   gradient: t.primaryGradient,
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [t.primaryGlow],
+                  borderRadius: BorderRadius.circular(AppRadius.full),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.refresh, color: Colors.white, size: 18),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Retry',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                child: const Text(
+                  'Retry',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),

@@ -116,9 +116,9 @@ class _ProfileTemplateState extends State<ProfileTemplate>
             child: SingleChildScrollView(
               controller: _scrollController,
               child: Column(children: [
-                _buildSection(context, const AboutPage(), t),
-                _buildSection(context, const ProjectPage(), t),
-                _buildSection(context, const ExperiancePage(), t),
+                _buildSection(context, const AboutPage(), t, fitContent: true),
+                _buildSection(context, const ProjectPage(), t, fitContent: true),
+                _buildSection(context, const ExperiancePage(), t, fitContent: true),
                 _buildSection(context, const ContactPage(), t),
               ]),
             ),
@@ -128,9 +128,9 @@ class _ProfileTemplateState extends State<ProfileTemplate>
     );
   }
 
-  Widget _buildSection(BuildContext context, Widget child, AppThemeData t) {
+  Widget _buildSection(BuildContext context, Widget child, AppThemeData t, {bool fitContent = false}) {
     return Container(
-      constraints: BoxConstraints(minHeight: _sectionHeight(context)),
+      constraints: fitContent ? null : BoxConstraints(minHeight: _sectionHeight(context)),
       padding: Responsive.pagePadding(context),
       child: child,
     );

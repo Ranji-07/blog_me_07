@@ -3,9 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:portfolio/core/app_theme.dart';
 import 'package:portfolio/core/animations.dart';
 import 'package:portfolio/core/responsive.dart';
-import 'package:portfolio/widgets/details_screen.dart';
 import 'package:portfolio/services/api_service.dart';
-import 'package:portfolio/widgets/glass_container.dart';
 
 class ContactPage extends StatefulWidget {
   const ContactPage({super.key});
@@ -16,10 +14,11 @@ class ContactPage extends StatefulWidget {
 
 class _ContactPageState extends State<ContactPage>
     with SingleTickerProviderStateMixin {
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController contactController = TextEditingController();
-  final TextEditingController messageController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _contactController = TextEditingController();
+  final _messageController = TextEditingController();
 
   bool isSubmitting = false;
 
@@ -43,73 +42,49 @@ class _ContactPageState extends State<ContactPage>
   @override
   void dispose() {
     _fadeController.dispose();
-    nameController.dispose();
-    emailController.dispose();
-    contactController.dispose();
-    messageController.dispose();
+    _nameController.dispose();
+    _emailController.dispose();
+    _contactController.dispose();
+    _messageController.dispose();
     super.dispose();
   }
 
-  Future<void> submitForm() async {
-    if (nameController.text.trim().isEmpty ||
-        emailController.text.trim().isEmpty ||
-        contactController.text.trim().isEmpty ||
-        messageController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill all fields'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    if (!emailController.text.contains('@')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a valid email'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
+  Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() => isSubmitting = true);
 
     try {
       final success = await ApiService.submitContactForm(
-        name: nameController.text.trim(),
-        email: emailController.text.trim(),
-        contact: contactController.text.trim(),
-        message: messageController.text.trim(),
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        contact: _contactController.text.trim(),
+        message: _messageController.text.trim(),
       );
 
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Message sent successfully!'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 3),
+          SnackBar(
+            content: const Text('Message sent successfully!'),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
-        nameController.clear();
-        emailController.clear();
-        contactController.clear();
-        messageController.clear();
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to send message. Please try again.'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _nameController.clear();
+        _emailController.clear();
+        _contactController.clear();
+        _messageController.clear();
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -126,175 +101,278 @@ class _ContactPageState extends State<ContactPage>
 
     return FadeTransition(
       opacity: _fadeAnimation,
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: isMobile ? 16 : 20,
-          vertical: isMobile ? 20 : 30,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            isMobile || isTablet
-                ? _buildMobileLayout(context, t, isMobile)
-                : _buildDesktopLayout(context, t),
-            _buildFooter(context, t, isMobile),
-          ],
-        ),
-      ),
-    );
-  }
+      child: Column(
+        children: [
+          // Section Header
+          _SectionHeader(
+            title: 'Get In Touch',
+            subtitle: "Let's discuss your next project or opportunity",
+          ),
+          SizedBox(height: isMobile ? 32 : 48),
 
-  Widget _buildMobileLayout(BuildContext context, AppThemeData t, bool isMobile) {
-    return Column(
-      children: [
-        EntranceAnimation(
-          delay: const Duration(milliseconds: 100),
-          child: Image.asset(
-            'assets/contact.png',
-            width: MediaQuery.of(context).size.width * 0.8,
-            height: isMobile ? 200 : 300,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                width: MediaQuery.of(context).size.width * 0.8,
-                height: isMobile ? 200 : 300,
-                decoration: BoxDecoration(
-                  color: t.card,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Icon(Icons.contact_mail, size: 80, color: t.textMuted),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 32),
-        EntranceAnimation(
-          delay: const Duration(milliseconds: 200),
-          child: GlassContainer(
-            width: MediaQuery.of(context).size.width * 0.9,
-            padding: const EdgeInsets.all(24),
-            child: DetailSection(
-              nameController: nameController,
-              emailController: emailController,
-              contactController: contactController,
-              messageController: messageController,
-              text: isSubmitting ? "Sending..." : "Send Message",
-              onPressed: isSubmitting ? null : submitForm,
-            ),
-          ),
-        ),
-      ],
+          // Content
+          if (isMobile || isTablet)
+            _buildMobileLayout(context, t)
+          else
+            _buildDesktopLayout(context, t),
+
+          SizedBox(height: isMobile ? 48 : 64),
+
+          // Footer
+          _Footer(),
+        ],
+      ),
     );
   }
 
   Widget _buildDesktopLayout(BuildContext context, AppThemeData t) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Flexible(
-          child: EntranceAnimation(
-            delay: const Duration(milliseconds: 100),
-            slideOffset: const Offset(-0.05, 0),
-            child: Image.asset(
-              'assets/contact.png',
-              width: 500,
-              height: 600,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  width: 500,
-                  height: 600,
-                  decoration: BoxDecoration(
-                    color: t.card,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Icon(Icons.contact_mail, size: 100, color: t.textMuted),
-                );
-              },
-            ),
-          ),
+        // Left: Contact info
+        Expanded(
+          flex: 4,
+          child: _ContactInfo(),
         ),
-        Flexible(
-          child: EntranceAnimation(
-            delay: const Duration(milliseconds: 200),
-            slideOffset: const Offset(0.05, 0),
-            child: GlassContainer(
-              padding: const EdgeInsets.all(40),
-              child: DetailSection(
-                nameController: nameController,
-                emailController: emailController,
-                contactController: contactController,
-                messageController: messageController,
-                text: isSubmitting ? "Sending..." : "Send Message",
-                onPressed: isSubmitting ? null : submitForm,
-              ),
-            ),
+        const SizedBox(width: 48),
+        // Right: Contact form
+        Expanded(
+          flex: 5,
+          child: _ContactForm(
+            formKey: _formKey,
+            nameController: _nameController,
+            emailController: _emailController,
+            contactController: _contactController,
+            messageController: _messageController,
+            isSubmitting: isSubmitting,
+            onSubmit: _submitForm,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildFooter(BuildContext context, AppThemeData t, bool isMobile) {
-    final year = DateTime.now().year;
+  Widget _buildMobileLayout(BuildContext context, AppThemeData t) {
+    return Column(
+      children: [
+        _ContactInfo(),
+        const SizedBox(height: 32),
+        _ContactForm(
+          formKey: _formKey,
+          nameController: _nameController,
+          emailController: _emailController,
+          contactController: _contactController,
+          messageController: _messageController,
+          isSubmitting: isSubmitting,
+          onSubmit: _submitForm,
+        ),
+      ],
+    );
+  }
+}
 
-    if (isMobile) {
-      return Column(
-        children: [
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _SocialIconButton(icon: FontAwesomeIcons.squarePhone),
-              const SizedBox(width: 12),
-              _SocialIconButton(icon: FontAwesomeIcons.instagram),
-              const SizedBox(width: 12),
-              _SocialIconButton(icon: FontAwesomeIcons.github),
-              const SizedBox(width: 12),
-              _SocialIconButton(icon: FontAwesomeIcons.linkedin),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            "© $year MyPortfolio",
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: t.text,
-            ),
-          ),
-        ],
-      );
-    }
+// ─────────────────────────────────────────────────────────────────────────────
+// Section Header
+// ─────────────────────────────────────────────────────────────────────────────
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final String subtitle;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.end,
+  const _SectionHeader({required this.title, required this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTheme.of(context);
+    final isMobile = Responsive.isMobile(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            _SocialIconButton(icon: FontAwesomeIcons.squarePhone),
-            const SizedBox(width: 12),
-            _SocialIconButton(icon: FontAwesomeIcons.instagram),
-            const SizedBox(width: 12),
-            _SocialIconButton(icon: FontAwesomeIcons.github),
-            const SizedBox(width: 12),
-            _SocialIconButton(icon: FontAwesomeIcons.linkedin),
+            Container(
+              width: 4,
+              height: isMobile ? 28 : 36,
+              decoration: BoxDecoration(
+                gradient: t.primaryGradient,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 16),
+            ShaderMask(
+              shaderCallback: (bounds) => t.primaryGradient.createShader(bounds),
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: isMobile ? 28 : 36,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ),
           ],
         ),
-        Row(
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.only(left: 20),
+          child: Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: isMobile ? 14 : 16,
+              color: t.textMuted,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Contact Info
+// ─────────────────────────────────────────────────────────────────────────────
+class _ContactInfo extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTheme.of(context);
+    final isMobile = Responsive.isMobile(context);
+
+    return Container(
+      padding: EdgeInsets.all(isMobile ? 24 : 32),
+      decoration: BoxDecoration(
+        color: t.card,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: t.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Illustration/Icon
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              gradient: t.primaryGradient,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+            ),
+            child: const Icon(
+              Icons.mail_outline_rounded,
+              size: 40,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          Text(
+            "Let's work together",
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              color: t.text,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            "I'm always open to discussing new projects, creative ideas, or opportunities to be part of your vision.",
+            style: t.bodyMD.copyWith(height: 1.7),
+          ),
+          const SizedBox(height: 32),
+
+          // Contact methods
+          _ContactMethod(
+            icon: Icons.email_outlined,
+            label: 'Email',
+            value: 'charles@example.com',
+            color: t.primary,
+          ),
+          const SizedBox(height: 16),
+          _ContactMethod(
+            icon: Icons.phone_outlined,
+            label: 'Phone',
+            value: '+1 (555) 123-4567',
+            color: t.accent,
+          ),
+          const SizedBox(height: 16),
+          _ContactMethod(
+            icon: Icons.location_on_outlined,
+            label: 'Location',
+            value: 'San Francisco, CA',
+            color: t.accentAlt,
+          ),
+          const SizedBox(height: 32),
+
+          // Social links
+          Text(
+            'Connect with me',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: t.text,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              _SocialButton(icon: FontAwesomeIcons.github),
+              const SizedBox(width: 12),
+              _SocialButton(icon: FontAwesomeIcons.linkedin),
+              const SizedBox(width: 12),
+              _SocialButton(icon: FontAwesomeIcons.xTwitter),
+              const SizedBox(width: 12),
+              _SocialButton(icon: FontAwesomeIcons.instagram),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ContactMethod extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  const _ContactMethod({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTheme.of(context);
+
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+          ),
+          child: Icon(icon, size: 20, color: color),
+        ),
+        const SizedBox(width: 16),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Last updated: ${_getMonth()} $year",
-              style: TextStyle(fontSize: 12, color: t.textMuted),
-            ),
-            const SizedBox(width: 40),
-            Text(
-              "© $year MyPortfolio",
+              label,
               style: TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w500,
+                color: t.textMuted,
+              ),
+            ),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
                 color: t.text,
               ),
             ),
@@ -303,23 +381,274 @@ class _ContactPageState extends State<ContactPage>
       ],
     );
   }
+}
 
-  String _getMonth() {
-    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-    return months[DateTime.now().month - 1];
+class _SocialButton extends StatefulWidget {
+  final IconData icon;
+
+  const _SocialButton({required this.icon});
+
+  @override
+  State<_SocialButton> createState() => _SocialButtonState();
+}
+
+class _SocialButtonState extends State<_SocialButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTheme.of(context);
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: AppAnimations.fast,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: _hovered ? t.primary.withValues(alpha: 0.1) : t.surface,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(
+            color: _hovered ? t.primary.withValues(alpha: 0.4) : t.border,
+          ),
+        ),
+        child: FaIcon(
+          widget.icon,
+          size: 18,
+          color: _hovered ? t.primary : t.textMuted,
+        ),
+      ),
+    );
   }
 }
 
-class _SocialIconButton extends StatefulWidget {
-  final IconData icon;
+// ─────────────────────────────────────────────────────────────────────────────
+// Contact Form
+// ─────────────────────────────────────────────────────────────────────────────
+class _ContactForm extends StatelessWidget {
+  final GlobalKey<FormState> formKey;
+  final TextEditingController nameController;
+  final TextEditingController emailController;
+  final TextEditingController contactController;
+  final TextEditingController messageController;
+  final bool isSubmitting;
+  final VoidCallback onSubmit;
 
-  const _SocialIconButton({required this.icon});
+  const _ContactForm({
+    required this.formKey,
+    required this.nameController,
+    required this.emailController,
+    required this.contactController,
+    required this.messageController,
+    required this.isSubmitting,
+    required this.onSubmit,
+  });
 
   @override
-  State<_SocialIconButton> createState() => _SocialIconButtonState();
+  Widget build(BuildContext context) {
+    final t = AppTheme.of(context);
+    final isMobile = Responsive.isMobile(context);
+
+    return Container(
+      padding: EdgeInsets.all(isMobile ? 24 : 32),
+      decoration: BoxDecoration(
+        color: t.card,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: t.border),
+      ),
+      child: Form(
+        key: formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Send a Message',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: t.text,
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Name & Email row
+            if (!isMobile)
+              Row(
+                children: [
+                  Expanded(
+                    child: _FormField(
+                      controller: nameController,
+                      label: 'Your Name',
+                      hint: 'John Doe',
+                      icon: Icons.person_outline,
+                      validator: (v) =>
+                          v?.isEmpty == true ? 'Name is required' : null,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _FormField(
+                      controller: emailController,
+                      label: 'Email Address',
+                      hint: 'john@example.com',
+                      icon: Icons.email_outlined,
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (v) {
+                        if (v?.isEmpty == true) return 'Email is required';
+                        if (!v!.contains('@')) return 'Invalid email';
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
+              )
+            else ...[
+              _FormField(
+                controller: nameController,
+                label: 'Your Name',
+                hint: 'John Doe',
+                icon: Icons.person_outline,
+                validator: (v) =>
+                    v?.isEmpty == true ? 'Name is required' : null,
+              ),
+              const SizedBox(height: 16),
+              _FormField(
+                controller: emailController,
+                label: 'Email Address',
+                hint: 'john@example.com',
+                icon: Icons.email_outlined,
+                keyboardType: TextInputType.emailAddress,
+                validator: (v) {
+                  if (v?.isEmpty == true) return 'Email is required';
+                  if (!v!.contains('@')) return 'Invalid email';
+                  return null;
+                },
+              ),
+            ],
+            const SizedBox(height: 16),
+
+            _FormField(
+              controller: contactController,
+              label: 'Phone Number',
+              hint: '+1 (555) 123-4567',
+              icon: Icons.phone_outlined,
+              keyboardType: TextInputType.phone,
+              validator: (v) =>
+                  v?.isEmpty == true ? 'Phone is required' : null,
+            ),
+            const SizedBox(height: 16),
+
+            _FormField(
+              controller: messageController,
+              label: 'Your Message',
+              hint: 'Tell me about your project...',
+              icon: Icons.message_outlined,
+              maxLines: 5,
+              validator: (v) =>
+                  v?.isEmpty == true ? 'Message is required' : null,
+            ),
+            const SizedBox(height: 24),
+
+            // Submit button
+            _SubmitButton(
+              isSubmitting: isSubmitting,
+              onTap: onSubmit,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _SocialIconButtonState extends State<_SocialIconButton> {
+class _FormField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final String hint;
+  final IconData icon;
+  final int maxLines;
+  final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
+
+  const _FormField({
+    required this.controller,
+    required this.label,
+    required this.hint,
+    required this.icon,
+    this.maxLines = 1,
+    this.keyboardType,
+    this.validator,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTheme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: t.text,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          maxLines: maxLines,
+          keyboardType: keyboardType,
+          validator: validator,
+          style: TextStyle(color: t.text, fontSize: 15),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: t.textMuted.withValues(alpha: 0.6)),
+            prefixIcon: maxLines == 1
+                ? Icon(icon, size: 20, color: t.textMuted)
+                : null,
+            filled: true,
+            fillColor: t.surface,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: maxLines > 1 ? 16 : 14,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              borderSide: BorderSide(color: t.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              borderSide: BorderSide(color: t.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              borderSide: BorderSide(color: t.primary, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              borderSide: BorderSide(color: AppColors.error),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SubmitButton extends StatefulWidget {
+  final bool isSubmitting;
+  final VoidCallback onTap;
+
+  const _SubmitButton({required this.isSubmitting, required this.onTap});
+
+  @override
+  State<_SubmitButton> createState() => _SubmitButtonState();
+}
+
+class _SubmitButtonState extends State<_SubmitButton> {
   bool _hovered = false;
 
   @override
@@ -331,30 +660,93 @@ class _SocialIconButtonState extends State<_SocialIconButton> {
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
-        onTap: () {},
+        onTap: widget.isSubmitting ? null : widget.onTap,
         child: AnimatedContainer(
           duration: AppAnimations.fast,
-          padding: const EdgeInsets.all(10),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
-            color: _hovered
-                ? t.primary.withValues(alpha: 0.15)
-                : t.primary.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
-            boxShadow: _hovered
-                ? [
-                    BoxShadow(
-                      color: t.primary.withValues(alpha: 0.3),
-                      blurRadius: 12,
-                    ),
-                  ]
-                : [],
+            gradient: t.primaryGradient,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            boxShadow: [
+              BoxShadow(
+                color: t.primary.withValues(alpha: _hovered ? 0.4 : 0.25),
+                blurRadius: _hovered ? 20 : 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          child: FaIcon(
-            widget.icon,
-            size: 18,
-            color: _hovered ? t.primary : t.primary.withValues(alpha: 0.8),
+          child: Center(
+            child: widget.isSubmitting
+                ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation(Colors.white),
+                    ),
+                  )
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Send Message',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      AnimatedContainer(
+                        duration: AppAnimations.fast,
+                        transform: Matrix4.translationValues(
+                          _hovered ? 4 : 0,
+                          0,
+                          0,
+                        ),
+                        child: const Icon(
+                          Icons.send_rounded,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Footer
+// ─────────────────────────────────────────────────────────────────────────────
+class _Footer extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTheme.of(context);
+    final year = DateTime.now().year;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: t.border)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            '© $year Portfolio. Built with ',
+            style: TextStyle(fontSize: 13, color: t.textMuted),
+          ),
+          Icon(Icons.favorite, size: 14, color: t.primary),
+          Text(
+            ' using Flutter',
+            style: TextStyle(fontSize: 13, color: t.textMuted),
+          ),
+        ],
       ),
     );
   }

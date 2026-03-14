@@ -7,7 +7,6 @@ import 'package:portfolio/core/animations.dart';
 import 'package:portfolio/core/responsive.dart';
 import 'package:portfolio/widgets/template.dart';
 import 'package:portfolio/services/api_service.dart';
-import 'package:portfolio/widgets/glass_container.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,33 +15,63 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   Map<String, dynamic>? aboutData;
   Map<String, dynamic>? contactData;
   bool isLoading = true;
 
   List<String> get roles => aboutData?['roles'] != null
       ? List<String>.from(aboutData!['roles'])
-      : ['Developer', 'Engineer', 'Creator'];
+      : ['AI & ML Engineer', 'Full Stack Developer', 'DevOps Specialist'];
 
   int _currentRoleIndex = 0;
+
+  late AnimationController _fadeController;
+  late AnimationController _floatController;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _floatAnimation;
 
   @override
   void initState() {
     super.initState();
+    
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: AppAnimations.entranceFade,
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: AppCurves.smoothDecelerate,
+    );
+
+    _floatController = AnimationController(
+      vsync: this,
+      duration: AppAnimations.floatCycle,
+    )..repeat(reverse: true);
+    _floatAnimation = Tween<double>(begin: -8, end: 8).animate(
+      CurvedAnimation(parent: _floatController, curve: AppCurves.ease),
+    );
+
     loadData();
-    _startAnimation();
+    _startRoleAnimation();
   }
 
-  void _startAnimation() {
+  void _startRoleAnimation() {
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
         setState(() {
           _currentRoleIndex = (_currentRoleIndex + 1) % roles.length;
         });
-        _startAnimation();
+        _startRoleAnimation();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    _floatController.dispose();
+    super.dispose();
   }
 
   Future<void> loadData() async {
@@ -54,10 +83,12 @@ class _HomePageState extends State<HomePage> {
         contactData = contact;
         isLoading = false;
       });
+      _fadeController.forward();
     } catch (e) {
       setState(() {
         isLoading = false;
       });
+      _fadeController.forward();
     }
   }
 
@@ -72,14 +103,12 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
     final isMobile = Responsive.isMobile(context);
-    final name = aboutData?['name'] ?? 'Developer';
-    final bio = aboutData?['bio'] ?? 'Passionate about building great software.';
-    final socialLinks = contactData?['social_links'] ?? {};
+    final isTablet = Responsive.isTablet(context);
 
     return Scaffold(
       body: Stack(
         children: [
-          // Background gradient
+          // Background
           Container(
             width: double.infinity,
             height: double.infinity,
@@ -87,46 +116,27 @@ class _HomePageState extends State<HomePage> {
           ),
           // Particle background
           const Positioned.fill(
-            child: RepaintBoundary(child: CinematicBackground()),
+            child: RepaintBoundary(child: _ParticleBackground()),
           ),
-          // Scrollable Foreground
-          SizedBox(
-            width: double.infinity,
-            height: double.infinity,
-            child: SingleChildScrollView(
-              child: Container(
-                constraints: BoxConstraints(
-                  minHeight: MediaQuery.of(context).size.height,
+          // Main content
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Container(
+                    constraints: BoxConstraints(maxWidth: 1200),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isMobile ? 20 : (isTablet ? 40 : 60),
+                      vertical: isMobile ? 40 : 80,
+                    ),
+                    child: isLoading
+                        ? Center(child: CircularProgressIndicator(color: t.primary))
+                        : isMobile
+                            ? _buildMobileLayout(context, t)
+                            : _buildDesktopLayout(context, t),
+                  ),
                 ),
-                padding: EdgeInsets.symmetric(vertical: isMobile ? 40 : 60),
-                child: isLoading
-                    ? Center(child: CircularProgressIndicator(color: t.primary))
-                    : Center(
-                        child: Wrap(
-                          alignment: WrapAlignment.center,
-                          spacing: 40,
-                          runSpacing: 40,
-                          children: [
-                            // Hero image with badges
-                            _HeroImageSection(
-                              aboutData: aboutData,
-                              isMobile: isMobile,
-                            ),
-                            // Content card
-                            _ContentCard(
-                              name: name,
-                              bio: bio,
-                              roles: roles,
-                              currentRoleIndex: _currentRoleIndex,
-                              aboutData: aboutData,
-                              socialLinks: socialLinks,
-                              contactData: contactData,
-                              isMobile: isMobile,
-                              onLaunchUrl: _launchUrl,
-                            ),
-                          ],
-                        ),
-                      ),
               ),
             ),
           ),
@@ -134,251 +144,366 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
+  Widget _buildDesktopLayout(BuildContext context, AppThemeData t) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Left: Text content
+        Expanded(
+          flex: 5,
+          child: _HeroTextContent(
+            aboutData: aboutData,
+            contactData: contactData,
+            roles: roles,
+            currentRoleIndex: _currentRoleIndex,
+            onLaunchUrl: _launchUrl,
+          ),
+        ),
+        const SizedBox(width: 60),
+        // Right: Avatar with tech stack
+        Expanded(
+          flex: 4,
+          child: _HeroAvatar(
+            aboutData: aboutData,
+            floatAnimation: _floatAnimation,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileLayout(BuildContext context, AppThemeData t) {
+    return Column(
+      children: [
+        _HeroAvatar(
+          aboutData: aboutData,
+          floatAnimation: _floatAnimation,
+          maxSize: 280,
+        ),
+        const SizedBox(height: 40),
+        _HeroTextContent(
+          aboutData: aboutData,
+          contactData: contactData,
+          roles: roles,
+          currentRoleIndex: _currentRoleIndex,
+          onLaunchUrl: _launchUrl,
+          isMobile: true,
+        ),
+      ],
+    );
+  }
 }
 
-class _HeroImageSection extends StatelessWidget {
+// ─────────────────────────────────────────────────────────────────────────────
+// Hero Text Content
+// ─────────────────────────────────────────────────────────────────────────────
+class _HeroTextContent extends StatelessWidget {
   final Map<String, dynamic>? aboutData;
+  final Map<String, dynamic>? contactData;
+  final List<String> roles;
+  final int currentRoleIndex;
+  final Function(String) onLaunchUrl;
   final bool isMobile;
 
-  const _HeroImageSection({
+  const _HeroTextContent({
     required this.aboutData,
-    required this.isMobile,
+    required this.contactData,
+    required this.roles,
+    required this.currentRoleIndex,
+    required this.onLaunchUrl,
+    this.isMobile = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
-    final screenWidth = MediaQuery.of(context).size.width;
-    final imageWidth = isMobile ? screenWidth * 0.85 : 400.0;
-    final imageHeight = isMobile ? screenWidth * 1.05 : 550.0;
+    final name = aboutData?['name'] ?? 'Developer';
+    final bio = aboutData?['bio'] ?? 'Building intelligent systems that make a difference.';
+    final stats = aboutData?['stats'] as Map<String, dynamic>? ?? {};
+    final socialLinks = contactData?['social_links'] as Map<String, dynamic>? ?? {};
+    final isAvailable = aboutData?['is_available'] ?? true;
 
-    return SizedBox(
-      width: isMobile ? screenWidth * 0.85 : 450,
-      height: isMobile ? screenWidth * 1.1 : 600,
-      child: Stack(
-        alignment: Alignment.center,
-        clipBehavior: Clip.none,
-        children: [
-          Container(
+    return Column(
+      crossAxisAlignment: isMobile ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      children: [
+        // Availability badge
+        _AvailabilityBadge(isAvailable: isAvailable),
+        const SizedBox(height: 24),
+        
+        // Greeting
+        Text(
+          "Hi, I'm",
+          style: TextStyle(
+            fontSize: isMobile ? 18 : 20,
+            fontWeight: FontWeight.w500,
+            color: t.textMuted,
+          ),
+          textAlign: isMobile ? TextAlign.center : TextAlign.start,
+        ),
+        const SizedBox(height: 8),
+        
+        // Name
+        Text(
+          name,
+          style: TextStyle(
+            fontSize: isMobile ? 40 : 56,
+            fontWeight: FontWeight.w800,
+            color: t.text,
+            height: 1.1,
+            letterSpacing: -1,
+          ),
+          textAlign: isMobile ? TextAlign.center : TextAlign.start,
+        ),
+        const SizedBox(height: 12),
+        
+        // Animated role
+        AnimatedSwitcher(
+          duration: AppAnimations.slower,
+          transitionBuilder: (child, animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.3),
+                  end: Offset.zero,
+                ).animate(CurvedAnimation(
+                  parent: animation,
+                  curve: AppCurves.appleEaseOut,
+                )),
+                child: child,
+              ),
+            );
+          },
+          child: ShaderMask(
+            key: ValueKey(currentRoleIndex),
+            shaderCallback: (bounds) => t.primaryGradient.createShader(bounds),
+            child: Text(
+              roles[currentRoleIndex],
+              style: TextStyle(
+                fontSize: isMobile ? 22 : 28,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ),
+              textAlign: isMobile ? TextAlign.center : TextAlign.start,
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        
+        // Bio
+        Container(
+          constraints: BoxConstraints(maxWidth: isMobile ? double.infinity : 520),
+          child: Text(
+            bio,
+            style: t.bodyLG.copyWith(height: 1.7),
+            textAlign: isMobile ? TextAlign.center : TextAlign.start,
+          ),
+        ),
+        const SizedBox(height: 40),
+        
+        // Stats
+        if (stats.isNotEmpty) ...[
+          Wrap(
+            alignment: isMobile ? WrapAlignment.center : WrapAlignment.start,
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              _StatItem(
+                value: '${stats['projects'] ?? 10}+',
+                label: 'Projects',
+              ),
+              _StatItem(
+                value: '${stats['experience'] ?? 3}+',
+                label: 'Years Exp.',
+              ),
+              _StatItem(
+                value: '${stats['technologies'] ?? 15}+',
+                label: 'Technologies',
+              ),
+            ],
+          ),
+          const SizedBox(height: 40),
+        ],
+        
+        // CTA Buttons
+        Wrap(
+          alignment: isMobile ? WrapAlignment.center : WrapAlignment.start,
+          spacing: 16,
+          runSpacing: 12,
+          children: [
+            _PrimaryButton(
+              label: 'View Projects',
+              onTap: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfileTemplate()),
+                );
+              },
+            ),
+            _SecondaryButton(
+              label: 'Download CV',
+              icon: Icons.download_rounded,
+              onTap: () {},
+            ),
+          ],
+        ),
+        const SizedBox(height: 40),
+        
+        // Social links
+        Row(
+          mainAxisAlignment: isMobile ? MainAxisAlignment.center : MainAxisAlignment.start,
+          children: [
+            if (socialLinks['github'] != null)
+              _SocialIcon(
+                icon: FontAwesomeIcons.github,
+                onTap: () => onLaunchUrl(socialLinks['github']),
+              ),
+            if (socialLinks['linkedin'] != null) ...[
+              const SizedBox(width: 16),
+              _SocialIcon(
+                icon: FontAwesomeIcons.linkedin,
+                onTap: () => onLaunchUrl(socialLinks['linkedin']),
+              ),
+            ],
+            if (socialLinks['twitter'] != null) ...[
+              const SizedBox(width: 16),
+              _SocialIcon(
+                icon: FontAwesomeIcons.xTwitter,
+                onTap: () => onLaunchUrl(socialLinks['twitter']),
+              ),
+            ],
+            if (contactData?['email'] != null) ...[
+              const SizedBox(width: 16),
+              _SocialIcon(
+                icon: Icons.email_outlined,
+                onTap: () => onLaunchUrl('mailto:${contactData!['email']}'),
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Hero Avatar Section
+// ─────────────────────────────────────────────────────────────────────────────
+class _HeroAvatar extends StatelessWidget {
+  final Map<String, dynamic>? aboutData;
+  final Animation<double> floatAnimation;
+  final double? maxSize;
+
+  const _HeroAvatar({
+    required this.aboutData,
+    required this.floatAnimation,
+    this.maxSize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTheme.of(context);
+    final techStack = aboutData?['tech_stack'] as List? ?? [];
+    final size = maxSize ?? 380.0;
+
+    return Column(
+      children: [
+        // Avatar with glow
+        AnimatedBuilder(
+          animation: floatAnimation,
+          builder: (context, child) {
+            return Transform.translate(
+              offset: Offset(0, floatAnimation.value),
+              child: child,
+            );
+          },
+          child: Container(
+            width: size,
+            height: size,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(80),
+              shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: t.primary.withValues(alpha: 0.3),
+                  color: t.primary.withValues(alpha: 0.25),
                   blurRadius: 60,
                   spreadRadius: 10,
                 ),
               ],
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(80),
-              child: Image.asset(
-                'assets/images.png',
-                width: imageWidth,
-                height: imageHeight,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: imageWidth,
-                    height: imageHeight,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(80),
-                      color: t.card,
-                    ),
-                    child: Icon(Icons.person, size: 150, color: t.textMuted),
-                  );
-                },
-              ),
-            ),
-          ),
-          if (!isMobile) ..._buildDynamicBadges(context),
-        ],
-      ),
-    );
-  }
-
-  List<Widget> _buildDynamicBadges(BuildContext context) {
-    final techStack = aboutData?['tech_stack'] as List?;
-    if (techStack == null || techStack.isEmpty) return [];
-
-    final positions = [
-      {'top': 40.0, 'left': 10.0, 'right': null, 'delay': 0.0},
-      {'top': 120.0, 'left': null, 'right': 10.0, 'delay': 0.5},
-      {'top': 300.0, 'left': 0.0, 'right': null, 'delay': 1.0},
-      {'top': 450.0, 'left': null, 'right': 20.0, 'delay': 1.5},
-      {'top': 550.0, 'left': 40.0, 'right': null, 'delay': 0.8},
-      {'top': 600.0, 'left': null, 'right': 30.0, 'delay': 0.2},
-      {'top': 200.0, 'left': 60.0, 'right': null, 'delay': 1.2},
-    ];
-
-    List<Widget> badges = [];
-    for (int i = 0; i < techStack.length && i < positions.length; i++) {
-      final pos = positions[i];
-      badges.add(FloatingBadge(
-        text: techStack[i].toString(),
-        top: pos['top'],
-        left: pos['left'],
-        right: pos['right'],
-        delay: pos['delay'] ?? 0.0,
-      ));
-    }
-    return badges;
-  }
-}
-
-class _ContentCard extends StatelessWidget {
-  final String name;
-  final String bio;
-  final List<String> roles;
-  final int currentRoleIndex;
-  final Map<String, dynamic>? aboutData;
-  final Map<String, dynamic> socialLinks;
-  final Map<String, dynamic>? contactData;
-  final bool isMobile;
-  final Function(String) onLaunchUrl;
-
-  const _ContentCard({
-    required this.name,
-    required this.bio,
-    required this.roles,
-    required this.currentRoleIndex,
-    required this.aboutData,
-    required this.socialLinks,
-    required this.contactData,
-    required this.isMobile,
-    required this.onLaunchUrl,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final t = AppTheme.of(context);
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    return GlassContainer(
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 20 : 50,
-        vertical: isMobile ? 30 : 40,
-      ),
-      width: isMobile ? screenWidth * 0.9 : 600,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Availability badge
-          _AvailabilityBadge(isAvailable: aboutData?['is_available'] ?? true),
-          const SizedBox(height: 20),
-          // Name
-          Text(
-            "Hi, I'm $name",
-            style: TextStyle(
-              fontSize: isMobile ? 32 : 42,
-              color: t.text,
-              fontWeight: FontWeight.bold,
-              height: 1.2,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 10),
-          // Animated role
-          AnimatedSwitcher(
-            duration: AppAnimations.slower,
-            transitionBuilder: (Widget child, Animation<double> animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0.0, 0.5),
-                    end: Offset.zero,
-                  ).animate(CurvedAnimation(
-                    parent: animation,
-                    curve: AppCurves.appleEaseOut,
-                  )),
-                  child: child,
-                ),
-              );
-            },
-            child: Text(
-              roles[currentRoleIndex],
-              key: ValueKey<int>(currentRoleIndex),
-              style: TextStyle(
-                fontSize: isMobile ? 22 : 28,
-                fontWeight: FontWeight.w600,
-                color: t.primary,
-                letterSpacing: 1.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          const SizedBox(height: 20),
-          // Bio
-          _GradientText(
-            text: bio,
-            style: TextStyle(
-              fontSize: isMobile ? 16 : 20,
-              fontWeight: FontWeight.w400,
-              height: 1.6,
-            ),
-          ),
-          const SizedBox(height: 40),
-          // Stats
-          if (aboutData?['stats'] != null) ...[
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 20,
-              runSpacing: 15,
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                _AnimatedStatCard(
-                  label: "Projects",
-                  value: aboutData!['stats']['projects']?.toString() ?? "10+",
+                // Gradient ring
+                Container(
+                  width: size,
+                  height: size,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        t.primary.withValues(alpha: 0.3),
+                        t.accent.withValues(alpha: 0.2),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
                 ),
-                _AnimatedStatCard(
-                  label: "Experience",
-                  value: "${aboutData!['stats']['experience']?.toString() ?? '1+'} Yrs",
-                ),
-                _AnimatedStatCard(
-                  label: "Tech Stack",
-                  value: aboutData!['stats']['technologies']?.toString() ?? "12+",
+                // Avatar image
+                Container(
+                  width: size - 16,
+                  height: size - 16,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: t.primary.withValues(alpha: 0.4),
+                      width: 3,
+                    ),
+                  ),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/images.png',
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: t.card,
+                        child: Icon(
+                          Icons.person,
+                          size: size * 0.4,
+                          color: t.textMuted,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 40),
-          ],
-          // CTA Button
-          _DiscoverMeButton(),
-          const SizedBox(height: 40),
-          // Social icons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (contactData?['phone'] != null)
-                _AnimatedSocialIcon(
-                  icon: FontAwesomeIcons.squarePhone,
-                  onPressed: () => onLaunchUrl('tel:${contactData!['phone']}'),
-                ),
-              if (contactData?['phone'] != null) const SizedBox(width: 20),
-              if (socialLinks['instagram'] != null)
-                _AnimatedSocialIcon(
-                  icon: FontAwesomeIcons.instagram,
-                  onPressed: () => onLaunchUrl(socialLinks['instagram']),
-                ),
-              if (socialLinks['instagram'] != null) const SizedBox(width: 20),
-              if (socialLinks['github'] != null)
-                _AnimatedSocialIcon(
-                  icon: FontAwesomeIcons.github,
-                  onPressed: () => onLaunchUrl(socialLinks['github']),
-                ),
-              if (socialLinks['github'] != null) const SizedBox(width: 20),
-              if (socialLinks['linkedin'] != null)
-                _AnimatedSocialIcon(
-                  icon: FontAwesomeIcons.linkedin,
-                  onPressed: () => onLaunchUrl(socialLinks['linkedin']),
-                ),
-            ],
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 32),
+        
+        // Tech stack tags (clean grid below avatar)
+        if (techStack.isNotEmpty)
+          Container(
+            constraints: BoxConstraints(maxWidth: size + 40),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 10,
+              runSpacing: 10,
+              children: techStack.take(7).map((tech) {
+                return _TechTag(label: tech.toString());
+              }).toList(),
+            ),
+          ),
+      ],
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Supporting Widgets
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _AvailabilityBadge extends StatelessWidget {
   final bool isAvailable;
@@ -390,11 +515,11 @@ class _AvailabilityBadge extends StatelessWidget {
     final t = AppTheme.of(context);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: t.card.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: t.border.withValues(alpha: 0.5)),
+        color: t.card,
+        borderRadius: BorderRadius.circular(AppRadius.full),
+        border: Border.all(color: t.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -403,26 +528,26 @@ class _AvailabilityBadge extends StatelessWidget {
             width: 8,
             height: 8,
             decoration: BoxDecoration(
-              color: isAvailable ? Colors.greenAccent : Colors.grey,
+              color: isAvailable ? AppColors.success : t.textMuted,
               shape: BoxShape.circle,
               boxShadow: isAvailable
                   ? [
                       BoxShadow(
-                        color: Colors.greenAccent.withValues(alpha: 0.5),
-                        blurRadius: 8,
-                        spreadRadius: 2,
+                        color: AppColors.success.withValues(alpha: 0.5),
+                        blurRadius: 6,
+                        spreadRadius: 1,
                       ),
                     ]
-                  : [],
+                  : null,
             ),
           ),
           const SizedBox(width: 10),
           Text(
-            isAvailable ? "Available for opportunities" : "Currently unavailable",
+            isAvailable ? 'Open to opportunities' : 'Currently unavailable',
             style: TextStyle(
-              color: isAvailable ? t.text : t.textMuted,
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w500,
+              color: isAvailable ? t.text : t.textMuted,
             ),
           ),
         ],
@@ -431,37 +556,73 @@ class _AvailabilityBadge extends StatelessWidget {
   }
 }
 
-class _GradientText extends StatelessWidget {
-  final String text;
-  final TextStyle style;
+class _StatItem extends StatefulWidget {
+  final String value;
+  final String label;
 
-  const _GradientText({required this.text, required this.style});
+  const _StatItem({required this.value, required this.label});
+
+  @override
+  State<_StatItem> createState() => _StatItemState();
+}
+
+class _StatItemState extends State<_StatItem> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
-    return ShaderMask(
-      shaderCallback: (Rect bounds) {
-        return const LinearGradient(
-          colors: [Color(0xFFE2E8F0), Color(0xFF94A3B8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ).createShader(bounds);
-      },
-      child: Text(
-        text,
-        style: style.copyWith(color: Colors.white),
-        textAlign: TextAlign.center,
+    final t = AppTheme.of(context);
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: AppAnimations.fast,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: _hovered ? t.primary.withValues(alpha: 0.1) : t.card,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(
+            color: _hovered ? t.primary.withValues(alpha: 0.4) : t.border,
+          ),
+        ),
+        child: Column(
+          children: [
+            Text(
+              widget.value,
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color: t.primary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              widget.label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: t.textMuted,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _DiscoverMeButton extends StatefulWidget {
+class _PrimaryButton extends StatefulWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _PrimaryButton({required this.label, required this.onTap});
+
   @override
-  State<_DiscoverMeButton> createState() => _DiscoverMeButtonState();
+  State<_PrimaryButton> createState() => _PrimaryButtonState();
 }
 
-class _DiscoverMeButtonState extends State<_DiscoverMeButton> {
+class _PrimaryButtonState extends State<_PrimaryButton> {
   bool _hovered = false;
 
   @override
@@ -473,33 +634,43 @@ class _DiscoverMeButtonState extends State<_DiscoverMeButton> {
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
-        onTap: () {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const ProfileTemplate()),
-          );
-        },
+        onTap: widget.onTap,
         child: AnimatedContainer(
           duration: AppAnimations.fast,
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(30),
             gradient: t.primaryGradient,
+            borderRadius: BorderRadius.circular(AppRadius.full),
             boxShadow: [
               BoxShadow(
-                color: t.primary.withValues(alpha: _hovered ? 0.5 : 0.4),
-                blurRadius: _hovered ? 20 : 15,
-                offset: const Offset(0, 5),
+                color: t.primary.withValues(alpha: _hovered ? 0.5 : 0.3),
+                blurRadius: _hovered ? 24 : 16,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: Text(
-            "Discover Me",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                widget.label,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 8),
+              AnimatedContainer(
+                duration: AppAnimations.fast,
+                transform: Matrix4.translationValues(_hovered ? 4 : 0, 0, 0),
+                child: const Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 20,
+                  color: Colors.white,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -507,39 +678,23 @@ class _DiscoverMeButtonState extends State<_DiscoverMeButton> {
   }
 }
 
-class _AnimatedSocialIcon extends StatefulWidget {
+class _SecondaryButton extends StatefulWidget {
+  final String label;
   final IconData icon;
-  final VoidCallback onPressed;
+  final VoidCallback onTap;
 
-  const _AnimatedSocialIcon({required this.icon, required this.onPressed});
+  const _SecondaryButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
 
   @override
-  State<_AnimatedSocialIcon> createState() => _AnimatedSocialIconState();
+  State<_SecondaryButton> createState() => _SecondaryButtonState();
 }
 
-class _AnimatedSocialIconState extends State<_AnimatedSocialIcon>
-    with SingleTickerProviderStateMixin {
-  bool _isHovered = false;
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: AppAnimations.fast,
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
-      CurvedAnimation(parent: _controller, curve: AppCurves.spring),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+class _SecondaryButtonState extends State<_SecondaryButton> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
@@ -547,51 +702,39 @@ class _AnimatedSocialIconState extends State<_AnimatedSocialIcon>
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
-      onEnter: (_) {
-        setState(() => _isHovered = true);
-        _controller.forward();
-      },
-      onExit: (_) {
-        setState(() => _isHovered = false);
-        _controller.reverse();
-      },
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
-        onTap: widget.onPressed,
-        child: AnimatedBuilder(
-          animation: _scaleAnimation,
-          builder: (context, child) {
-            return Transform.scale(
-              scale: _scaleAnimation.value,
-              child: child,
-            );
-          },
-          child: AnimatedContainer(
-            duration: AppAnimations.fast,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: _isHovered
-                  ? t.primary.withValues(alpha: 0.15)
-                  : t.card.withValues(alpha: 0.3),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: _isHovered
-                    ? t.primary.withValues(alpha: 0.5)
-                    : t.border.withValues(alpha: 0.3),
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: AppAnimations.fast,
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          decoration: BoxDecoration(
+            color: _hovered ? t.primary.withValues(alpha: 0.1) : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppRadius.full),
+            border: Border.all(
+              color: _hovered ? t.primary : t.border,
+              width: 1.5,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                widget.icon,
+                size: 18,
+                color: _hovered ? t.primary : t.text,
               ),
-              boxShadow: _isHovered
-                  ? [
-                      BoxShadow(
-                        color: t.primary.withValues(alpha: 0.3),
-                        blurRadius: 16,
-                      ),
-                    ]
-                  : [],
-            ),
-            child: FaIcon(
-              widget.icon,
-              color: _isHovered ? t.primary : t.textMuted,
-              size: 22,
-            ),
+              const SizedBox(width: 8),
+              Text(
+                widget.label,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: _hovered ? t.primary : t.text,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -599,104 +742,43 @@ class _AnimatedSocialIconState extends State<_AnimatedSocialIcon>
   }
 }
 
-class _AnimatedStatCard extends StatefulWidget {
-  final String label;
-  final String value;
+class _SocialIcon extends StatefulWidget {
+  final IconData icon;
+  final VoidCallback onTap;
 
-  const _AnimatedStatCard({required this.label, required this.value});
+  const _SocialIcon({required this.icon, required this.onTap});
 
   @override
-  State<_AnimatedStatCard> createState() => _AnimatedStatCardState();
+  State<_SocialIcon> createState() => _SocialIconState();
 }
 
-class _AnimatedStatCardState extends State<_AnimatedStatCard>
-    with SingleTickerProviderStateMixin {
-  bool _isHovered = false;
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: AppAnimations.fast,
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(parent: _controller, curve: AppCurves.spring),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+class _SocialIconState extends State<_SocialIcon> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
 
     return MouseRegion(
-      onEnter: (_) {
-        setState(() => _isHovered = true);
-        _controller.forward();
-      },
-      onExit: (_) {
-        setState(() => _isHovered = false);
-        _controller.reverse();
-      },
-      child: AnimatedBuilder(
-        animation: _scaleAnimation,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _scaleAnimation.value,
-            child: child,
-          );
-        },
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
         child: AnimatedContainer(
           duration: AppAnimations.fast,
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 22),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: _isHovered
-                ? t.primary.withValues(alpha: 0.1)
-                : t.card.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(16),
+            color: _hovered ? t.primary.withValues(alpha: 0.1) : t.card,
+            shape: BoxShape.circle,
             border: Border.all(
-              color: _isHovered
-                  ? t.primary.withValues(alpha: 0.4)
-                  : t.border.withValues(alpha: 0.3),
+              color: _hovered ? t.primary.withValues(alpha: 0.4) : t.border,
             ),
-            boxShadow: _isHovered
-                ? [
-                    BoxShadow(
-                      color: t.primary.withValues(alpha: 0.2),
-                      blurRadius: 20,
-                      spreadRadius: -2,
-                    ),
-                  ]
-                : [],
           ),
-          child: Column(
-            children: [
-              Text(
-                widget.value,
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: t.primary,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                widget.label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: _isHovered ? FontWeight.w600 : FontWeight.w400,
-                  color: _isHovered ? t.text : t.textMuted,
-                ),
-              ),
-            ],
+          child: Icon(
+            widget.icon,
+            size: 20,
+            color: _hovered ? t.primary : t.textMuted,
           ),
         ),
       ),
@@ -704,94 +786,41 @@ class _AnimatedStatCardState extends State<_AnimatedStatCard>
   }
 }
 
-class FloatingBadge extends StatefulWidget {
-  final String text;
-  final double? top;
-  final double? left;
-  final double? right;
-  final double? bottom;
-  final double delay;
+class _TechTag extends StatefulWidget {
+  final String label;
 
-  const FloatingBadge({
-    super.key,
-    required this.text,
-    this.top,
-    this.left,
-    this.right,
-    this.bottom,
-    required this.delay,
-  });
+  const _TechTag({required this.label});
 
   @override
-  State<FloatingBadge> createState() => _FloatingBadgeState();
+  State<_TechTag> createState() => _TechTagState();
 }
 
-class _FloatingBadgeState extends State<FloatingBadge>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: AppAnimations.floatCycle,
-      vsync: this,
-    )..repeat(reverse: true);
-
-    Future.delayed(Duration(milliseconds: (widget.delay * 1000).toInt()), () {
-      if (mounted) _controller.forward();
-    });
-
-    _animation = Tween<double>(begin: 0, end: 15).animate(
-      CurvedAnimation(parent: _controller, curve: AppCurves.ease),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+class _TechTagState extends State<_TechTag> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
 
-    return Positioned(
-      top: widget.top,
-      left: widget.left,
-      right: widget.right,
-      bottom: widget.bottom,
-      child: AnimatedBuilder(
-        animation: _animation,
-        builder: (context, child) {
-          return Transform.translate(
-            offset: Offset(0, _animation.value),
-            child: child,
-          );
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: t.card.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: t.primary.withValues(alpha: 0.3)),
-            boxShadow: [
-              BoxShadow(
-                color: t.primary.withValues(alpha: 0.1),
-                blurRadius: 10,
-                spreadRadius: 2,
-              ),
-            ],
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: AppAnimations.fast,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: _hovered ? t.primary.withValues(alpha: 0.15) : t.card,
+          borderRadius: BorderRadius.circular(AppRadius.full),
+          border: Border.all(
+            color: _hovered ? t.primary.withValues(alpha: 0.5) : t.border,
           ),
-          child: Text(
-            widget.text,
-            style: TextStyle(
-              color: t.text,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
+        ),
+        child: Text(
+          widget.label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: _hovered ? t.primary : t.text,
           ),
         ),
       ),
@@ -799,17 +828,20 @@ class _FloatingBadgeState extends State<FloatingBadge>
   }
 }
 
-class CinematicBackground extends StatefulWidget {
-  const CinematicBackground({super.key});
+// ─────────────────────────────────────────────────────────────────────────────
+// Particle Background
+// ─────────────────────────────────────────────────────────────────────────────
+class _ParticleBackground extends StatefulWidget {
+  const _ParticleBackground();
 
   @override
-  State<CinematicBackground> createState() => _CinematicBackgroundState();
+  State<_ParticleBackground> createState() => _ParticleBackgroundState();
 }
 
-class _CinematicBackgroundState extends State<CinematicBackground>
+class _ParticleBackgroundState extends State<_ParticleBackground>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  final List<Particle> _particles = [];
+  final List<_Particle> _particles = [];
   final math.Random _rnd = math.Random();
   bool _initialized = false;
 
@@ -831,13 +863,13 @@ class _CinematicBackgroundState extends State<CinematicBackground>
   void _initParticles(Size size) {
     if (_initialized) return;
     _initialized = true;
-    int count = (size.width * size.height / 35000).clamp(15, 60).toInt();
+    int count = (size.width * size.height / 40000).clamp(12, 50).toInt();
     for (int i = 0; i < count; i++) {
-      _particles.add(Particle(
+      _particles.add(_Particle(
         x: _rnd.nextDouble() * size.width,
         y: _rnd.nextDouble() * size.height,
-        vx: (_rnd.nextDouble() - 0.5) * 0.2,
-        vy: (_rnd.nextDouble() - 0.5) * 0.2,
+        vx: (_rnd.nextDouble() - 0.5) * 0.15,
+        vy: (_rnd.nextDouble() - 0.5) * 0.15,
         radius: _rnd.nextDouble() * 2 + 1,
       ));
     }
@@ -857,7 +889,7 @@ class _CinematicBackgroundState extends State<CinematicBackground>
             _updateParticles(size);
             return CustomPaint(
               size: size,
-              painter: CinematicPainter(_particles, t.primary),
+              painter: _ParticlePainter(_particles, t.primary),
             );
           },
         );
@@ -877,9 +909,9 @@ class _CinematicBackgroundState extends State<CinematicBackground>
   }
 }
 
-class Particle {
+class _Particle {
   double x, y, vx, vy, radius;
-  Particle({
+  _Particle({
     required this.x,
     required this.y,
     required this.vx,
@@ -888,20 +920,20 @@ class Particle {
   });
 }
 
-class CinematicPainter extends CustomPainter {
-  final List<Particle> particles;
+class _ParticlePainter extends CustomPainter {
+  final List<_Particle> particles;
   final Color primaryColor;
 
-  CinematicPainter(this.particles, this.primaryColor);
+  _ParticlePainter(this.particles, this.primaryColor);
 
   @override
   void paint(Canvas canvas, Size size) {
     final linePaint = Paint()
-      ..color = primaryColor.withValues(alpha: 0.15)
+      ..color = primaryColor.withValues(alpha: 0.08)
       ..strokeWidth = 1.0;
 
     final dotPaint = Paint()
-      ..color = primaryColor.withValues(alpha: 0.4)
+      ..color = primaryColor.withValues(alpha: 0.3)
       ..style = PaintingStyle.fill;
 
     for (int i = 0; i < particles.length; i++) {
@@ -910,36 +942,19 @@ class CinematicPainter extends CustomPainter {
 
       for (int j = i + 1; j < particles.length; j++) {
         final p2 = particles[j];
-        final double dx = p1.x - p2.x;
-        final double dy = p1.y - p2.y;
-        final double distSq = dx * dx + dy * dy;
+        final dx = p1.x - p2.x;
+        final dy = p1.y - p2.y;
+        final distSq = dx * dx + dy * dy;
 
-        if (distSq < 20000) {
-          final double alpha = (1.0 - distSq / 20000) * 0.25;
+        if (distSq < 25000) {
+          final alpha = (1.0 - distSq / 25000) * 0.15;
           linePaint.color = primaryColor.withValues(alpha: alpha);
           canvas.drawLine(Offset(p1.x, p1.y), Offset(p2.x, p2.y), linePaint);
         }
       }
     }
-
-    final centerGlow = Rect.fromCenter(
-      center: Offset(size.width / 2, size.height / 2),
-      width: size.width * 1.5,
-      height: size.height * 1.5,
-    );
-
-    final vignettePaint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          const Color(0xFF0F172A).withValues(alpha: 0.85),
-          Colors.transparent,
-        ],
-        stops: const [0.15, 0.7],
-      ).createShader(centerGlow);
-
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), vignettePaint);
   }
 
   @override
-  bool shouldRepaint(covariant CinematicPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _ParticlePainter oldDelegate) => true;
 }

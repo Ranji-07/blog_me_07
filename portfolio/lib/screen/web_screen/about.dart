@@ -6,6 +6,7 @@ import 'package:portfolio/services/api_service.dart';
 
 class AboutPage extends StatefulWidget {
   const AboutPage({super.key});
+
   @override
   State<AboutPage> createState() => _AboutPageState();
 }
@@ -15,78 +16,55 @@ class _AboutPageState extends State<AboutPage> with TickerProviderStateMixin {
   bool isLoading = true;
   String? error;
 
-  late final AnimationController _avatarCtrl;
-  late final AnimationController _fadeCtrl;
-  late final Animation<double> _floatAnim;
-  late final Animation<double> _fadeAnim;
-  late final AnimationController _slideCtrl;
-  late final Animation<Offset> _slideAnim;
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
-
-    _avatarCtrl = AnimationController(
+    _fadeController = AnimationController(
       vsync: this,
-      duration: AppAnimations.floatCycle,
-    )..repeat(reverse: true);
-    _floatAnim = Tween<double>(begin: -10, end: 10).animate(
-      CurvedAnimation(parent: _avatarCtrl, curve: AppCurves.ease),
+      duration: AppAnimations.entranceFade,
     );
-
-    _fadeCtrl = AnimationController(
-      vsync: this,
-      duration: AppAnimations.slower,
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: AppCurves.smoothDecelerate,
     );
-    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: AppCurves.easeOut);
-
-    _slideCtrl = AnimationController(
-      vsync: this,
-      duration: AppAnimations.slow,
-    );
-    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _slideCtrl, curve: AppCurves.easeOut));
-
     loadAboutData();
   }
 
   @override
   void dispose() {
-    _avatarCtrl.dispose();
-    _fadeCtrl.dispose();
-    _slideCtrl.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
   Future<void> loadAboutData() async {
-    setState(() {
-      isLoading = true;
-      error = null;
-    });
     try {
       final data = await ApiService.getAbout();
       setState(() {
         aboutData = data;
         isLoading = false;
       });
-      _fadeCtrl.forward();
-      _slideCtrl.forward();
+      _fadeController.forward();
     } catch (e) {
       setState(() {
         error = e.toString();
         isLoading = false;
       });
+      _fadeController.forward();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
-    final isDesktop = Responsive.isDesktop(context);
     final isMobile = Responsive.isMobile(context);
 
     if (isLoading) {
-      return Center(child: CircularProgressIndicator(color: t.primary));
+      return Center(
+        child: CircularProgressIndicator(color: t.primary),
+      );
     }
 
     if (error != null) {
@@ -94,424 +72,264 @@ class _AboutPageState extends State<AboutPage> with TickerProviderStateMixin {
     }
 
     return FadeTransition(
-      opacity: _fadeAnim,
-      child: SlideTransition(
-        position: _slideAnim,
-        child: isDesktop
-            ? _DesktopLayout(
-                aboutData: aboutData,
-                floatAnim: _floatAnim,
-                avatarCtrl: _avatarCtrl,
-              )
-            : _MobileLayout(
-                aboutData: aboutData,
-                isMobile: isMobile,
-                floatAnim: _floatAnim,
-                avatarCtrl: _avatarCtrl,
-              ),
+      opacity: _fadeAnimation,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section Header
+          _SectionHeader(
+            title: 'About Me',
+            subtitle: 'Get to know my background and expertise',
+          ),
+          SizedBox(height: isMobile ? 32 : 48),
+
+          // About Content
+          _AboutContent(aboutData: aboutData, isMobile: isMobile),
+          SizedBox(height: isMobile ? 48 : 64),
+
+          // Skills Section
+          _SectionHeader(
+            title: 'Core Competencies',
+            subtitle: 'Technologies and tools I work with',
+          ),
+          SizedBox(height: isMobile ? 24 : 32),
+          _SkillsGrid(skillsData: aboutData?['skills'], isMobile: isMobile),
+          SizedBox(height: isMobile ? 48 : 64),
+
+          // Education Section
+          _SectionHeader(
+            title: 'Education',
+            subtitle: 'My academic background',
+          ),
+          SizedBox(height: isMobile ? 24 : 32),
+          _EducationTimeline(
+            education: aboutData?['education'] as List? ?? [],
+            isMobile: isMobile,
+          ),
+        ],
       ),
     );
   }
 }
 
-class _DesktopLayout extends StatelessWidget {
-  final Map<String, dynamic>? aboutData;
-  final Animation<double> floatAnim;
-  final AnimationController avatarCtrl;
+// ─────────────────────────────────────────────────────────────────────────────
+// Section Header
+// ─────────────────────────────────────────────────────────────────────────────
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final String subtitle;
 
-  const _DesktopLayout({
-    required this.aboutData,
-    required this.floatAnim,
-    required this.avatarCtrl,
-  });
+  const _SectionHeader({required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          flex: 3,
-          child: _ContentColumn(aboutData: aboutData),
-        ),
-        const SizedBox(width: 48),
-        SizedBox(
-          width: 340,
-          child: _AvatarCard(floatAnim: floatAnim, avatarCtrl: avatarCtrl),
-        ),
-      ],
-    );
-  }
-}
+    final t = AppTheme.of(context);
+    final isMobile = Responsive.isMobile(context);
 
-class _MobileLayout extends StatelessWidget {
-  final Map<String, dynamic>? aboutData;
-  final bool isMobile;
-  final Animation<double> floatAnim;
-  final AnimationController avatarCtrl;
-
-  const _MobileLayout({
-    required this.aboutData,
-    required this.isMobile,
-    required this.floatAnim,
-    required this.avatarCtrl,
-  });
-
-  @override
-  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Center(
-          child: _AvatarCard(
-            floatAnim: floatAnim,
-            avatarCtrl: avatarCtrl,
-            maxWidth: isMobile ? 260 : 320,
+        Row(
+          children: [
+            Container(
+              width: 4,
+              height: isMobile ? 28 : 36,
+              decoration: BoxDecoration(
+                gradient: t.primaryGradient,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 16),
+            ShaderMask(
+              shaderCallback: (bounds) => t.primaryGradient.createShader(bounds),
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: isMobile ? 28 : 36,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.only(left: 20),
+          child: Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: isMobile ? 14 : 16,
+              color: t.textMuted,
+            ),
           ),
         ),
-        const SizedBox(height: 32),
-        _ContentColumn(aboutData: aboutData),
       ],
     );
   }
 }
 
-class _ContentColumn extends StatelessWidget {
+// ─────────────────────────────────────────────────────────────────────────────
+// About Content
+// ─────────────────────────────────────────────────────────────────────────────
+class _AboutContent extends StatelessWidget {
   final Map<String, dynamic>? aboutData;
+  final bool isMobile;
 
-  const _ContentColumn({required this.aboutData});
+  const _AboutContent({required this.aboutData, required this.isMobile});
 
   @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
     final bio = aboutData?['bio'] ??
-        'Passionate Flutter & AI developer building impactful digital experiences.';
-    final skills = aboutData?['skills'] as List? ?? [];
-    final education = aboutData?['education'] as List? ?? [];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _GradientHeading('About Me'),
-        const SizedBox(height: 16),
-        Text(
-          bio,
-          style: TextStyle(fontSize: 16, color: t.textMuted, height: 1.8),
-        ),
-        const SizedBox(height: 40),
-        _SectionLabel('Core Competencies'),
-        const SizedBox(height: 16),
-        _ExpandableSkillGroups(skills: skills),
-        const SizedBox(height: 40),
-        _SectionLabel('Education & Timeline'),
-        const SizedBox(height: 16),
-        _EducationTimeline(education: education),
-        const SizedBox(height: 32),
-      ],
-    );
-  }
-}
-
-class _AvatarCard extends StatefulWidget {
-  final Animation<double> floatAnim;
-  final AnimationController avatarCtrl;
-  final double? maxWidth;
-
-  const _AvatarCard({
-    required this.floatAnim,
-    required this.avatarCtrl,
-    this.maxWidth,
-  });
-
-  @override
-  State<_AvatarCard> createState() => _AvatarCardState();
-}
-
-class _AvatarCardState extends State<_AvatarCard> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = AppTheme.of(context);
-
-    return AnimatedBuilder(
-      animation: widget.floatAnim,
-      builder: (_, child) {
-        return Transform.translate(
-          offset: Offset(0, widget.floatAnim.value),
-          child: child,
-        );
-      },
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: AnimatedContainer(
-          duration: AppAnimations.medium,
-          constraints: BoxConstraints(maxWidth: widget.maxWidth ?? 340),
-          decoration: BoxDecoration(
-            color: t.card,
-            borderRadius: BorderRadius.circular(32),
-            border: Border.all(
-              color: t.primary.withValues(alpha: 0.4),
-              width: 1.5,
-            ),
-            boxShadow: [
-              t.primaryGlow,
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 40,
-              ),
-              if (_hovered)
-                BoxShadow(
-                  color: t.primary.withValues(alpha: 0.25),
-                  blurRadius: 60,
-                  spreadRadius: 4,
-                ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(32),
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          t.primary.withValues(alpha: 0.05),
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                AnimatedContainer(
-                  duration: AppAnimations.medium,
-                  transform: _hovered
-                      ? (Matrix4.identity()..rotateZ(0.015))
-                      : Matrix4.identity(),
-                  child: Image.asset(
-                    'assets/images.png',
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 400,
-                      color: t.card,
-                      child: Icon(
-                        Icons.person,
-                        size: 120,
-                        color: t.primary.withValues(alpha: 0.3),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ExpandableSkillGroups extends StatefulWidget {
-  final List skills;
-  const _ExpandableSkillGroups({required this.skills});
-
-  @override
-  State<_ExpandableSkillGroups> createState() => _ExpandableSkillGroupsState();
-}
-
-class _ExpandableSkillGroupsState extends State<_ExpandableSkillGroups> {
-  final Map<String, bool> _expanded = {};
-
-  Map<String, List<String>> _groupSkills(List skills) {
-    final Map<String, List<String>> groups = {
-      'Languages': [],
-      'Frameworks': [],
-      'Tools & Platforms': [],
-    };
-    for (final s in skills) {
-      if (s is Map) {
-        final cat = s['category']?.toString() ?? '';
-        final name = s['name']?.toString() ?? '';
-        if (cat.toLowerCase().contains('language')) {
-          groups['Languages']!.add(name);
-        } else if (cat.toLowerCase().contains('framework') ||
-            cat.toLowerCase().contains('sdk')) {
-          groups['Frameworks']!.add(name);
-        } else {
-          groups['Tools & Platforms']!.add(name);
-        }
-      } else {
-        groups['Tools & Platforms']!.add(s.toString());
-      }
-    }
-    return groups;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _expanded['Languages'] = true;
-    _expanded['Frameworks'] = true;
-    _expanded['Tools & Platforms'] = true;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final groups = _groupSkills(widget.skills);
-
-    if (groups.values.every((v) => v.isEmpty)) {
-      groups['Languages'] = ['Dart', 'Python', 'JavaScript', 'TypeScript', 'SQL'];
-      groups['Frameworks'] = ['Flutter', 'FastAPI', 'React', 'Node.js', 'TensorFlow'];
-      groups['Tools & Platforms'] = ['Docker', 'Firebase', 'PostgreSQL', 'Git', 'AWS', 'Figma'];
-    }
-
-    return Column(
-      children: groups.entries.map((entry) {
-        final isOpen = _expanded[entry.key] ?? true;
-        return _SkillGroupCard(
-          title: entry.key,
-          skills: entry.value,
-          isOpen: isOpen,
-          onToggle: () => setState(() => _expanded[entry.key] = !isOpen),
-        );
-      }).toList(),
-    );
-  }
-}
-
-class _SkillGroupCard extends StatelessWidget {
-  final String title;
-  final List<String> skills;
-  final bool isOpen;
-  final VoidCallback onToggle;
-
-  const _SkillGroupCard({
-    required this.title,
-    required this.skills,
-    required this.isOpen,
-    required this.onToggle,
-  });
-
-  IconData _groupIcon() {
-    switch (title) {
-      case 'Languages':
-        return Icons.code;
-      case 'Frameworks':
-        return Icons.developer_board;
-      default:
-        return Icons.build;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final t = AppTheme.of(context);
+        'Passionate software engineer with expertise in building scalable applications.';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
+      padding: EdgeInsets.all(isMobile ? 20 : 32),
       decoration: BoxDecoration(
         color: t.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(color: t.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 12,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: t.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: Icon(
+                  Icons.person_rounded,
+                  color: t.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                'Who I Am',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: t.text,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            bio,
+            style: t.bodyLG.copyWith(height: 1.8),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Column(
-          children: [
-            InkWell(
-              onTap: onToggle,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: t.primary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(_groupIcon(), size: 18, color: t.primary),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: t.text,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: t.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        '${skills.length}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: t.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    AnimatedRotation(
-                      turns: isOpen ? 0.5 : 0,
-                      duration: AppAnimations.normal,
-                      child: Icon(
-                        Icons.keyboard_arrow_down,
-                        color: t.textMuted,
-                        size: 20,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            AnimatedCrossFade(
-              firstChild: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                child: Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: skills.map((s) => _SkillBadge(label: s)).toList(),
-                ),
-              ),
-              secondChild: const SizedBox.shrink(),
-              crossFadeState: isOpen ? CrossFadeState.showFirst : CrossFadeState.showSecond,
-              duration: AppAnimations.normal,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
 
-class _SkillBadge extends StatefulWidget {
-  final String label;
-  const _SkillBadge({required this.label});
+// ─────────────────────────────────────────────────────────────────────────────
+// Skills Grid
+// ─────────────────────────────────────────────────────────────────────────────
+class _SkillsGrid extends StatelessWidget {
+  final dynamic skillsData;
+  final bool isMobile;
+
+  const _SkillsGrid({required this.skillsData, required this.isMobile});
+
+  Map<String, List<Map<String, dynamic>>> _parseSkills() {
+    final Map<String, List<Map<String, dynamic>>> groups = {};
+
+    if (skillsData == null) {
+      groups['Languages'] = [
+        {'name': 'Python', 'level': 90},
+        {'name': 'Dart', 'level': 85},
+        {'name': 'JavaScript', 'level': 80},
+      ];
+      return groups;
+    }
+
+    if (skillsData is Map) {
+      final skillsMap = skillsData as Map<String, dynamic>;
+      for (final entry in skillsMap.entries) {
+        final categoryName = entry.key;
+        final skillsList = entry.value as List? ?? [];
+        groups[categoryName] = skillsList.map((s) {
+          if (s is Map) {
+            return {
+              'name': s['name']?.toString() ?? '',
+              'level': s['level'] ?? 80,
+            };
+          }
+          return {'name': s.toString(), 'level': 80};
+        }).toList();
+      }
+    }
+
+    return groups;
+  }
+
+  IconData _getCategoryIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'languages':
+        return Icons.code_rounded;
+      case 'frameworks':
+        return Icons.layers_rounded;
+      case 'tools & platforms':
+        return Icons.build_rounded;
+      case 'iot & embedded':
+        return Icons.memory_rounded;
+      default:
+        return Icons.star_rounded;
+    }
+  }
 
   @override
-  State<_SkillBadge> createState() => _SkillBadgeState();
+  Widget build(BuildContext context) {
+    final groups = _parseSkills();
+    final crossAxisCount = isMobile ? 1 : 2;
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        crossAxisSpacing: 20,
+        mainAxisSpacing: 20,
+        childAspectRatio: isMobile ? 2.2 : 2.0,
+      ),
+      itemCount: groups.length,
+      itemBuilder: (context, index) {
+        final entry = groups.entries.elementAt(index);
+        return _SkillCategoryCard(
+          title: entry.key,
+          icon: _getCategoryIcon(entry.key),
+          skills: entry.value,
+        );
+      },
+    );
+  }
 }
 
-class _SkillBadgeState extends State<_SkillBadge> {
+class _SkillCategoryCard extends StatefulWidget {
+  final String title;
+  final IconData icon;
+  final List<Map<String, dynamic>> skills;
+
+  const _SkillCategoryCard({
+    required this.title,
+    required this.icon,
+    required this.skills,
+  });
+
+  @override
+  State<_SkillCategoryCard> createState() => _SkillCategoryCardState();
+}
+
+class _SkillCategoryCardState extends State<_SkillCategoryCard> {
   bool _hovered = false;
 
   @override
@@ -523,24 +341,112 @@ class _SkillBadgeState extends State<_SkillBadge> {
       onExit: (_) => setState(() => _hovered = false),
       child: AnimatedContainer(
         duration: AppAnimations.fast,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: _hovered ? t.cardHover : t.card,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(
+            color: _hovered ? t.primary.withValues(alpha: 0.3) : t.border,
+          ),
+          boxShadow: _hovered ? [t.cardShadowHover] : [],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: t.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                  ),
+                  child: Icon(widget.icon, size: 20, color: t.primary),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: t.text,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${widget.skills.length}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: t.primary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Skills wrap
+            Expanded(
+              child: SingleChildScrollView(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: widget.skills.map((skill) {
+                    return _SkillTag(
+                      name: skill['name'] ?? '',
+                      level: skill['level'] ?? 80,
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SkillTag extends StatefulWidget {
+  final String name;
+  final int level;
+
+  const _SkillTag({required this.name, required this.level});
+
+  @override
+  State<_SkillTag> createState() => _SkillTagState();
+}
+
+class _SkillTagState extends State<_SkillTag> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTheme.of(context);
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: AppAnimations.fast,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: _hovered
-              ? t.primary.withValues(alpha: 0.18)
+              ? t.primary.withValues(alpha: 0.15)
               : t.primary.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(AppRadius.full),
           border: Border.all(
-            color: _hovered ? t.primary.withValues(alpha: 0.7) : t.border,
+            color: _hovered
+                ? t.primary.withValues(alpha: 0.4)
+                : t.primary.withValues(alpha: 0.15),
           ),
-          boxShadow: _hovered
-              ? [BoxShadow(color: t.primary.withValues(alpha: 0.3), blurRadius: 10)]
-              : [],
         ),
         child: Text(
-          widget.label,
+          widget.name,
           style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
             color: _hovered ? t.primary : t.text,
           ),
         ),
@@ -549,99 +455,34 @@ class _SkillBadgeState extends State<_SkillBadge> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Education Timeline
+// ─────────────────────────────────────────────────────────────────────────────
 class _EducationTimeline extends StatelessWidget {
   final List education;
-  const _EducationTimeline({required this.education});
+  final bool isMobile;
 
-  List<Map<String, String>> _defaultEducation() => [
-        {
-          'degree': 'School (10th)',
-          'institution': 'State Board',
-          'year': '2018',
-          'description': 'Completed secondary education with distinction.'
-        },
-        {
-          'degree': 'Higher Secondary (12th)',
-          'institution': 'State Board',
-          'year': '2020',
-          'description': 'Studied Computer Science & Mathematics.'
-        },
-        {
-          'degree': 'B.Tech / B.E.',
-          'institution': 'University',
-          'year': '2024',
-          'description': 'Bachelor\'s in Computer Science Engineering with AI specialization.'
-        },
-      ];
+  const _EducationTimeline({required this.education, required this.isMobile});
 
   @override
   Widget build(BuildContext context) {
-    final t = AppTheme.of(context);
-    final items = education.isNotEmpty
-        ? education
-            .map((e) => {
-                  'degree': (e['degree'] ?? e['title'] ?? '').toString(),
-                  'institution': (e['institution'] ?? e['school'] ?? '').toString(),
-                  'year': (e['year'] ?? e['date'] ?? '').toString(),
-                  'description': (e['description'] ?? '').toString(),
-                })
-            .toList()
-        : _defaultEducation();
+    if (education.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Column(
-      children: List.generate(items.length, (i) {
-        final isLast = i == items.length - 1;
-        final item = items[i];
+      children: List.generate(education.length, (index) {
+        final item = education[index] as Map<String, dynamic>;
+        final isLast = index == education.length - 1;
 
-        return IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 40,
-                child: Column(
-                  children: [
-                    const SizedBox(height: 4),
-                    Container(
-                      width: 20,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: t.card,
-                        border: Border.all(color: t.primary, width: 3),
-                        boxShadow: [
-                          BoxShadow(
-                            color: t.primary.withValues(alpha: 0.5),
-                            blurRadius: 8,
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: t.primary,
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (!isLast)
-                      Expanded(
-                        child: Container(
-                          width: 2,
-                          color: t.primary.withValues(alpha: 0.25),
-                          margin: const EdgeInsets.symmetric(vertical: 6),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: _TimelineCard(item: item, isAccent: i % 2 == 1),
-              ),
-            ],
+        return EntranceAnimation(
+          delay: Duration(milliseconds: 100 + (index * 80)),
+          child: _TimelineItem(
+            year: item['year'] ?? '',
+            title: item['title'] ?? '',
+            subtitle: item['subtitle'] ?? '',
+            institution: item['institution'] ?? '',
+            isLast: isLast,
           ),
         );
       }),
@@ -649,107 +490,153 @@ class _EducationTimeline extends StatelessWidget {
   }
 }
 
-class _TimelineCard extends StatefulWidget {
-  final Map<String, String> item;
-  final bool isAccent;
+class _TimelineItem extends StatefulWidget {
+  final String year;
+  final String title;
+  final String subtitle;
+  final String institution;
+  final bool isLast;
 
-  const _TimelineCard({required this.item, required this.isAccent});
+  const _TimelineItem({
+    required this.year,
+    required this.title,
+    required this.subtitle,
+    required this.institution,
+    required this.isLast,
+  });
 
   @override
-  State<_TimelineCard> createState() => _TimelineCardState();
+  State<_TimelineItem> createState() => _TimelineItemState();
 }
 
-class _TimelineCardState extends State<_TimelineCard> {
+class _TimelineItemState extends State<_TimelineItem> {
   bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
-    final accentColor = widget.isAccent ? t.accent : t.primary;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
-      child: AnimatedContainer(
-        duration: AppAnimations.fast,
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: t.card,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: _hovered ? accentColor.withValues(alpha: 0.6) : t.border,
-          ),
-          boxShadow: [
-            if (_hovered)
-              BoxShadow(
-                color: accentColor.withValues(alpha: 0.25),
-                blurRadius: 20,
-              ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 10,
-            ),
-          ],
-        ),
-        child: Column(
+      child: IntrinsicHeight(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    widget.item['degree'] ?? '',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: t.text,
+            // Timeline indicator
+            SizedBox(
+              width: 60,
+              child: Column(
+                children: [
+                  AnimatedContainer(
+                    duration: AppAnimations.fast,
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: _hovered ? t.primary : t.card,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: t.primary,
+                        width: 3,
+                      ),
+                      boxShadow: _hovered
+                          ? [
+                              BoxShadow(
+                                color: t.primary.withValues(alpha: 0.4),
+                                blurRadius: 8,
+                              ),
+                            ]
+                          : [],
                     ),
                   ),
+                  if (!widget.isLast)
+                    Expanded(
+                      child: Container(
+                        width: 2,
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        color: t.border,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            // Content
+            Expanded(
+              child: AnimatedContainer(
+                duration: AppAnimations.fast,
+                margin: const EdgeInsets.only(bottom: 24),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: _hovered ? t.cardHover : t.card,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  border: Border.all(
+                    color: _hovered ? t.primary.withValues(alpha: 0.3) : t.border,
+                  ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    gradient: t.primaryGradient,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: accentColor.withValues(alpha: 0.3),
-                        blurRadius: 8,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Year badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: t.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                      child: Text(
+                        widget.year,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: t.primary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      widget.title,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: t.text,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.subtitle,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: t.textMuted,
+                      ),
+                    ),
+                    if (widget.institution.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.school_rounded,
+                            size: 14,
+                            color: t.accent,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            widget.institution,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: t.accent,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
-                  ),
-                  child: Text(
-                    widget.item['year'] ?? '',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              widget.item['institution'] ?? '',
-              style: TextStyle(
-                fontSize: 13,
-                color: accentColor,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            if ((widget.item['description'] ?? '').isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                widget.item['description']!,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: t.textMuted,
-                  height: 1.5,
+                  ],
                 ),
               ),
-            ],
+            ),
           ],
         ),
       ),
@@ -757,62 +644,9 @@ class _TimelineCardState extends State<_TimelineCard> {
   }
 }
 
-class _GradientHeading extends StatelessWidget {
-  final String text;
-  const _GradientHeading(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    final t = AppTheme.of(context);
-
-    return ShaderMask(
-      shaderCallback: (bounds) => t.primaryGradient.createShader(bounds),
-      blendMode: BlendMode.srcIn,
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 38,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.5,
-          color: Colors.white,
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  const _SectionLabel(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    final t = AppTheme.of(context);
-
-    return Row(
-      children: [
-        Container(
-          width: 4,
-          height: 22,
-          decoration: BoxDecoration(
-            color: t.primary,
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: t.text,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
+// ─────────────────────────────────────────────────────────────────────────────
+// Error View
+// ─────────────────────────────────────────────────────────────────────────────
 class _ErrorView extends StatelessWidget {
   final String error;
   final VoidCallback onRetry;
@@ -824,42 +658,46 @@ class _ErrorView extends StatelessWidget {
     final t = AppTheme.of(context);
 
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
+      child: Container(
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: t.card,
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          border: Border.all(color: t.border),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.warning_rounded, size: 60, color: t.accent),
+            Icon(Icons.error_outline_rounded, size: 48, color: t.accentAlt),
             const SizedBox(height: 16),
             Text(
-              'Failed to Load',
+              'Failed to load data',
               style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
                 color: t.text,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               error,
-              style: TextStyle(fontSize: 13, color: t.textMuted),
+              style: TextStyle(fontSize: 14, color: t.textMuted),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
             GestureDetector(
               onTap: onRetry,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 decoration: BoxDecoration(
                   gradient: t.primaryGradient,
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [t.primaryGlow],
+                  borderRadius: BorderRadius.circular(AppRadius.full),
                 ),
                 child: const Text(
                   'Retry',
                   style: TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
