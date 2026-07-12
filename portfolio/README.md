@@ -1,16 +1,21 @@
-# portfolio
+# Portfolio Frontend
 
-A new Flutter project.
+Flutter Web frontend for the portfolio.
 
-## Getting Started
+## Local Development
 
-This project is a starting point for a Flutter application.
+```bat
+cd portfolio
+C:\flutter\bin\flutter.bat pub get
+.\start-local.bat
+```
 
-A few resources to get you started if this is your first Flutter project:
+Default local backend:
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- `http://127.0.0.1:8000`
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Override for hosted backend:
+
+```bat
+C:\flutter\bin\flutter.bat run -d chrome --dart-define=API_BASE_URL=https://your-backend-domain.example.com
+```

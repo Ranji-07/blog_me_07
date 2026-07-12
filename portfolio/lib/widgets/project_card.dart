@@ -3,6 +3,7 @@ import 'package:portfolio/core/app_theme.dart';
 import 'package:portfolio/core/animations.dart';
 import 'package:portfolio/core/responsive.dart';
 import 'package:portfolio/models/project_model.dart';
+import 'package:portfolio/widgets/interactive_effects.dart';
 import 'package:portfolio/widgets/project_modal.dart';
 
 /// Modern project card with hover effects and micro-interactions
@@ -42,7 +43,8 @@ class _ProjectCardState extends State<ProjectCard>
     );
 
     _glowAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _hoverController, curve: AppCurves.smoothDecelerate),
+      CurvedAnimation(
+          parent: _hoverController, curve: AppCurves.smoothDecelerate),
     );
   }
 
@@ -118,34 +120,43 @@ class _ProjectCardState extends State<ProjectCard>
             builder: (context, child) {
               return Transform.translate(
                 offset: Offset(0, -_liftAnimation.value),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: t.card,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: _isHovered
-                          ? t.primary.withValues(alpha: 0.4)
-                          : t.border,
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: _isHovered ? 0.15 : 0.08),
-                        blurRadius: _isHovered ? 30 : 16,
-                        offset: Offset(0, _isHovered ? 12 : 4),
-                        spreadRadius: _isHovered ? 2 : 0,
+                child: InteractiveSpotlight(
+                  enabled: !isMobile,
+                  borderRadius: 20,
+                  radius: 240,
+                  opacity: 0.14,
+                  color: t.accent,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: t.card,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: _isHovered
+                            ? t.primary.withValues(alpha: 0.4)
+                            : t.border,
+                        width: 1.5,
                       ),
-                      if (_isHovered && t.isDark)
+                      boxShadow: [
                         BoxShadow(
-                          color: t.primary.withValues(alpha: 0.2 * _glowAnimation.value),
-                          blurRadius: 40,
-                          spreadRadius: -5,
+                          color: Colors.black
+                              .withValues(alpha: _isHovered ? 0.15 : 0.08),
+                          blurRadius: _isHovered ? 30 : 16,
+                          offset: Offset(0, _isHovered ? 12 : 4),
+                          spreadRadius: _isHovered ? 2 : 0,
                         ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: child,
+                        if (_isHovered && t.isDark)
+                          BoxShadow(
+                            color: t.primary
+                                .withValues(alpha: 0.2 * _glowAnimation.value),
+                            blurRadius: 40,
+                            spreadRadius: -5,
+                          ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: child,
+                    ),
                   ),
                 ),
               );
@@ -163,8 +174,28 @@ class _ProjectCardState extends State<ProjectCard>
     ProjectModel project,
     bool isMobile,
   ) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompactMobile = isMobile && screenWidth < 430;
+    final cardPadding = isCompactMobile ? 18.0 : (isMobile ? 20.0 : 24.0);
+    final iconPadding = isCompactMobile ? 12.0 : 14.0;
+    final iconSize = isCompactMobile ? 24.0 : (isMobile ? 28.0 : 32.0);
+    final titleSize = isCompactMobile ? 16.0 : (isMobile ? 18.0 : 20.0);
+    final bodySize = isCompactMobile ? 12.5 : (isMobile ? 13.0 : 14.0);
+    final visibleTechCount = isCompactMobile ? 3 : 4;
+
     return Container(
-      padding: EdgeInsets.all(isMobile ? 20 : 24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            t.surface.withValues(alpha: 0.12),
+            Colors.transparent,
+            t.accent.withValues(alpha: 0.04),
+          ],
+        ),
+      ),
+      padding: EdgeInsets.all(cardPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -175,14 +206,20 @@ class _ProjectCardState extends State<ProjectCard>
               // Project icon
               AnimatedContainer(
                 duration: AppAnimations.fast,
-                padding: const EdgeInsets.all(14),
+                padding: EdgeInsets.all(iconPadding),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: _isHovered
-                        ? [t.primary.withValues(alpha: 0.25), t.primary.withValues(alpha: 0.1)]
-                        : [t.primary.withValues(alpha: 0.12), t.primary.withValues(alpha: 0.05)],
+                        ? [
+                            t.primary.withValues(alpha: 0.25),
+                            t.primary.withValues(alpha: 0.1)
+                          ]
+                        : [
+                            t.primary.withValues(alpha: 0.12),
+                            t.primary.withValues(alpha: 0.05)
+                          ],
                   ),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
@@ -202,7 +239,7 @@ class _ProjectCardState extends State<ProjectCard>
                 ),
                 child: Icon(
                   _getIconData(project.icon),
-                  size: isMobile ? 28 : 32,
+                  size: iconSize,
                   color: t.primary,
                 ),
               ),
@@ -211,7 +248,11 @@ class _ProjectCardState extends State<ProjectCard>
               if (project.category != null)
                 AnimatedContainer(
                   duration: AppAnimations.fast,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      EdgeInsets.symmetric(
+                        horizontal: isCompactMobile ? 10 : 12,
+                        vertical: isCompactMobile ? 5 : 6,
+                      ),
                   decoration: BoxDecoration(
                     color: _isHovered
                         ? t.accent.withValues(alpha: 0.2)
@@ -226,7 +267,7 @@ class _ProjectCardState extends State<ProjectCard>
                   child: Text(
                     project.category!,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: isCompactMobile ? 10 : 11,
                       fontWeight: FontWeight.w600,
                       color: t.accent,
                       letterSpacing: 0.3,
@@ -235,12 +276,12 @@ class _ProjectCardState extends State<ProjectCard>
                 ),
             ],
           ),
-          SizedBox(height: isMobile ? 18 : 22),
+          SizedBox(height: isCompactMobile ? 14 : (isMobile ? 18 : 22)),
           // Title
           AnimatedDefaultTextStyle(
             duration: AppAnimations.fast,
             style: TextStyle(
-              fontSize: isMobile ? 18 : 20,
+              fontSize: titleSize,
               fontWeight: FontWeight.w700,
               color: _isHovered ? t.primary : t.text,
               height: 1.3,
@@ -251,32 +292,33 @@ class _ProjectCardState extends State<ProjectCard>
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: isCompactMobile ? 8 : 10),
           // Short description
           Text(
             project.shortDescription,
             style: TextStyle(
-              fontSize: isMobile ? 13 : 14,
+              fontSize: bodySize,
               color: t.textMuted,
               height: 1.5,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          SizedBox(height: isMobile ? 18 : 22),
+          SizedBox(height: isCompactMobile ? 16 : (isMobile ? 18 : 22)),
           // Technology tags
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: project.technologies.take(4).map((tech) {
+            spacing: isCompactMobile ? 6 : 8,
+            runSpacing: isCompactMobile ? 6 : 8,
+            children: project.technologies.take(visibleTechCount).map((tech) {
               return _TechTag(
                 label: tech,
                 theme: t,
                 isHovered: _isHovered,
+                compact: isCompactMobile,
               );
             }).toList(),
           ),
-          SizedBox(height: isMobile ? 16 : 20),
+          SizedBox(height: isCompactMobile ? 12 : (isMobile ? 16 : 20)),
           // View details indicator
           AnimatedContainer(
             duration: AppAnimations.fast,
@@ -285,12 +327,12 @@ class _ProjectCardState extends State<ProjectCard>
                 Text(
                   'View Details',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: isCompactMobile ? 12 : 13,
                     fontWeight: FontWeight.w600,
                     color: _isHovered ? t.primary : t.textMuted,
                   ),
                 ),
-                const SizedBox(width: 6),
+                SizedBox(width: isCompactMobile ? 4 : 6),
                 AnimatedContainer(
                   duration: AppAnimations.fast,
                   transform: Matrix4.translationValues(
@@ -300,7 +342,7 @@ class _ProjectCardState extends State<ProjectCard>
                   ),
                   child: Icon(
                     Icons.arrow_forward_rounded,
-                    size: 16,
+                    size: isCompactMobile ? 14 : 16,
                     color: _isHovered ? t.primary : t.textMuted,
                   ),
                 ),
@@ -317,18 +359,23 @@ class _TechTag extends StatelessWidget {
   final String label;
   final AppThemeData theme;
   final bool isHovered;
+  final bool compact;
 
   const _TechTag({
     required this.label,
     required this.theme,
     required this.isHovered,
+    this.compact = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
       duration: AppAnimations.fast,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 8 : 10,
+        vertical: compact ? 4 : 5,
+      ),
       decoration: BoxDecoration(
         color: isHovered
             ? theme.primary.withValues(alpha: 0.15)
@@ -343,7 +390,7 @@ class _TechTag extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 11,
+          fontSize: compact ? 10 : 11,
           fontWeight: FontWeight.w500,
           color: isHovered ? theme.primary : theme.textMuted,
         ),

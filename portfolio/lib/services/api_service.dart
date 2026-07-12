@@ -1,11 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../core/app_config.dart';
 
 class ApiService {
-  // CHANGE THIS to your API URL
-  // For local testing: http://localhost:8000/api
-  // For production: https://your-api-domain.com/api
-  static const String baseUrl = 'http://localhost:8000';
+  static const String baseUrl = AppConfig.apiBaseUrl;
 
   // Timeout duration
   static const Duration timeout = Duration(seconds: 10);
@@ -100,13 +98,13 @@ class ApiService {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/api/portfolio/contact-form'),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
           'name': name,
           'email': email,
           'contact': contact,
           'message': message,
-        },
+        }),
       ).timeout(timeout);
 
       return response.statusCode == 200;
@@ -119,7 +117,7 @@ class ApiService {
   static Future<bool> checkApiHealth() async {
     try {
       final response = await http
-          .get(Uri.parse('${baseUrl.replaceAll('/api', '')}/health'))
+          .get(Uri.parse('$baseUrl/health'))
           .timeout(timeout);
       return response.statusCode == 200;
     } catch (e) {

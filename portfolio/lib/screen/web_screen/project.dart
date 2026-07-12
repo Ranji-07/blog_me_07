@@ -132,6 +132,10 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
     final isMobile = Responsive.isMobile(context);
+    final titleSize =
+        Responsive.fontSize(context, mobile: 28, tablet: 32, desktop: 36);
+    final subtitleSize =
+        Responsive.fontSize(context, mobile: 14, tablet: 15, desktop: 16);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,7 +156,7 @@ class _SectionHeader extends StatelessWidget {
               child: Text(
                 title,
                 style: TextStyle(
-                  fontSize: isMobile ? 28 : 36,
+                  fontSize: titleSize,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
                   letterSpacing: -0.5,
@@ -167,7 +171,7 @@ class _SectionHeader extends StatelessWidget {
           child: Text(
             subtitle,
             style: TextStyle(
-              fontSize: isMobile ? 14 : 16,
+              fontSize: subtitleSize,
               color: t.textMuted,
             ),
           ),
@@ -294,30 +298,25 @@ class _ProjectGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = Responsive.isMobile(context);
-    final isTablet = Responsive.isTablet(context);
-
-    // 3 columns on desktop, 2 on tablet, 1 on mobile
-    final crossAxisCount = isMobile ? 1 : (isTablet ? 2 : 3);
-    final childAspectRatio = isMobile ? 1.4 : (isTablet ? 1.2 : 1.15);
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        crossAxisSpacing: 20,
-        mainAxisSpacing: 20,
-        childAspectRatio: childAspectRatio,
-      ),
-      itemCount: projects.length,
-      itemBuilder: (context, index) {
-        return EntranceAnimation(
-          delay: Duration(milliseconds: 80 + (index * 60)),
-          child: ProjectCard(
-            project: projects[index],
-            index: index,
-          ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final columns = width >= 1280 ? 3 : (width >= 760 ? 2 : 1);
+        return AdaptiveGrid(
+          mobileColumns: 1,
+          tabletColumns: 2,
+          desktopColumns: columns,
+          spacing: 20,
+          runSpacing: 20,
+          children: List.generate(projects.length, (index) {
+            return EntranceAnimation(
+              delay: Duration(milliseconds: 80 + (index * 60)),
+              child: ProjectCard(
+                project: projects[index],
+                index: index,
+              ),
+            );
+          }),
         );
       },
     );
@@ -331,31 +330,32 @@ class _LoadingGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
-    final isMobile = Responsive.isMobile(context);
-    final isTablet = Responsive.isTablet(context);
-    final crossAxisCount = isMobile ? 1 : (isTablet ? 2 : 3);
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        crossAxisSpacing: 20,
-        mainAxisSpacing: 20,
-        childAspectRatio: 1.15,
-      ),
-      itemCount: 6,
-      itemBuilder: (context, index) {
-        return ShimmerEffect(
-          baseColor: t.card,
-          highlightColor: t.cardHover,
-          child: Container(
-            decoration: BoxDecoration(
-              color: t.card,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(color: t.border),
-            ),
-          ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final columns = width >= 1280 ? 3 : (width >= 760 ? 2 : 1);
+        return AdaptiveGrid(
+          mobileColumns: 1,
+          tabletColumns: 2,
+          desktopColumns: columns,
+          spacing: 20,
+          runSpacing: 20,
+          children: List.generate(6, (index) {
+            return SizedBox(
+              height: width >= 760 ? 330 : 280,
+              child: ShimmerEffect(
+                baseColor: t.card,
+                highlightColor: t.cardHover,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: t.card,
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    border: Border.all(color: t.border),
+                  ),
+                ),
+              ),
+            );
+          }),
         );
       },
     );

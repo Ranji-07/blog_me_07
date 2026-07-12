@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -40,6 +41,7 @@ class _ProjectModalState extends State<ProjectModal>
   late Animation<double> _modalScaleAnimation;
   late Animation<double> _modalFadeAnimation;
   late Animation<Offset> _modalSlideAnimation;
+  String? _selectedArchitectureNode;
 
   @override
   void initState() {
@@ -51,7 +53,8 @@ class _ProjectModalState extends State<ProjectModal>
       duration: AppAnimations.modalEnter,
     );
     _backdropAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _backdropController, curve: AppCurves.smoothDecelerate),
+      CurvedAnimation(
+          parent: _backdropController, curve: AppCurves.smoothDecelerate),
     );
 
     // Modal animation
@@ -63,12 +66,14 @@ class _ProjectModalState extends State<ProjectModal>
       CurvedAnimation(parent: _modalController, curve: AppCurves.modalEnter),
     );
     _modalFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _modalController, curve: AppCurves.smoothDecelerate),
+      CurvedAnimation(
+          parent: _modalController, curve: AppCurves.smoothDecelerate),
     );
     _modalSlideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.02),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _modalController, curve: AppCurves.modalEnter));
+    ).animate(
+        CurvedAnimation(parent: _modalController, curve: AppCurves.modalEnter));
 
     // Start animations
     _backdropController.forward();
@@ -103,6 +108,7 @@ class _ProjectModalState extends State<ProjectModal>
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
     final isMobile = Responsive.isMobile(context);
+    final isTablet = Responsive.isTablet(context);
 
     return Material(
       type: MaterialType.transparency,
@@ -120,7 +126,8 @@ class _ProjectModalState extends State<ProjectModal>
                     sigmaY: 12 * _backdropAnimation.value,
                   ),
                   child: Container(
-                    color: Colors.black.withValues(alpha: 0.6 * _backdropAnimation.value),
+                    color: Colors.black
+                        .withValues(alpha: 0.6 * _backdropAnimation.value),
                   ),
                 ),
               );
@@ -133,8 +140,10 @@ class _ProjectModalState extends State<ProjectModal>
               builder: (context, child) {
                 return Transform.translate(
                   offset: Offset(
-                    _modalSlideAnimation.value.dx * MediaQuery.of(context).size.width,
-                    _modalSlideAnimation.value.dy * MediaQuery.of(context).size.height,
+                    _modalSlideAnimation.value.dx *
+                        MediaQuery.of(context).size.width,
+                    _modalSlideAnimation.value.dy *
+                        MediaQuery.of(context).size.height,
                   ),
                   child: Transform.scale(
                     scale: _modalScaleAnimation.value,
@@ -147,7 +156,7 @@ class _ProjectModalState extends State<ProjectModal>
               },
               child: isMobile
                   ? _buildMobileModal(context, t)
-                  : _buildDesktopModal(context, t),
+                  : _buildDesktopModal(context, t, isTablet: isTablet),
             ),
           ),
         ],
@@ -155,17 +164,18 @@ class _ProjectModalState extends State<ProjectModal>
     );
   }
 
-  Widget _buildDesktopModal(BuildContext context, AppThemeData t) {
+  Widget _buildDesktopModal(BuildContext context, AppThemeData t,
+      {required bool isTablet}) {
     final screenSize = MediaQuery.of(context).size;
-    final maxWidth = screenSize.width * 0.85;
+    final maxWidth = screenSize.width * (isTablet ? 0.92 : 0.85);
     final maxHeight = screenSize.height * 0.9;
 
     return Container(
       constraints: BoxConstraints(
-        maxWidth: maxWidth.clamp(600.0, 1100.0),
+        maxWidth: maxWidth.clamp(680.0, 1100.0),
         maxHeight: maxHeight,
       ),
-      margin: const EdgeInsets.all(24),
+      margin: EdgeInsets.all(isTablet ? 16 : 24),
       decoration: BoxDecoration(
         color: t.card,
         borderRadius: BorderRadius.circular(24),
@@ -196,7 +206,7 @@ class _ProjectModalState extends State<ProjectModal>
 
   Widget _buildMobileModal(BuildContext context, AppThemeData t) {
     return Container(
-      margin: const EdgeInsets.only(top: 60),
+      margin: const EdgeInsets.only(top: 32),
       decoration: BoxDecoration(
         color: t.card,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
@@ -219,8 +229,11 @@ class _ProjectModalState extends State<ProjectModal>
     );
   }
 
-  Widget _buildModalContent(BuildContext context, AppThemeData t, {required bool isDesktop}) {
+  Widget _buildModalContent(BuildContext context, AppThemeData t,
+      {required bool isDesktop}) {
     final project = widget.project;
+    final isCompactDesktop =
+        !Responsive.isMobile(context) && MediaQuery.of(context).size.width < 1280;
 
     return Column(
       children: [
@@ -229,11 +242,11 @@ class _ProjectModalState extends State<ProjectModal>
         // Scrollable content
         Expanded(
           child: SingleChildScrollView(
-            padding: EdgeInsets.all(isDesktop ? 32 : 20),
+            padding: EdgeInsets.all(isDesktop ? (isCompactDesktop ? 24 : 32) : 20),
             child: StaggeredList(
               initialDelay: const Duration(milliseconds: 100),
               staggerDelay: AppAnimations.staggerDelay,
-              spacing: isDesktop ? 32 : 24,
+              spacing: isDesktop ? (isCompactDesktop ? 24 : 32) : 24,
               children: [
                 // Hero section
                 _buildHeroSection(context, t, project, isDesktop),
@@ -242,6 +255,7 @@ class _ProjectModalState extends State<ProjectModal>
                 // Technology stack
                 if (project.technologies.isNotEmpty)
                   _buildTechSection(context, t, project, isDesktop),
+                _buildArchitectureSection(context, t, project, isDesktop),
                 // Workflow/Architecture
                 if (project.workflow.isNotEmpty)
                   _buildWorkflowSection(context, t, project, isDesktop),
@@ -261,25 +275,45 @@ class _ProjectModalState extends State<ProjectModal>
   }
 
   Widget _buildHeader(BuildContext context, AppThemeData t) {
+    final isMobile = Responsive.isMobile(context);
+    final titleSize =
+        Responsive.fontSize(context, mobile: 16, tablet: 17, desktop: 18);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         color: t.card,
-        border: Border(bottom: BorderSide(color: t.border.withValues(alpha: 0.5))),
+        border:
+            Border(bottom: BorderSide(color: t.border.withValues(alpha: 0.5))),
       ),
       child: Row(
         children: [
           // Drag indicator for mobile
-          if (Responsive.isMobile(context)) ...[
+          if (isMobile) ...[
             Expanded(
               child: Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: t.textMuted.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: t.textMuted.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      widget.project.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: titleSize,
+                        fontWeight: FontWeight.w700,
+                        color: t.text,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -287,14 +321,17 @@ class _ProjectModalState extends State<ProjectModal>
             Expanded(
               child: Text(
                 widget.project.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: titleSize,
                   fontWeight: FontWeight.w700,
                   color: t.text,
                 ),
               ),
             ),
           ],
+          if (isMobile) const SizedBox(width: 12),
           // Close button
           PressableScale(
             onTap: _closeModal,
@@ -322,60 +359,58 @@ class _ProjectModalState extends State<ProjectModal>
     ProjectModel project,
     bool isDesktop,
   ) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Project icon
-        Container(
-          padding: EdgeInsets.all(isDesktop ? 20 : 16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                t.primary.withValues(alpha: 0.15),
-                t.primary.withValues(alpha: 0.05),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: t.primary.withValues(alpha: 0.2)),
-          ),
-          child: Icon(
-            _getIconData(project.icon),
-            size: isDesktop ? 48 : 36,
-            color: t.primary,
-          ),
-        ),
-        const SizedBox(width: 20),
-        // Title and category
-        Expanded(
-          child: Column(
+    final isMobile = Responsive.isMobile(context);
+    final titleSize =
+        Responsive.fontSize(context, mobile: 24, tablet: 28, desktop: 32);
+    final iconSize = isDesktop ? 48.0 : 36.0;
+    final iconPadding = isDesktop ? 20.0 : 16.0;
+
+    return isMobile
+        ? Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (Responsive.isMobile(context))
-                Text(
-                  project.title,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: t.text,
-                    height: 1.2,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(iconPadding),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          t.primary.withValues(alpha: 0.15),
+                          t.primary.withValues(alpha: 0.05),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: t.primary.withValues(alpha: 0.2)),
+                    ),
+                    child: Icon(
+                      _getIconData(project.icon),
+                      size: iconSize,
+                      color: t.primary,
+                    ),
                   ),
-                ),
-              if (!Responsive.isMobile(context))
-                Text(
-                  project.title,
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w800,
-                    color: t.text,
-                    height: 1.2,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      project.title,
+                      style: TextStyle(
+                        fontSize: titleSize,
+                        fontWeight: FontWeight.w800,
+                        color: t.text,
+                        height: 1.2,
+                      ),
+                    ),
                   ),
-                ),
-              const SizedBox(height: 8),
-              if (project.category != null)
+                ],
+              ),
+              if (project.category != null) ...[
+                const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
                     color: t.accent.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(20),
@@ -390,11 +425,71 @@ class _ProjectModalState extends State<ProjectModal>
                     ),
                   ),
                 ),
+              ],
             ],
-          ),
-        ),
-      ],
-    );
+          )
+        : Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: EdgeInsets.all(iconPadding),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      t.primary.withValues(alpha: 0.15),
+                      t.primary.withValues(alpha: 0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: t.primary.withValues(alpha: 0.2)),
+                ),
+                child: Icon(
+                  _getIconData(project.icon),
+                  size: iconSize,
+                  color: t.primary,
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      project.title,
+                      style: TextStyle(
+                        fontSize: titleSize,
+                        fontWeight: FontWeight.w800,
+                        color: t.text,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (project.category != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: t.accent.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: t.accent.withValues(alpha: 0.3)),
+                        ),
+                        child: Text(
+                          project.category!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: t.accent,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          );
   }
 
   Widget _buildDescriptionSection(
@@ -436,6 +531,103 @@ class _ProjectModalState extends State<ProjectModal>
           children: project.technologies.map((tech) {
             return _TechBadge(label: tech, theme: t);
           }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildArchitectureSection(
+    BuildContext context,
+    AppThemeData t,
+    ProjectModel project,
+    bool isDesktop,
+  ) {
+    final nodes = _buildArchitectureNodes(project);
+    final selectedId = _selectedArchitectureNode ?? nodes.first.id;
+    final selectedNode = nodes.firstWhere((node) => node.id == selectedId);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle(t, 'Architecture', Icons.hub_rounded),
+        const SizedBox(height: 12),
+        if (project.architectureDescription != null &&
+            project.architectureDescription!.trim().isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Text(
+              project.architectureDescription!,
+              style: TextStyle(
+                fontSize: 14,
+                color: t.textMuted,
+                height: 1.6,
+              ),
+            ),
+          ),
+        Container(
+          padding: EdgeInsets.all(isDesktop ? 22 : 16),
+          decoration: BoxDecoration(
+            color: t.surface.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: t.border.withValues(alpha: 0.7)),
+          ),
+          child: Column(
+            children: [
+              AspectRatio(
+                aspectRatio: isDesktop ? 2.3 : 1.0,
+                child: _ArchitectureDiagram(
+                  nodes: nodes,
+                  selectedId: selectedId,
+                  onSelect: (id) =>
+                      setState(() => _selectedArchitectureNode = id),
+                ),
+              ),
+              const SizedBox(height: 16),
+              AnimatedSwitcher(
+                duration: AppAnimations.fast,
+                child: Container(
+                  key: ValueKey(selectedNode.id),
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        t.primary.withValues(alpha: 0.14),
+                        t.accent.withValues(alpha: 0.08),
+                      ],
+                    ),
+                    border:
+                        Border.all(color: t.primary.withValues(alpha: 0.22)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        selectedNode.label,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: t.text,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        selectedNode.description,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: t.textMuted,
+                          height: 1.55,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -582,6 +774,7 @@ class _ProjectModalState extends State<ProjectModal>
   }
 
   Widget _sectionTitle(AppThemeData t, String title, IconData icon) {
+    final fontSize = Responsive.fontSize(context, mobile: 16, tablet: 17, desktop: 18);
     return Row(
       children: [
         Container(
@@ -596,13 +789,101 @@ class _ProjectModalState extends State<ProjectModal>
         Text(
           title,
           style: TextStyle(
-            fontSize: 18,
+            fontSize: fontSize,
             fontWeight: FontWeight.w700,
             color: t.text,
           ),
         ),
       ],
     );
+  }
+
+  List<_ArchitectureNodeData> _buildArchitectureNodes(ProjectModel project) {
+    final tech = project.technologies.map((e) => e.toLowerCase()).toList();
+    final nodes = <_ArchitectureNodeData>[
+      const _ArchitectureNodeData(
+        id: 'client',
+        label: 'Frontend',
+        description:
+            'User-facing experience for dashboards, controls, and real-time feedback.',
+        icon: Icons.devices_rounded,
+        alignment: Alignment(-0.92, -0.55),
+        kind: _ArchitectureNodeKind.client,
+      ),
+      const _ArchitectureNodeData(
+        id: 'api',
+        label: 'API Layer',
+        description:
+            'Coordinates requests, authentication, business rules, and service orchestration.',
+        icon: Icons.hub_rounded,
+        alignment: Alignment(0.0, -0.1),
+        kind: _ArchitectureNodeKind.api,
+      ),
+      const _ArchitectureNodeData(
+        id: 'data',
+        label: 'Database',
+        description:
+            'Persists operational state, historical events, and analytics-ready records.',
+        icon: Icons.storage_rounded,
+        alignment: Alignment(0.92, 0.58),
+        kind: _ArchitectureNodeKind.data,
+      ),
+    ];
+
+    if (tech.any((item) =>
+        item.contains('tensorflow') ||
+        item.contains('ai') ||
+        item.contains('ml'))) {
+      nodes.add(
+        const _ArchitectureNodeData(
+          id: 'ml',
+          label: 'ML Engine',
+          description:
+              'Runs predictive models, inference pipelines, and ranking or optimization logic.',
+          icon: Icons.psychology_alt_rounded,
+          alignment: Alignment(0.92, -0.55),
+          kind: _ArchitectureNodeKind.ml,
+        ),
+      );
+    }
+
+    if (tech.any((item) =>
+        item.contains('aws') ||
+        item.contains('docker') ||
+        item.contains('firebase') ||
+        item.contains('cloud'))) {
+      nodes.add(
+        const _ArchitectureNodeData(
+          id: 'cloud',
+          label: 'Cloud Services',
+          description:
+              'Handles deployment, scaling, containers, storage, and supporting managed services.',
+          icon: Icons.cloud_rounded,
+          alignment: Alignment(0.0, 0.82),
+          kind: _ArchitectureNodeKind.cloud,
+        ),
+      );
+    }
+
+    if (project.category?.toLowerCase().contains('iot') == true ||
+        tech.any((item) =>
+            item.contains('esp32') ||
+            item.contains('arduino') ||
+            item.contains('lorawan'))) {
+      nodes.add(
+        const _ArchitectureNodeData(
+          id: 'edge',
+          label: 'Edge Devices',
+          description:
+              'Field devices stream sensor data or operational signals into the central platform.',
+          icon: Icons.sensors_rounded,
+          alignment: Alignment(-0.92, 0.52),
+          kind: _ArchitectureNodeKind.edge,
+        ),
+      );
+    }
+
+    return nodes;
   }
 
   IconData _getIconData(String iconName) {
@@ -638,6 +919,224 @@ class _ProjectModalState extends State<ProjectModal>
 }
 
 // ─────────────────────────── Sub-widgets ─────────────────────────────────────
+
+enum _ArchitectureNodeKind { client, api, data, ml, cloud, edge }
+
+class _ArchitectureNodeData {
+  final String id;
+  final String label;
+  final String description;
+  final IconData icon;
+  final Alignment alignment;
+  final _ArchitectureNodeKind kind;
+
+  const _ArchitectureNodeData({
+    required this.id,
+    required this.label,
+    required this.description,
+    required this.icon,
+    required this.alignment,
+    required this.kind,
+  });
+}
+
+class _ArchitectureDiagram extends StatelessWidget {
+  final List<_ArchitectureNodeData> nodes;
+  final String selectedId;
+  final ValueChanged<String> onSelect;
+
+  const _ArchitectureDiagram({
+    required this.nodes,
+    required this.selectedId,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTheme.of(context);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = Size(constraints.maxWidth, constraints.maxHeight);
+        final apiNode = nodes.firstWhere((node) => node.id == 'api');
+
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: CustomPaint(
+                painter: _ArchitectureConnectionsPainter(
+                  theme: t,
+                  nodes: nodes,
+                  centerNode: apiNode,
+                ),
+              ),
+            ),
+            ...nodes.map((node) {
+              final dx = ((node.alignment.x + 1) / 2) * size.width;
+              final dy = ((node.alignment.y + 1) / 2) * size.height;
+              return Positioned(
+                left: dx - 58,
+                top: dy - 34,
+                child: _ArchitectureNode(
+                  node: node,
+                  selected: node.id == selectedId,
+                  onTap: () => onSelect(node.id),
+                ),
+              );
+            }),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ArchitectureConnectionsPainter extends CustomPainter {
+  final AppThemeData theme;
+  final List<_ArchitectureNodeData> nodes;
+  final _ArchitectureNodeData centerNode;
+
+  const _ArchitectureConnectionsPainter({
+    required this.theme,
+    required this.nodes,
+    required this.centerNode,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final linePaint = Paint()
+      ..strokeWidth = 1.4
+      ..style = PaintingStyle.stroke;
+    final pulsePaint = Paint()
+      ..style = PaintingStyle.fill
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
+    final center = Offset(
+      ((centerNode.alignment.x + 1) / 2) * size.width,
+      ((centerNode.alignment.y + 1) / 2) * size.height,
+    );
+
+    for (final node in nodes.where((item) => item.id != centerNode.id)) {
+      final target = Offset(
+        ((node.alignment.x + 1) / 2) * size.width,
+        ((node.alignment.y + 1) / 2) * size.height,
+      );
+      linePaint.shader = LinearGradient(
+        colors: [
+          theme.accent.withValues(alpha: 0.12),
+          theme.primary.withValues(alpha: 0.3),
+          theme.accent.withValues(alpha: 0.12),
+        ],
+      ).createShader(Rect.fromPoints(center, target));
+      final path = Path()
+        ..moveTo(center.dx, center.dy)
+        ..quadraticBezierTo(
+          (center.dx + target.dx) / 2,
+          math.min(center.dy, target.dy) - 30,
+          target.dx,
+          target.dy,
+        );
+      canvas.drawPath(path, linePaint);
+      pulsePaint.color = theme.primary.withValues(alpha: 0.12);
+      canvas.drawCircle(Offset.lerp(center, target, 0.5)!, 8, pulsePaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ArchitectureConnectionsPainter oldDelegate) =>
+      false;
+}
+
+class _ArchitectureNode extends StatefulWidget {
+  final _ArchitectureNodeData node;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ArchitectureNode({
+    required this.node,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  State<_ArchitectureNode> createState() => _ArchitectureNodeState();
+}
+
+class _ArchitectureNodeState extends State<_ArchitectureNode> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTheme.of(context);
+    final isMobile = Responsive.isMobile(context);
+    final active = widget.selected || _hovered;
+    final accent = switch (widget.node.kind) {
+      _ArchitectureNodeKind.client => t.accent,
+      _ArchitectureNodeKind.api => t.primary,
+      _ArchitectureNodeKind.data => t.accent,
+      _ArchitectureNodeKind.ml => t.primaryLight,
+      _ArchitectureNodeKind.cloud => t.primary,
+      _ArchitectureNodeKind.edge => t.accent,
+    };
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: PressableScale(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: AppAnimations.fast,
+          width: isMobile ? 96 : 116,
+          padding: EdgeInsets.symmetric(
+            horizontal: isMobile ? 10 : 12,
+            vertical: 12,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                accent.withValues(alpha: active ? 0.24 : 0.12),
+                Colors.transparent,
+              ],
+            ),
+            border: Border.all(
+              color: active
+                  ? accent.withValues(alpha: 0.7)
+                  : accent.withValues(alpha: 0.22),
+            ),
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: accent.withValues(alpha: 0.22),
+                      blurRadius: 22,
+                      spreadRadius: -6,
+                    ),
+                  ]
+                : null,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(widget.node.icon, size: 22, color: accent),
+              const SizedBox(height: 8),
+              Text(
+                widget.node.label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: isMobile ? 11 : 12,
+                  fontWeight: FontWeight.w700,
+                  color: t.text,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _TechBadge extends StatefulWidget {
   final String label;
@@ -759,6 +1258,7 @@ class _WorkflowStepCardState extends State<_WorkflowStepCard> {
   Widget build(BuildContext context) {
     final t = widget.theme;
     final step = widget.step;
+    final isMobile = Responsive.isMobile(context);
 
     return EntranceAnimation(
       delay: widget.delay,
@@ -768,7 +1268,7 @@ class _WorkflowStepCardState extends State<_WorkflowStepCard> {
           children: [
             // Step indicator and line
             SizedBox(
-              width: 50,
+              width: isMobile ? 42 : 50,
               child: Column(
                 children: [
                   Container(
@@ -815,7 +1315,7 @@ class _WorkflowStepCardState extends State<_WorkflowStepCard> {
                 ],
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: isMobile ? 12 : 16),
             // Step content
             Expanded(
               child: MouseRegion(
@@ -824,7 +1324,7 @@ class _WorkflowStepCardState extends State<_WorkflowStepCard> {
                 child: AnimatedContainer(
                   duration: AppAnimations.fast,
                   margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(18),
+                  padding: EdgeInsets.all(isMobile ? 16 : 18),
                   decoration: BoxDecoration(
                     color: t.card,
                     borderRadius: BorderRadius.circular(16),
@@ -835,7 +1335,8 @@ class _WorkflowStepCardState extends State<_WorkflowStepCard> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: _hovered ? 0.12 : 0.06),
+                        color: Colors.black
+                            .withValues(alpha: _hovered ? 0.12 : 0.06),
                         blurRadius: _hovered ? 16 : 8,
                         offset: Offset(0, _hovered ? 6 : 2),
                       ),
@@ -849,7 +1350,7 @@ class _WorkflowStepCardState extends State<_WorkflowStepCard> {
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(10),
+                        padding: EdgeInsets.all(isMobile ? 8 : 10),
                         decoration: BoxDecoration(
                           color: t.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
@@ -868,7 +1369,7 @@ class _WorkflowStepCardState extends State<_WorkflowStepCard> {
                             Text(
                               step.title,
                               style: TextStyle(
-                                fontSize: 15,
+                                fontSize: isMobile ? 14 : 15,
                                 fontWeight: FontWeight.w700,
                                 color: t.text,
                               ),
@@ -877,7 +1378,7 @@ class _WorkflowStepCardState extends State<_WorkflowStepCard> {
                             Text(
                               step.description,
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: isMobile ? 12.5 : 13,
                                 color: t.textMuted,
                                 height: 1.4,
                               ),

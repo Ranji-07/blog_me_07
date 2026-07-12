@@ -1,92 +1,57 @@
 # Portfolio Backend API
 
-Professional portfolio management system with email-based control.
+FastAPI backend for the portfolio frontend.
 
-## Features
-- RESTful API with FastAPI
-- PostgreSQL database
-- Email-based content updates
-- Admin controls (404, 202, update)
-- Swagger documentation
-- Docker containerization
+## Local Development
 
-## Setup
+The backend now runs locally by default with SQLite.
 
-### 1. Clone Repository
-\`\`\`bash
-git clone <your-repo-url>
+### Setup
+
+```bat
 cd portfolio-backend
-\`\`\`
+py -3.12 -m venv .venv312
+.\.venv312\Scripts\pip install -r requirements.txt
+.\.venv312\Scripts\python init_db.py
+.\start-local.bat
+```
 
-### 2. Configure Environment
-\`\`\`bash
-cp .env.example .env
-# Edit .env with your email credentials
-\`\`\`
+### URLs
 
-### 3. Run with Docker
-\`\`\`bash
-docker-compose up --build
-\`\`\`
+- API: `http://127.0.0.1:8000`
+- Swagger Docs: `http://127.0.0.1:8000/docs`
+- ReDoc: `http://127.0.0.1:8000/redoc`
 
-### 4. Initialize Database
-\`\`\`bash
-docker-compose exec api python init_db.py
-\`\`\`
+## Deployment Prep
 
-### 5. Access API
-- API: http://localhost:8000
-- Swagger Docs: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+This backend is now prepared for env-based deployment:
 
-## Email Commands
+- `render.yaml` for Render-style deployment
+- `Procfile` for generic process-based hosts
+- `APP_BASE_URL` for confirmation links in admin emails
+- `CORS_ALLOW_ORIGINS` for hosted frontend domains
+- `PORT`, `API_HOST`, and `API_PORT` support for platform-managed ports
 
-Send POST request to `/api/admin/email-command`:
+### Environment Variables
 
-### 404 Mode (Hide Portfolio)
-\`\`\`json
-{
-  "command": "404",
-  "auth_email": "admin@example.com"
-}
-\`\`\`
+Minimum production-style settings:
 
-### 202 Restart (Show Portfolio)
-\`\`\`json
-{
-  "command": "202",
-  "auth_email": "admin@example.com"
-}
-\`\`\`
+```env
+DATABASE_URL=postgresql://...
+ADMIN_EMAIL=admin@example.com
+ADMIN_API_KEY=replace-with-generated-admin-api-key
+EMAIL_DELIVERY_MODE=smtp
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+SMTP_EMAIL=admin@example.com
+SMTP_PASSWORD=replace-with-app-password
+APP_BASE_URL=https://your-backend-domain.example.com
+CORS_ALLOW_ORIGINS=https://your-frontend-domain.example.com
+```
 
-### Update Content
-\`\`\`json
-{
-  "command": "update",
-  "auth_email": "admin@example.com",
-  "data": {
-    "section": "about",
-    "content": {
-      "name": "Your Name",
-      "bio": "Your bio"
-    }
-  }
-}
-\`\`\`
+For local-only work you can keep:
 
-## Deployment
-
-### Docker Hub
-\`\`\`bash
-docker build -t your-username/portfolio-api .
-docker push your-username/portfolio-api
-\`\`\`
-
-### Git
-\`\`\`bash
-git init
-git add .
-git commit -m "Initial commit"
-git remote add origin <your-repo-url>
-git push -u origin main
-\`\`\`
+```env
+DATABASE_URL=sqlite:///./portfolio_dev.db
+EMAIL_DELIVERY_MODE=log
+```

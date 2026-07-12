@@ -125,6 +125,10 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
     final isMobile = Responsive.isMobile(context);
+    final titleSize =
+        Responsive.fontSize(context, mobile: 28, tablet: 32, desktop: 36);
+    final subtitleSize =
+        Responsive.fontSize(context, mobile: 14, tablet: 15, desktop: 16);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,7 +149,7 @@ class _SectionHeader extends StatelessWidget {
               child: Text(
                 title,
                 style: TextStyle(
-                  fontSize: isMobile ? 28 : 36,
+                  fontSize: titleSize,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
                   letterSpacing: -0.5,
@@ -160,7 +164,7 @@ class _SectionHeader extends StatelessWidget {
           child: Text(
             subtitle,
             style: TextStyle(
-              fontSize: isMobile ? 14 : 16,
+              fontSize: subtitleSize,
               color: t.textMuted,
             ),
           ),
@@ -290,26 +294,20 @@ class _SkillsGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final groups = _parseSkills();
-    final crossAxisCount = isMobile ? 1 : 2;
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        crossAxisSpacing: 20,
-        mainAxisSpacing: 20,
-        childAspectRatio: isMobile ? 2.2 : 2.0,
-      ),
-      itemCount: groups.length,
-      itemBuilder: (context, index) {
-        final entry = groups.entries.elementAt(index);
+    return AdaptiveGrid(
+      mobileColumns: 1,
+      tabletColumns: 1,
+      desktopColumns: 2,
+      spacing: 20,
+      runSpacing: 20,
+      children: groups.entries.map((entry) {
         return _SkillCategoryCard(
           title: entry.key,
           icon: _getCategoryIcon(entry.key),
           skills: entry.value,
+          isMobile: isMobile,
         );
-      },
+      }).toList(),
     );
   }
 }
@@ -318,11 +316,13 @@ class _SkillCategoryCard extends StatefulWidget {
   final String title;
   final IconData icon;
   final List<Map<String, dynamic>> skills;
+  final bool isMobile;
 
   const _SkillCategoryCard({
     required this.title,
     required this.icon,
     required this.skills,
+    required this.isMobile,
   });
 
   @override
@@ -339,9 +339,9 @@ class _SkillCategoryCardState extends State<_SkillCategoryCard> {
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
-      child: AnimatedContainer(
+        child: AnimatedContainer(
         duration: AppAnimations.fast,
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(widget.isMobile ? 18 : 20),
         decoration: BoxDecoration(
           color: _hovered ? t.cardHover : t.card,
           borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -352,6 +352,7 @@ class _SkillCategoryCardState extends State<_SkillCategoryCard> {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             // Header
             Row(
@@ -386,20 +387,15 @@ class _SkillCategoryCardState extends State<_SkillCategoryCard> {
               ],
             ),
             const SizedBox(height: 16),
-            // Skills wrap
-            Expanded(
-              child: SingleChildScrollView(
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: widget.skills.map((skill) {
-                    return _SkillTag(
-                      name: skill['name'] ?? '',
-                      level: skill['level'] ?? 80,
-                    );
-                  }).toList(),
-                ),
-              ),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: widget.skills.map((skill) {
+                return _SkillTag(
+                  name: skill['name'] ?? '',
+                  level: skill['level'] ?? 80,
+                );
+              }).toList(),
             ),
           ],
         ),

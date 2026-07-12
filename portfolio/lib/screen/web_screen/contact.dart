@@ -184,6 +184,10 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
     final isMobile = Responsive.isMobile(context);
+    final titleSize =
+        Responsive.fontSize(context, mobile: 28, tablet: 32, desktop: 36);
+    final subtitleSize =
+        Responsive.fontSize(context, mobile: 14, tablet: 15, desktop: 16);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,7 +208,7 @@ class _SectionHeader extends StatelessWidget {
               child: Text(
                 title,
                 style: TextStyle(
-                  fontSize: isMobile ? 28 : 36,
+                  fontSize: titleSize,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
                   letterSpacing: -0.5,
@@ -219,7 +223,7 @@ class _SectionHeader extends StatelessWidget {
           child: Text(
             subtitle,
             style: TextStyle(
-              fontSize: isMobile ? 14 : 16,
+              fontSize: subtitleSize,
               color: t.textMuted,
             ),
           ),
@@ -237,6 +241,9 @@ class _ContactInfo extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
     final isMobile = Responsive.isMobile(context);
+    final iconBoxSize = isMobile ? 68.0 : 80.0;
+    final headingSize =
+        Responsive.fontSize(context, mobile: 22, tablet: 23, desktop: 24);
 
     return Container(
       padding: EdgeInsets.all(isMobile ? 24 : 32),
@@ -250,8 +257,8 @@ class _ContactInfo extends StatelessWidget {
         children: [
           // Illustration/Icon
           Container(
-            width: 80,
-            height: 80,
+            width: iconBoxSize,
+            height: iconBoxSize,
             decoration: BoxDecoration(
               gradient: t.primaryGradient,
               borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -267,7 +274,7 @@ class _ContactInfo extends StatelessWidget {
           Text(
             "Let's work together",
             style: TextStyle(
-              fontSize: 24,
+              fontSize: headingSize,
               fontWeight: FontWeight.w700,
               color: t.text,
             ),
@@ -312,14 +319,13 @@ class _ContactInfo extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
             children: [
               _SocialButton(icon: FontAwesomeIcons.github),
-              const SizedBox(width: 12),
               _SocialButton(icon: FontAwesomeIcons.linkedin),
-              const SizedBox(width: 12),
               _SocialButton(icon: FontAwesomeIcons.xTwitter),
-              const SizedBox(width: 12),
               _SocialButton(icon: FontAwesomeIcons.instagram),
             ],
           ),
@@ -345,8 +351,10 @@ class _ContactMethod extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
+    final isMobile = Responsive.isMobile(context);
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           padding: const EdgeInsets.all(10),
@@ -357,26 +365,29 @@ class _ContactMethod extends StatelessWidget {
           child: Icon(icon, size: 20, color: color),
         ),
         const SizedBox(width: 16),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: t.textMuted,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: t.textMuted,
+                ),
               ),
-            ),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: t.text,
+              Text(
+                value,
+                softWrap: true,
+                style: TextStyle(
+                  fontSize: isMobile ? 14 : 15,
+                  fontWeight: FontWeight.w600,
+                  color: t.text,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -449,6 +460,8 @@ class _ContactForm extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
     final isMobile = Responsive.isMobile(context);
+    final headingSize =
+        Responsive.fontSize(context, mobile: 19, tablet: 20, desktop: 20);
 
     return Container(
       padding: EdgeInsets.all(isMobile ? 24 : 32),
@@ -465,7 +478,7 @@ class _ContactForm extends StatelessWidget {
             Text(
               'Send a Message',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: headingSize,
                 fontWeight: FontWeight.w700,
                 color: t.text,
               ),
@@ -734,8 +747,11 @@ class _Footer extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: t.border)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 4,
+        runSpacing: 4,
         children: [
           Text(
             '© $year Portfolio. Built with ',

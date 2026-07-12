@@ -1,0 +1,186 @@
+{
+  "about": {
+    "name": "Ranjith Vijay",
+    "title": "Full Stack Developer & AI Engineer",
+    "roles": [
+      "Full Stack Developer",
+      "AI Engineer",
+      "Flutter Developer"
+    ],
+    "bio": "I build production-ready apps, APIs, and AI-powered user experiences.",
+    "tagline": "AI systems • Mobile UI • Backend APIs",
+    "is_available": true,
+    "profile_image": {
+      "url": "/images/profile.png",
+      "image_url": "/images/profile.png",
+      "alt": "Profile portrait"
+    },
+    "resume": {
+      "url": "/files/resume.pdf"
+    },
+    "stats": {
+      "projects": 12,
+      "experience": 3,
+      "technologies": 20
+    },
+    "tech_stack": ["Flutter", "FastAPI", "Python", "SQLite"],
+    "skills": {
+      "Languages": [
+        {
+          "name": "Python",
+          "level": 95,
+          "icon_url": "/images/icons/python.png"
+        }
+      ]
+    },
+    "education": [
+      {
+        "year": "2021 - 2025",
+        "title": "Bachelor of Technology",
+        "subtitle": "Computer Science",
+        "institution": "ABC University",
+        "grade": "8.7 CGPA",
+        "image_url": "/images/education/btech.png"
+      }
+    ],
+    "certifications": [
+      {
+        "title": "Azure AI Engineer Associate",
+        "issuer": "Microsoft",
+        "date": "2026-06",
+        "credential_id": "AZAI-12345",
+        "credential_url": "https://example.com/credential/azai-12345",
+        "icon_url": "/images/certifications/azure-ai.png"
+      }
+    ],
+    "status": {
+      "visibility": "visible",
+      "state": "published",
+      "status_message": "Live",
+      "updated_at": "2026-07-12T12:30:00Z",
+      "updated_by": "admin@portfolio.dev"
+    }
+  },
+  "projects": {
+    "projects": [
+      {
+        "id": 1,
+        "title": "Portfolio CMS Backend",
+        "slug": "portfolio-cms-backend",
+        "short_description": "JSON-driven content API for a portfolio site.",
+        "full_description": "Provides content management, asset upload, and visibility controls.",
+        "category": "Web",
+        "technologies": ["FastAPI", "SQLite", "Flutter"],
+        "features": [
+          "JSON content delivery",
+          "Email-controlled admin flow",
+          "Asset upload support"
+        ],
+        "workflow": [
+          {
+            "step": 1,
+            "title": "Author JSON",
+            "description": "Admin drafts new content JSON.",
+            "icon_url": "/images/icons/edit.png"
+          }
+        ],
+        "thumbnail": {
+          "url": "/images/projects/cms-thumb.png",
+          "image_url": "/images/projects/cms-thumb.png",
+          "alt": "CMS project thumbnail"
+        },
+        "links": {
+          "github": "https://github.com/example/portfolio-cms",
+          "live_demo": "https://portfolio.example.com"
+        },
+        "status": {
+          "visibility": "visible",
+          "state": "published",
+          "status_message": "Featured"
+        }
+      }
+    ],
+    "status": {
+      "visibility": "visible",
+      "state": "published"
+    }
+  },
+  "experience": {
+    "careers": [
+      {
+        "company": "TechNova Solutions",
+        "logo": {
+          "url": "/images/company/technova.png",
+          "image_url": "/images/company/technova.png",
+          "alt": "TechNova logo"
+        },
+        "positions": [
+          {
+            "position": "Full Stack Engineer",
+            "start_date": "2024-01",
+            "end_date": "Present",
+            "description": "Built data-driven customer applications.",
+            "achievements": [
+              "Delivered admin tooling",
+              "Improved deployment workflow"
+            ]
+          }
+        ],
+        "visibility": "visible"
+      }
+    ],
+    "internships": [],
+    "education": [
+      {
+        "year": "2021 - 2025",
+        "title": "Bachelor of Technology",
+        "institution": "ABC University"
+      }
+    ],
+    "certifications": [
+      {
+        "title": "Flutter Developer",
+        "issuer": "Google",
+        "date": "2025-10",
+        "icon_url": "/images/certifications/flutter.png"
+      }
+    ],
+    "academic": [
+      {
+        "title": "Hackathon Winner",
+        "institution": "Innovation Fest",
+        "date": "2025-09",
+        "description": "Won first prize for an AI portfolio automation project."
+      }
+    ],
+    "status": {
+      "visibility": "visible",
+      "state": "published"
+    }
+  },
+  "contact": {
+    "email": "admin@portfolio.dev",
+    "phone": "+91 99999 99999",
+    "location": "India",
+    "timezone": "IST",
+    "avatar": {
+      "url": "/images/contact/avatar.png",
+      "image_url": "/images/contact/avatar.png"
+    },
+    "social_links": {
+      "github": "https://github.com/example",
+      "linkedin": "https://linkedin.com/in/example"
+    },
+    "availability": {
+      "freelance": true,
+      "fulltime": true,
+      "consultation": true,
+      "response_time": "Within 24 hours"
+    },
+    "status": {
+      "visibility": "visible",
+      "state": "published",
+      "status_message": "Inbox open"
+    }
+  }
+}

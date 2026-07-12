@@ -1,0 +1,20 @@
+# Python
+portfolio-backend/.venv*/
+portfolio-backend/__pycache__/
+portfolio-backend/*.pyc
+portfolio-backend/*.log
+portfolio-backend/portfolio_dev.db
+portfolio-backend/.env
+portfolio-backend/dev_outbox/
+
+# Flutter / Dart
+portfolio/.dart_tool/
+portfolio/.flutter-plugins
+portfolio/.flutter-plugins-dependencies
+portfolio/.packages
+portfolio/build/
+portfolio/*.log
+
+# Editor / OS
+.DS_Store
+Thumbs.db
