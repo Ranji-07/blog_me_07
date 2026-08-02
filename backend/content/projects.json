@@ -1,0 +1,21 @@
+{
+  "projects": [
+    {
+      "id": 1,
+      "title": "",
+      "slug": "",
+      "category": "AI",
+      "featured": true,
+      "short_description": "",
+      "description": "",
+      "technologies": [],
+      "features": [],
+      "images": [],
+      "github": "",
+      "live_demo": "",
+      "status": "published"
+    }
+  ],
+  "visible": true,
+  "status": "published"
+}

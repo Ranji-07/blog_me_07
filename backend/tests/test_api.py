@@ -51,11 +51,7 @@ class PortfolioApiTests(unittest.TestCase):
             "section": "about",
             "target_id": None,
             "payload": {
-                "status": {
-                    "visibility": "visible",
-                    "state": "published",
-                    "status_message": "Updated by test"
-                }
+                "status": "draft"
             },
             "auth_email": "admin@portfolio.dev",
             "admin_token": "super-secret-admin-key",
@@ -74,10 +70,7 @@ class PortfolioApiTests(unittest.TestCase):
 
         about = self.client.get("/api/portfolio/about")
         self.assertEqual(about.status_code, 200)
-        self.assertEqual(
-            about.json()["status"]["status_message"],
-            "Updated by test",
-        )
+        self.assertEqual(about.json()["status"], "draft")
 
         history = self.client.get(
             "/api/admin/history",
@@ -117,10 +110,7 @@ class PortfolioApiTests(unittest.TestCase):
             "action": "set_status",
             "section": "about",
             "payload": {
-                "status": {
-                    "visibility": "visible",
-                    "state": "published",
-                }
+                "status": "published"
             },
             "auth_email": "admin@portfolio.dev",
             "admin_token": "wrong-token-but-long-enough",
@@ -129,15 +119,31 @@ class PortfolioApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_history_rollback_restores_previous_snapshot(self):
+        baseline_payload = {
+            "action": "set_status",
+            "section": "about",
+            "payload": {
+                "status": "published"
+            },
+            "auth_email": "admin@portfolio.dev",
+            "admin_token": "super-secret-admin-key",
+        }
+        baseline_pending = self.client.post("/api/admin/email-command", json=baseline_payload, headers=self.admin_headers)
+        self.assertEqual(baseline_pending.status_code, 200)
+        baseline_token = baseline_pending.json()["data"]["token"]
+
+        baseline_confirmed = self.client.get(
+            f"/api/admin/confirm/{baseline_token}",
+            params={"auth_email": "admin@portfolio.dev", "admin_token": "super-secret-admin-key"},
+            headers=self.admin_headers,
+        )
+        self.assertEqual(baseline_confirmed.status_code, 200)
+
         request_payload = {
             "action": "set_status",
             "section": "about",
             "payload": {
-                "status": {
-                    "visibility": "visible",
-                    "state": "published",
-                    "status_message": "Rollback candidate",
-                }
+                "status": "draft"
             },
             "auth_email": "admin@portfolio.dev",
             "admin_token": "super-secret-admin-key",
@@ -161,7 +167,7 @@ class PortfolioApiTests(unittest.TestCase):
         self.assertEqual(history.status_code, 200)
         target_version = next(
             item for item in history.json()["data"]["versions"]
-            if item["action"] == "set_status" and item["snapshot_after"]["status"]["status_message"] == "Rollback candidate"
+            if item["action"] == "set_status" and item["snapshot_after"]["status"] == "draft"
         )
 
         rollback = self.client.post(
@@ -174,7 +180,7 @@ class PortfolioApiTests(unittest.TestCase):
 
         about = self.client.get("/api/portfolio/about")
         self.assertEqual(about.status_code, 200)
-        self.assertNotEqual(about.json()["status"]["status_message"], "Rollback candidate")
+        self.assertNotEqual(about.json()["status"], "draft")
 
         history_after = self.client.get(
             "/api/admin/history",

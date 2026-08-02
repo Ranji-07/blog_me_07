@@ -2,7 +2,8 @@
 
 This repo contains a local-first portfolio app with:
 
-- `frontend/`: Flutter Web frontend
+- `frontend/`: active Flutter Web rebuild
+- `frontendref/`: legacy frontend kept for reference during the redesign
 - `backend/`: FastAPI backend
 
 ## Local Scope
@@ -29,6 +30,14 @@ Frontend:
 
 ```bat
 cd frontend
+C:\flutter\bin\flutter.bat pub get
+.\start-local.bat
+```
+
+Reference frontend:
+
+```bat
+cd frontendref
 C:\flutter\bin\flutter.bat pub get
 .\start-local.bat
 ```

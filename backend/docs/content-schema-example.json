@@ -1,186 +1,144 @@
 {
   "about": {
-    "name": "Ranjith Vijay",
+    "name": "Tarzan",
     "title": "Full Stack Developer & AI Engineer",
     "roles": [
       "Full Stack Developer",
       "AI Engineer",
-      "Flutter Developer"
+      "Flutter Developer",
+      "DevOps Engineer",
+      "MLOps Engineer",
+      "Cloud Engineer",
+      "IoT Developer"
     ],
-    "bio": "I build production-ready apps, APIs, and AI-powered user experiences.",
-    "tagline": "AI systems • Mobile UI • Backend APIs",
-    "is_available": true,
-    "profile_image": {
-      "url": "/images/profile.png",
-      "image_url": "/images/profile.png",
-      "alt": "Profile portrait"
-    },
-    "resume": {
-      "url": "/files/resume.pdf"
-    },
+    "bio": "I build scalable mobile applications, backend APIs, cloud infrastructure, and AI-powered systems using Flutter, FastAPI, Docker, Kubernetes, and AWS.",
+    "tagline": "AI • Cloud • Mobile • Backend • DevOps",
+    "available_for_work": true,
+    "profile_image": "/images/profile.png",
+    "resume": "/files/resume.pdf",
     "stats": {
-      "projects": 12,
-      "experience": 3,
+      "projects": 6,
+      "experience_years": 2,
       "technologies": 20
     },
-    "tech_stack": ["Flutter", "FastAPI", "Python", "SQLite"],
+    "tech_stack": [
+      "Flutter",
+      "FastAPI",
+      "Python",
+      "SQLite",
+      "AWS",
+      "Docker",
+      "Docker Compose",
+      "DockerHub",
+      "Terraform",
+      "Kubernetes",
+      "Helm",
+      "Jenkins",
+      "Prometheus",
+      "Grafana",
+      "React",
+      "Node.js",
+      "JavaScript",
+      "HTML",
+      "Nginx",
+      "GitHub"
+    ],
     "skills": {
-      "Languages": [
-        {
-          "name": "Python",
-          "level": 95,
-          "icon_url": "/images/icons/python.png"
-        }
+      "Programming Languages": [
+        "Python",
+        "JavaScript",
+        "HTML"
+      ],
+      "Frontend": [
+        "Flutter",
+        "React"
+      ],
+      "Backend": [
+        "FastAPI",
+        "REST API"
       ]
     },
     "education": [
       {
-        "year": "2021 - 2025",
-        "title": "Bachelor of Technology",
-        "subtitle": "Computer Science",
-        "institution": "ABC University",
-        "grade": "8.7 CGPA",
-        "image_url": "/images/education/btech.png"
+        "degree": "Bachelor of Technology",
+        "branch": "Computer Science",
+        "institution": "",
+        "duration": "2021-2025"
       }
     ],
-    "certifications": [
-      {
-        "title": "Azure AI Engineer Associate",
-        "issuer": "Microsoft",
-        "date": "2026-06",
-        "credential_id": "AZAI-12345",
-        "credential_url": "https://example.com/credential/azai-12345",
-        "icon_url": "/images/certifications/azure-ai.png"
-      }
-    ],
-    "status": {
-      "visibility": "visible",
-      "state": "published",
-      "status_message": "Live",
-      "updated_at": "2026-07-12T12:30:00Z",
-      "updated_by": "admin@portfolio.dev"
-    }
+    "certifications": [],
+    "visible": true,
+    "status": "published",
+    "updated_at": "2026-08-02T00:00:00Z"
   },
   "projects": {
     "projects": [
       {
         "id": 1,
-        "title": "Portfolio CMS Backend",
-        "slug": "portfolio-cms-backend",
-        "short_description": "JSON-driven content API for a portfolio site.",
-        "full_description": "Provides content management, asset upload, and visibility controls.",
-        "category": "Web",
-        "technologies": ["FastAPI", "SQLite", "Flutter"],
+        "title": "AI Portfolio Assistant",
+        "slug": "ai-portfolio-assistant",
+        "category": "AI",
+        "featured": true,
+        "short_description": "An AI assistant for managing and presenting portfolio content.",
+        "description": "Built an AI-powered assistant that organizes portfolio content, answers project questions, and streamlines updates across the site.",
+        "technologies": [
+          "Python",
+          "FastAPI",
+          "Flutter",
+          "Docker"
+        ],
         "features": [
-          "JSON content delivery",
-          "Email-controlled admin flow",
-          "Asset upload support"
+          "Structured content management",
+          "Admin automation",
+          "Responsive frontend integration"
         ],
-        "workflow": [
-          {
-            "step": 1,
-            "title": "Author JSON",
-            "description": "Admin drafts new content JSON.",
-            "icon_url": "/images/icons/edit.png"
-          }
+        "images": [
+          "/images/projects/ai-portfolio-assistant-1.png"
         ],
-        "thumbnail": {
-          "url": "/images/projects/cms-thumb.png",
-          "image_url": "/images/projects/cms-thumb.png",
-          "alt": "CMS project thumbnail"
-        },
-        "links": {
-          "github": "https://github.com/example/portfolio-cms",
-          "live_demo": "https://portfolio.example.com"
-        },
-        "status": {
-          "visibility": "visible",
-          "state": "published",
-          "status_message": "Featured"
-        }
+        "github": "",
+        "live_demo": "",
+        "status": "published"
       }
     ],
-    "status": {
-      "visibility": "visible",
-      "state": "published"
-    }
+    "visible": true,
+    "status": "published"
   },
   "experience": {
-    "careers": [
-      {
-        "company": "TechNova Solutions",
-        "logo": {
-          "url": "/images/company/technova.png",
-          "image_url": "/images/company/technova.png",
-          "alt": "TechNova logo"
-        },
-        "positions": [
-          {
-            "position": "Full Stack Engineer",
-            "start_date": "2024-01",
-            "end_date": "Present",
-            "description": "Built data-driven customer applications.",
-            "achievements": [
-              "Delivered admin tooling",
-              "Improved deployment workflow"
-            ]
-          }
-        ],
-        "visibility": "visible"
-      }
-    ],
+    "work": [],
     "internships": [],
-    "education": [
+    "achievements": [
       {
-        "year": "2021 - 2025",
-        "title": "Bachelor of Technology",
-        "institution": "ABC University"
+        "title": "Portfolio backend refresh",
+        "date": "2026-08-02",
+        "description": "Simplified the backend content model into cleaner JSON sections."
       }
     ],
-    "certifications": [
-      {
-        "title": "Flutter Developer",
-        "issuer": "Google",
-        "date": "2025-10",
-        "icon_url": "/images/certifications/flutter.png"
-      }
-    ],
-    "academic": [
-      {
-        "title": "Hackathon Winner",
-        "institution": "Innovation Fest",
-        "date": "2025-09",
-        "description": "Won first prize for an AI portfolio automation project."
-      }
-    ],
-    "status": {
-      "visibility": "visible",
-      "state": "published"
-    }
+    "opensource": [],
+    "hackathons": [],
+    "volunteer": [],
+    "visible": true,
+    "status": "published"
   },
   "contact": {
-    "email": "admin@portfolio.dev",
-    "phone": "+91 99999 99999",
-    "location": "India",
-    "timezone": "IST",
-    "avatar": {
-      "url": "/images/contact/avatar.png",
-      "image_url": "/images/contact/avatar.png"
-    },
-    "social_links": {
-      "github": "https://github.com/example",
-      "linkedin": "https://linkedin.com/in/example"
+    "email": "",
+    "phone": "",
+    "location": "",
+    "timezone": "Asia/Kolkata",
+    "social": {
+      "github": "",
+      "linkedin": "",
+      "twitter": "",
+      "leetcode": "",
+      "hackerrank": "",
+      "portfolio": ""
     },
     "availability": {
       "freelance": true,
       "fulltime": true,
-      "consultation": true,
-      "response_time": "Within 24 hours"
+      "internship": false,
+      "response_time": "24 hours"
     },
-    "status": {
-      "visibility": "visible",
-      "state": "published",
-      "status_message": "Inbox open"
-    }
+    "visible": true,
+    "status": "published"
   }
 }

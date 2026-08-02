@@ -1,0 +1,22 @@
+{
+  "email": "",
+  "phone": "",
+  "location": "",
+  "timezone": "Asia/Kolkata",
+  "social": {
+    "github": "",
+    "linkedin": "",
+    "twitter": "",
+    "leetcode": "",
+    "hackerrank": "",
+    "portfolio": ""
+  },
+  "availability": {
+    "freelance": true,
+    "fulltime": true,
+    "internship": false,
+    "response_time": "24 hours"
+  },
+  "visible": true,
+  "status": "published"
+}

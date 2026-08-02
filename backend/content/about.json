@@ -1,0 +1,105 @@
+{
+  "name": "Tarzan",
+  "title": "Full Stack Developer & AI Engineer",
+  "roles": [
+    "Full Stack Developer",
+    "AI Engineer",
+    "Flutter Developer",
+    "DevOps Engineer",
+    "MLOps Engineer",
+    "Cloud Engineer",
+    "IoT Developer"
+  ],
+  "bio": "I build scalable mobile applications, backend APIs, cloud infrastructure, and AI-powered systems using Flutter, FastAPI, Docker, Kubernetes, and AWS.",
+  "tagline": "AI • Cloud • Mobile • Backend • DevOps",
+  "available_for_work": true,
+  "profile_image": "/images/profile.png",
+  "resume": "/files/resume.pdf",
+  "stats": {
+    "projects": 6,
+    "experience_years": 2,
+    "technologies": 20
+  },
+  "tech_stack": [
+    "Flutter",
+    "FastAPI",
+    "Python",
+    "SQLite",
+    "AWS",
+    "Docker",
+    "Docker Compose",
+    "DockerHub",
+    "Terraform",
+    "Kubernetes",
+    "Helm",
+    "Jenkins",
+    "Prometheus",
+    "Grafana",
+    "React",
+    "Node.js",
+    "JavaScript",
+    "HTML",
+    "Nginx",
+    "GitHub"
+  ],
+  "skills": {
+    "Programming Languages": [
+      "Python",
+      "JavaScript",
+      "HTML"
+    ],
+    "Frontend": [
+      "Flutter",
+      "React"
+    ],
+    "Backend": [
+      "FastAPI",
+      "REST API"
+    ],
+    "Database": [
+      "SQLite"
+    ],
+    "Cloud": [
+      "AWS EC2",
+      "AWS ECR",
+      "AWS EKS",
+      "AWS IAM",
+      "AWS VPC",
+      "AWS CloudWatch",
+      "AWS CodeBuild",
+      "AWS CodePipeline"
+    ],
+    "DevOps": [
+      "Docker",
+      "Docker Compose",
+      "DockerHub",
+      "Terraform",
+      "Kubernetes",
+      "Helm",
+      "Jenkins",
+      "Nginx"
+    ],
+    "Monitoring": [
+      "Prometheus",
+      "Grafana"
+    ],
+    "Version Control": [
+      "Git",
+      "GitHub",
+      "GitHub Actions",
+      "GitHub Webhooks"
+    ]
+  },
+  "education": [
+    {
+      "degree": "Bachelor of Technology",
+      "branch": "Computer Science",
+      "institution": "",
+      "duration": "2021-2025"
+    }
+  ],
+  "certifications": [],
+  "visible": true,
+  "status": "published",
+  "updated_at": "2026-08-02T00:00:00Z"
+}

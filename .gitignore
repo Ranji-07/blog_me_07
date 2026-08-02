@@ -15,8 +15,11 @@ frontend/.packages
 frontend/.gradle-user-home/
 frontend/build/
 frontend/*.log
+frontendref
 
 # Editor / OS
 .DS_Store
 Thumbs.db
 .idea/
+.agents
+.vscode

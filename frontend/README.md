@@ -1,6 +1,6 @@
 # Portfolio Frontend
 
-Flutter Web frontend for the portfolio.
+Active Flutter Web rebuild for the portfolio.
 
 ## Local Development
 
@@ -19,3 +19,7 @@ Override for hosted backend:
 ```bat
 C:\flutter\bin\flutter.bat run -d chrome --dart-define=API_BASE_URL=https://your-backend-domain.example.com
 ```
+
+Reference app:
+
+- The previous frontend is preserved in `../frontendref`.

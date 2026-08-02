@@ -8,7 +8,9 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent
-SCHEMA_DIR = BASE_DIR / "docs"
+PROJECT_DIR = BASE_DIR.parent
+SCHEMA_DIR = PROJECT_DIR / "docs"
+CONTENT_DIR = PROJECT_DIR / "content"
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./portfolio_dev.db")
 
 engine_kwargs = {

@@ -8,11 +8,11 @@ from sqlalchemy.orm import Session
 
 from app.database import SCHEMA_DIR
 from app.models import PortfolioData, PortfolioVersion
-from app.schemas import CommandType, PublishState, VisibilityState
+from app.schemas import CommandType
 
 SECTION_ITEM_COLLECTION = {
     "projects": "projects",
-    "experience": "careers",
+    "experience": "work",
     "contact": None,
     "about": None,
 }
@@ -23,6 +23,9 @@ SECTION_DEF_MAP = {
     "experience": "experienceSection",
     "contact": "contactSection",
 }
+
+PUBLISHED_STATES = {"draft", "published", "archived"}
+VISIBILITY_VALUES = {"visible", "hidden", "in_progress"}
 
 
 def load_schema_file(name: str) -> Dict[str, Any]:
@@ -82,29 +85,53 @@ def deep_merge(existing: Dict[str, Any], patch: Dict[str, Any]) -> Dict[str, Any
     return merged
 
 
-def validate_status_block(status: Dict[str, Any]) -> None:
-    visibility = status.get("visibility")
-    state = status.get("state")
-    if visibility is not None and visibility not in {item.value for item in VisibilityState}:
-        raise HTTPException(status_code=400, detail="Invalid visibility value")
-    if state is not None and state not in {item.value for item in PublishState}:
-        raise HTTPException(status_code=400, detail="Invalid state value")
+def _normalize_visibility(content: Dict[str, Any]) -> Dict[str, Any]:
+    if "visible" in content:
+        content["visible"] = bool(content["visible"])
+        return content
+
+    legacy_status = content.get("status")
+    if isinstance(legacy_status, dict):
+        visibility = legacy_status.get("visibility", "visible")
+        if visibility not in VISIBILITY_VALUES:
+            raise HTTPException(status_code=400, detail="Invalid visibility value")
+        content["visible"] = visibility != "hidden"
+        state = legacy_status.get("state")
+        if state and "status" not in content:
+            content["status"] = state
+        updated_at = legacy_status.get("updated_at")
+        if updated_at and "updated_at" not in content:
+            content["updated_at"] = updated_at
+    else:
+        content["visible"] = True
+
+    return content
 
 
-def normalize_status(content: Dict[str, Any], default_visibility: str = "visible") -> Dict[str, Any]:
-    status = content.get("status", {})
-    if not isinstance(status, dict):
-        raise HTTPException(status_code=400, detail="status must be a JSON object")
-    status.setdefault("visibility", default_visibility)
-    status.setdefault("state", PublishState.PUBLISHED.value)
-    validate_status_block(status)
+def _normalize_status(content: Dict[str, Any]) -> Dict[str, Any]:
+    status = content.get("status", "published")
+    if isinstance(status, dict):
+        status = status.get("state", "published")
+    if not isinstance(status, str) or status not in PUBLISHED_STATES:
+        raise HTTPException(status_code=400, detail="Invalid status value")
     content["status"] = status
     return content
 
 
+def normalize_content(content: Dict[str, Any]) -> Dict[str, Any]:
+    normalized = json.loads(json.dumps(content))
+    normalized = _normalize_visibility(normalized)
+    normalized = _normalize_status(normalized)
+    return normalized
+
+
+def is_content_active(content: Dict[str, Any]) -> bool:
+    return bool(content.get("visible", True)) and content.get("status") != "archived"
+
+
 def find_item_index(items: list[Dict[str, Any]], target_id: str) -> int:
     for index, item in enumerate(items):
-        item_id = item.get("id") or item.get("title") or item.get("credential_id")
+        item_id = item.get("id") or item.get("slug") or item.get("title") or item.get("credential_id")
         if str(item_id) == str(target_id):
             return index
     raise HTTPException(status_code=404, detail=f"Target item '{target_id}' not found")
@@ -116,17 +143,17 @@ def save_section_content(
     content: Dict[str, Any],
     existing_record: Optional[PortfolioData] = None,
 ) -> PortfolioData:
-    normalized = normalize_status(content)
+    normalized = normalize_content(content)
     validate_section_schema(section, normalized)
     record = existing_record or get_section_record(db, section)
     if record:
         record.content = json.dumps(normalized)
-        record.is_active = normalized["status"]["visibility"] != VisibilityState.HIDDEN.value
+        record.is_active = is_content_active(normalized)
     else:
         record = PortfolioData(
             section=section,
             content=json.dumps(normalized),
-            is_active=normalized["status"]["visibility"] != VisibilityState.HIDDEN.value,
+            is_active=is_content_active(normalized),
         )
         db.add(record)
     db.commit()
@@ -270,11 +297,8 @@ def apply_admin_command(command: Dict[str, Any], db: Session, command_token: Opt
                 after=content,
             )
             return {"section": section, "target_id": target_id, "action": action, "deleted": deleted}
-        content["status"] = {
-            **content.get("status", {}),
-            "visibility": VisibilityState.HIDDEN.value,
-            "state": PublishState.ARCHIVED.value,
-        }
+        content["visible"] = False
+        content["status"] = "archived"
         save_section_content(db, section, content, record)
         create_version_record(
             db,
@@ -290,9 +314,13 @@ def apply_admin_command(command: Dict[str, Any], db: Session, command_token: Opt
 
     if action == CommandType.SET_VISIBILITY.value:
         visibility = payload.get("visibility")
-        if visibility not in {item.value for item in VisibilityState}:
-            raise HTTPException(status_code=400, detail="payload.visibility is required")
-        content["status"] = {**content.get("status", {}), "visibility": visibility}
+        visible = payload.get("visible")
+        if isinstance(visible, bool):
+            content["visible"] = visible
+        elif visibility in VISIBILITY_VALUES:
+            content["visible"] = visibility != "hidden"
+        else:
+            raise HTTPException(status_code=400, detail="payload.visible or payload.visibility is required")
         save_section_content(db, section, content, record)
         create_version_record(
             db,
@@ -304,14 +332,15 @@ def apply_admin_command(command: Dict[str, Any], db: Session, command_token: Opt
             before=before_content,
             after=content,
         )
-        return {"section": section, "visibility": visibility, "action": action}
+        return {"section": section, "visible": content["visible"], "action": action}
 
     if action == CommandType.SET_STATUS.value:
         status_patch = payload.get("status")
-        if not isinstance(status_patch, dict):
-            raise HTTPException(status_code=400, detail="payload.status must be an object")
-        validate_status_block(status_patch)
-        content["status"] = {**content.get("status", {}), **status_patch}
+        if isinstance(status_patch, dict):
+            status_patch = status_patch.get("state")
+        if not isinstance(status_patch, str) or status_patch not in PUBLISHED_STATES:
+            raise HTTPException(status_code=400, detail="payload.status must be draft, published, or archived")
+        content["status"] = status_patch
         save_section_content(db, section, content, record)
         create_version_record(
             db,
