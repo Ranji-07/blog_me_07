@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:portfolio/core/app_theme.dart';
 import 'package:portfolio/core/responsive.dart';
-import 'package:portfolio/core/secure_link_opener.dart';
+import 'package:portfolio/services/secure_link_opener.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ContactLinksSection extends StatelessWidget {

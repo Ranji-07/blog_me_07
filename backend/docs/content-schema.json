@@ -58,10 +58,21 @@
       "required": ["name", "title", "bio", "visible", "status"],
       "properties": {
         "name": { "type": "string" },
+        "name_font_family": { "type": "string" },
+        "name_font_size": { "type": "number", "minimum": 12, "maximum": 96 },
+        "name_font_weight": { "type": "integer", "minimum": 100, "maximum": 900 },
+        "avatar_url": { "type": "string" },
+        "portrait_url": { "type": "string" },
         "title": { "type": "string" },
         "roles": { "$ref": "#/$defs/stringArray" },
         "bio": { "type": "string" },
         "tagline": { "type": "string" },
+        "role_font_size": { "type": "number", "minimum": 10, "maximum": 48 },
+        "value_statement": { "type": "string" },
+        "availability": {
+          "type": "string",
+          "enum": ["open", "freelance", "unavailable"]
+        },
         "available_for_work": { "type": "boolean" },
         "profile_image": { "type": "string" },
         "resume": { "type": "string" },

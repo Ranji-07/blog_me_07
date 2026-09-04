@@ -1,20 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:portfolio/core/app_navigation.dart';
 import 'package:portfolio/core/app_theme.dart';
 import 'package:portfolio/core/responsive.dart';
 import 'package:portfolio/screens/about_page.dart';
 import 'package:portfolio/screens/contact_page.dart';
 import 'package:portfolio/screens/landing_page.dart';
 import 'package:portfolio/screens/projects_page.dart';
-import 'package:portfolio/widgets/resume_section.dart';
-
-enum PortfolioSection {
-  landing,
-  about,
-  projects,
-  contact,
-}
+import 'package:portfolio/screens/resume_dialog.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -26,11 +20,16 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   static const String _brandLabel = 'Tarzan';
   PortfolioSection _current = PortfolioSection.landing;
+  Map<String, dynamic>? _portfolioContent;
   Timer? _resumeSuccessTimer;
   bool _showResumeDone = false;
 
   void _goTo(PortfolioSection section) {
     setState(() => _current = section);
+  }
+
+  void _cachePortfolioContent(Map<String, dynamic> content) {
+    _portfolioContent = content;
   }
 
   Future<void> _openResume() {
@@ -55,13 +54,14 @@ class _AppShellState extends State<AppShell> {
       case PortfolioSection.landing:
         return LandingScreen(
           onEnter: () => _goTo(PortfolioSection.about),
+          onPortfolioContentLoaded: _cachePortfolioContent,
         );
       case PortfolioSection.about:
         return const AboutScreen();
       case PortfolioSection.projects:
         return const ProjectsScreen();
       case PortfolioSection.contact:
-        return const ContactScreen();
+        return ContactScreen(cachedContent: _portfolioContent);
     }
   }
 
@@ -97,7 +97,7 @@ class _AppShellState extends State<AppShell> {
               ),
             ),
           ),
-          const _BrandMark(label: _brandLabel),
+          if (_showNavigation) const _BrandMark(label: _brandLabel),
           if (_showNavigation && !isMobile)
             _FloatingTopNav(
               current: _current,

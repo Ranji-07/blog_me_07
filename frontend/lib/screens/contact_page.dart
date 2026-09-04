@@ -1,30 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:portfolio/core/app_theme.dart';
 import 'package:portfolio/core/responsive.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:portfolio/widgets/contact_links_section.dart';
+import 'package:portfolio/common/social/social_links.dart';
+import 'package:portfolio/services/portfolio_api.dart';
 
 class ContactScreen extends StatelessWidget {
-  const ContactScreen({super.key});
+  final Map<String, dynamic>? cachedContent;
 
-  static const String _baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://127.0.0.1:8000',
-  );
+  const ContactScreen({
+    super.key,
+    this.cachedContent,
+  });
 
   Future<_ContactPageContent> _fetchContactPageContent() async {
-    final response = await http.get(Uri.parse('$_baseUrl/api/portfolio/all'));
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Unable to load portfolio content.');
+    if (cachedContent != null) {
+      return _contentFromDecoded(cachedContent!);
     }
 
-    final decoded = jsonDecode(response.body);
-    if (decoded is! Map<String, dynamic>) {
-      throw Exception('Invalid portfolio response.');
-    }
+    return _contentFromDecoded(await PortfolioApi.fetchAll());
+  }
 
+  _ContactPageContent _contentFromDecoded(Map<String, dynamic> decoded) {
     final about = (decoded['about'] as Map<String, dynamic>?) ?? const {};
     final contact = (decoded['contact'] as Map<String, dynamic>?) ?? const {};
     final social = (contact['social'] as Map<String, dynamic>?) ?? const {};

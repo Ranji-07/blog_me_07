@@ -1,12 +1,12 @@
 import logging
 import json
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import ContactSubmission, PortfolioData
+from app.models import ContactSubmission, PortfolioData, VisitLog
 from app.schemas import APIResponse, ContactFormRequest
 from app.services.email_service import (
     ADMIN_API_KEY,
@@ -110,6 +110,22 @@ async def get_all_portfolio(db: Session = Depends(get_db)):
         ).first()
         result[section] = json.loads(data.content) if data else None
     return result
+
+
+@router.post("/api/analytics/visit", tags=["Analytics"], status_code=204)
+async def record_visit(request: Request, db: Session = Depends(get_db)):
+    forwarded_for = request.headers.get("x-forwarded-for", "")
+    client_ip = forwarded_for.split(",")[0].strip() if forwarded_for else None
+    if not client_ip and request.client:
+        client_ip = request.client.host
+
+    db.add(
+        VisitLog(
+            ip=client_ip,
+            user_agent=request.headers.get("user-agent"),
+        )
+    )
+    db.commit()
 
 
 @router.post("/api/portfolio/contact-form", tags=["Contact"], response_model=APIResponse)

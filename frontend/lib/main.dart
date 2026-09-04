@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:portfolio/core/app_theme.dart';
-import 'package:portfolio/core/navigation.dart';
+import 'package:portfolio/core/app_shell.dart';
 
 void main() {
   final light = AppTheme.light();

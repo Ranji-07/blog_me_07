@@ -1,5 +1,10 @@
 {
   "name": "Tarzan",
+  "name_font_family": "Outfit",
+  "name_font_size": 20,
+  "name_font_weight": 600,
+  "avatar_url": "",
+  "portrait_url": "",
   "title": "Full Stack Developer & AI Engineer",
   "roles": [
     "Full Stack Developer",
@@ -12,6 +17,9 @@
   ],
   "bio": "I build scalable mobile applications, backend APIs, cloud infrastructure, and AI-powered systems using Flutter, FastAPI, Docker, Kubernetes, and AWS.",
   "tagline": "AI • Cloud • Mobile • Backend • DevOps",
+  "role_font_size": 32,
+  "value_statement": "Building intelligent systems at the intersection of software engineering, cloud infrastructure, and AI.",
+  "availability": "open",
   "available_for_work": true,
   "profile_image": "/images/profile.png",
   "resume": "/files/resume.pdf",

@@ -39,6 +39,15 @@ class ContactSubmission(Base):
     is_read = Column(Boolean, default=False)
 
 
+class VisitLog(Base):
+    __tablename__ = "visit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ip = Column(String(64), nullable=True)
+    user_agent = Column(Text, nullable=True)
+    visited_at = Column(DateTime(timezone=True), default=utc_now, index=True)
+
+
 class PortfolioVersion(Base):
     __tablename__ = "portfolio_versions"
 

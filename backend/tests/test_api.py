@@ -25,9 +25,10 @@ warnings.simplefilter("ignore", DeprecationWarning)
 
 from fastapi.testclient import TestClient
 
-from app.database import Base, engine
+from app.database import Base, SessionLocal, engine
 from app.init_db import init_database
 from app.main import app
+from app.models import VisitLog
 
 
 class PortfolioApiTests(unittest.TestCase):
@@ -44,6 +45,25 @@ class PortfolioApiTests(unittest.TestCase):
         response = self.client.get("/api/portfolio/about")
         self.assertEqual(response.status_code, 200)
         self.assertIn("name", response.json())
+
+    def test_visit_analytics_is_recorded(self):
+        response = self.client.post(
+            "/api/analytics/visit",
+            headers={
+                "x-forwarded-for": "203.0.113.10",
+                "user-agent": "PortfolioApiTest/1.0",
+            },
+        )
+        self.assertEqual(response.status_code, 204)
+
+        db = SessionLocal()
+        try:
+            visit = db.query(VisitLog).order_by(VisitLog.id.desc()).first()
+            self.assertIsNotNone(visit)
+            self.assertEqual(visit.ip, "203.0.113.10")
+            self.assertEqual(visit.user_agent, "PortfolioApiTest/1.0")
+        finally:
+            db.close()
 
     def test_admin_command_can_be_confirmed_end_to_end(self):
         request_payload = {
