@@ -1,21 +1,27 @@
 {
-  "email": "",
-  "phone": "",
-  "location": "",
+  "email": "tarzan.dev@example.com",
+  "phone": "+91 98765 43210",
+  "location": "India",
   "timezone": "Asia/Kolkata",
   "social": {
-    "github": "",
-    "linkedin": "",
+    "github": "https://github.com/tarzan-dev",
+    "linkedin": "https://www.linkedin.com/in/tarzan-dev/",
     "twitter": "",
     "leetcode": "",
     "hackerrank": "",
-    "portfolio": ""
+    "portfolio": "https://tarzan.dev"
   },
   "availability": {
     "freelance": true,
     "fulltime": true,
     "internship": false,
     "response_time": "24 hours"
+  },
+  "footer": {
+    "build_year": 2026,
+    "built_with": "Flutter",
+    "app_version": "1.0.0",
+    "note": "Responsive portfolio experience for web and mobile"
   },
   "visible": true,
   "status": "published"

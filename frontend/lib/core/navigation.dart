@@ -2,13 +2,19 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:portfolio/core/app_theme.dart';
-import 'package:portfolio/core/portfolio_sections.dart';
 import 'package:portfolio/core/responsive.dart';
 import 'package:portfolio/screens/about_page.dart';
 import 'package:portfolio/screens/contact_page.dart';
 import 'package:portfolio/screens/landing_page.dart';
 import 'package:portfolio/screens/projects_page.dart';
 import 'package:portfolio/widgets/resume_section.dart';
+
+enum PortfolioSection {
+  landing,
+  about,
+  projects,
+  contact,
+}
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -18,7 +24,7 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
-  static const String _brandPlaceholder = 'Your Name';
+  static const String _brandLabel = 'Tarzan';
   PortfolioSection _current = PortfolioSection.landing;
   Timer? _resumeSuccessTimer;
   bool _showResumeDone = false;
@@ -76,8 +82,22 @@ class _AppShellState extends State<AppShell> {
       backgroundColor: t.background,
       body: Stack(
         children: [
-          Positioned.fill(child: _currentPage()),
-          const _BrandPlaceholder(label: _brandPlaceholder),
+          Positioned.fill(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: child,
+              ),
+              child: KeyedSubtree(
+                key: ValueKey(_current),
+                child: _currentPage(),
+              ),
+            ),
+          ),
+          const _BrandMark(label: _brandLabel),
           if (_showNavigation && !isMobile)
             _FloatingTopNav(
               current: _current,
@@ -85,7 +105,7 @@ class _AppShellState extends State<AppShell> {
               onResumeTap: _openResume,
             ),
           if (_showNavigation && isMobile)
-            _FloatingBottomNav(
+            _FloatingMobileNav(
               current: _current,
               onSelect: _goTo,
               onResumeTap: _openResume,
@@ -97,10 +117,10 @@ class _AppShellState extends State<AppShell> {
   }
 }
 
-class _BrandPlaceholder extends StatelessWidget {
+class _BrandMark extends StatelessWidget {
   final String label;
 
-  const _BrandPlaceholder({
+  const _BrandMark({
     required this.label,
   });
 
@@ -168,13 +188,13 @@ class _FloatingTopNav extends StatelessWidget {
   }
 }
 
-class _FloatingBottomNav extends StatelessWidget {
+class _FloatingMobileNav extends StatelessWidget {
   final PortfolioSection current;
   final ValueChanged<PortfolioSection> onSelect;
   final VoidCallback onResumeTap;
   final bool showResumeDone;
 
-  const _FloatingBottomNav({
+  const _FloatingMobileNav({
     required this.current,
     required this.onSelect,
     required this.onResumeTap,
@@ -186,11 +206,10 @@ class _FloatingBottomNav extends StatelessWidget {
     final t = AppTheme.of(context);
 
     return Positioned(
-      left: 20,
-      right: 20,
-      bottom: 24,
+      top: 18,
+      right: 16,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisSize: MainAxisSize.min,
         children: [
           _BottomNavIcon(
             icon: Icons.person_outline_rounded,
@@ -198,18 +217,21 @@ class _FloatingBottomNav extends StatelessWidget {
             activeColor: t.button,
             onTap: () => onSelect(PortfolioSection.about),
           ),
+          const SizedBox(width: 14),
           _BottomNavIcon(
             icon: Icons.work_outline_rounded,
             active: current == PortfolioSection.projects,
             activeColor: t.button,
             onTap: () => onSelect(PortfolioSection.projects),
           ),
+          const SizedBox(width: 14),
           _BottomNavIcon(
             icon: Icons.mail_outline_rounded,
             active: current == PortfolioSection.contact,
             activeColor: t.button,
             onTap: () => onSelect(PortfolioSection.contact),
           ),
+          const SizedBox(width: 14),
           _BottomNavIcon(
             icon: showResumeDone
                 ? Icons.download_done_outlined
@@ -238,13 +260,16 @@ class _TopNavText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
-    return GestureDetector(
-      onTap: onTap,
+    return TextButton(
+      onPressed: onTap,
+      style: TextButton.styleFrom(
+        minimumSize: const Size(48, 48),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+        foregroundColor: active ? t.button : t.text,
+      ),
       child: Text(
         label,
-        style: t.subheading.copyWith(
-          color: active ? t.button : t.text,
-        ),
+        style: t.subheading.copyWith(color: active ? t.button : t.text),
       ),
     );
   }
@@ -266,13 +291,13 @@ class _BottomNavIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: Icon(
-        icon,
-        size: 26,
-        color: active ? activeColor : t.text,
-      ),
+    return IconButton(
+      onPressed: onTap,
+      iconSize: 26,
+      constraints: const BoxConstraints.tightFor(width: 48, height: 48),
+      tooltip: active ? 'Current section' : 'Open section',
+      color: active ? activeColor : t.text,
+      icon: Icon(icon),
     );
   }
 }

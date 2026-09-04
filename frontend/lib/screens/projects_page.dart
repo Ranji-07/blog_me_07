@@ -1,35 +1,36 @@
 import 'package:flutter/material.dart';
-import 'package:portfolio/widgets/page_frame.dart';
-import 'package:portfolio/widgets/section_placeholder_card.dart';
+import 'package:portfolio/core/app_theme.dart';
 
 class ProjectsScreen extends StatelessWidget {
   const ProjectsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const PageFrame(
-      title: 'Projects',
-      description:
-          'Project cards, filters, and detail sections will be rebuilt here.',
-      children: [
-        SectionPlaceholderCard(
-          title: 'Featured Projects',
-          description:
-              'Placeholder for the main project list and highlighted case studies.',
+    final t = AppTheme.of(context);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        120,
+        AppSpacing.xl,
+        140,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1040),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Projects', style: t.heading),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Selected work and case studies.',
+                style: t.body,
+              ),
+            ],
+          ),
         ),
-        SizedBox(height: 24),
-        SectionPlaceholderCard(
-          title: 'Project Categories',
-          description:
-              'Placeholder for filters, grouping, or stack-based browsing.',
-        ),
-        SizedBox(height: 24),
-        SectionPlaceholderCard(
-          title: 'Project Details',
-          description:
-              'Placeholder for the selected project story, metrics, and links.',
-        ),
-      ],
+      ),
     );
   }
 }

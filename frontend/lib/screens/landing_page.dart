@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:portfolio/core/app_theme.dart';
-import 'package:portfolio/widgets/outline_card.dart';
 
 class LandingScreen extends StatelessWidget {
   final VoidCallback onEnter;
@@ -19,19 +18,24 @@ class LandingScreen extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 860),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xl),
-          child: OutlineCard(
-            radius: AppRadius.xl,
+          child: Container(
+            width: double.infinity,
             padding: const EdgeInsets.all(AppSpacing.xxl),
+            decoration: BoxDecoration(
+              color: t.card,
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              border: Border.all(color: t.border),
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Portfolio', style: t.label.copyWith(color: t.button)),
                 const SizedBox(height: AppSpacing.lg),
-                Text('New Landing Screen', style: t.display),
+                Text('Full Stack Developer & AI Engineer', style: t.display),
                 const SizedBox(height: AppSpacing.lg),
                 Text(
-                  'This is the fresh starting point. No navigation bar appears on landing. We will build the new design from here, page by page.',
+                  'Building mobile apps, backend systems, cloud infrastructure, and AI-powered products.',
                   style: t.body,
                 ),
                 const SizedBox(height: AppSpacing.xl),

@@ -216,6 +216,16 @@
         "portfolio": { "type": "string" }
       }
     },
+    "footerConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "build_year": { "type": "integer", "minimum": 2000 },
+        "built_with": { "type": "string" },
+        "app_version": { "type": "string" },
+        "note": { "type": "string" }
+      }
+    },
     "contactSection": {
       "type": "object",
       "additionalProperties": false,
@@ -227,6 +237,7 @@
         "timezone": { "type": "string" },
         "social": { "$ref": "#/$defs/socialLinks" },
         "availability": { "$ref": "#/$defs/availabilityConfig" },
+        "footer": { "$ref": "#/$defs/footerConfig" },
         "visible": { "type": "boolean" },
         "status": { "$ref": "#/$defs/publishState" },
         "updated_at": { "type": "string", "format": "date-time" }

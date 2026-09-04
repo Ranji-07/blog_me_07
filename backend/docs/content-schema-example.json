@@ -127,7 +127,7 @@
     "social": {
       "github": "",
       "linkedin": "",
-      "twitter": "",
+      "email": "",
       "leetcode": "",
       "hackerrank": "",
       "portfolio": ""
@@ -137,6 +137,12 @@
       "fulltime": true,
       "internship": false,
       "response_time": "24 hours"
+    },
+    "footer": {
+      "build_year": 2026,
+      "built_with": "Flutter",
+      "app_version": "1.0.0",
+      "note": "Responsive portfolio experience for web and mobile"
     },
     "visible": true,
     "status": "published"

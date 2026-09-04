@@ -1,38 +1,36 @@
 import 'package:flutter/material.dart';
-import 'package:portfolio/widgets/page_frame.dart';
-import 'package:portfolio/widgets/section_placeholder_card.dart';
-import 'package:portfolio/widgets/timeline_section.dart';
+import 'package:portfolio/core/app_theme.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const PageFrame(
-      title: 'About',
-      description:
-          'Bio, education, experience timeline, and skills will live on this page.',
-      children: [
-        SectionPlaceholderCard(
-          title: 'Bio',
-          description:
-              'Placeholder card for biography summary and personal intro.',
+    final t = AppTheme.of(context);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        120,
+        AppSpacing.xl,
+        140,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1040),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('About', style: t.heading),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Profile, background, and experience.',
+                style: t.body,
+              ),
+            ],
+          ),
         ),
-        SizedBox(height: 24),
-        EducationTimelineSection(),
-        SizedBox(height: 24),
-        SectionPlaceholderCard(
-          title: 'Experience Timeline',
-          description:
-              'Placeholder card for work and experience timeline content.',
-        ),
-        SizedBox(height: 24),
-        SectionPlaceholderCard(
-          title: 'Skills',
-          description:
-              'Placeholder card for grouped skills, tools, and stack.',
-        ),
-      ],
+      ),
     );
   }
 }

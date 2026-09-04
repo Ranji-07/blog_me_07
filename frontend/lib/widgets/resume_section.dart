@@ -332,7 +332,7 @@ class _ResumePage extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: const [
         Text(
-          'Your Name',
+          'Tarzan',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w800,
@@ -341,7 +341,7 @@ class _ResumePage extends StatelessWidget {
         ),
         SizedBox(height: 8),
         Text(
-          'Portfolio Owner • Role Placeholder • City, Country',
+          'Full Stack Developer • AI Engineer • India',
           style: TextStyle(
             fontSize: 13,
             color: bodyColor,
@@ -350,7 +350,7 @@ class _ResumePage extends StatelessWidget {
         ),
         SizedBox(height: 6),
         Text(
-          'email@example.com • +00 00000 00000 • portfolio.dev',
+          'Portfolio contact details available in the app contact section',
           style: TextStyle(
             fontSize: 12,
             color: bodyColor,
@@ -361,19 +361,19 @@ class _ResumePage extends StatelessWidget {
         _ResumeSection(
           title: 'Profile',
           content:
-              'Short professional summary goes here. Replace this placeholder with a concise introduction, strengths, and the kind of work you want to highlight.',
+              'I build scalable mobile applications, backend APIs, cloud infrastructure, and AI-powered systems using Flutter, FastAPI, Docker, Kubernetes, and AWS.',
         ),
         SizedBox(height: 18),
         _ResumeSection(
           title: 'Experience',
           content:
-              'Company / Role Placeholder\n2024 - Present\nKey contributions, measurable outcomes, product ownership, and delivery highlights.',
+              'Full Stack, AI, cloud, and DevOps-focused project experience.\n2024 - Present\nApplication delivery, infrastructure setup, automation, and product execution across modern web and mobile stacks.',
         ),
         SizedBox(height: 18),
         _ResumeSection(
           title: 'Education',
           content:
-              'Degree / Institution Placeholder\nGraduation year, specialization, or notable academic highlights.',
+              'Bachelor of Technology in Computer Science\n2021 - 2025',
         ),
         SizedBox(height: 18),
         _ResumeSection(
@@ -383,7 +383,7 @@ class _ResumePage extends StatelessWidget {
         ),
         SizedBox(height: 18),
         Text(
-          'This is a preview placeholder. Replace with final resume content and PDF later.',
+          'This preview summarizes the resume experience available in the portfolio.',
           style: TextStyle(
             fontSize: 11,
             color: accentColor,

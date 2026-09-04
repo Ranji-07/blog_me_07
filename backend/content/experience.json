@@ -1,16 +1,58 @@
 {
-  "work": [],
-  "internships": [],
-  "achievements": [
+  "work": [
     {
-      "title": "",
-      "date": "",
-      "description": ""
+      "title": "Full Stack Developer",
+      "company": "Example Digital Studio",
+      "date": "2025 - Present",
+      "duration": "1 year",
+      "description": "Developing responsive mobile and web products, backend APIs, and cloud deployment workflows for client projects.",
+      "technologies": ["Flutter", "FastAPI", "AWS", "Docker"]
     }
   ],
-  "opensource": [],
-  "hackathons": [],
-  "volunteer": [],
+  "internships": [
+    {
+      "title": "Software Engineering Intern",
+      "company": "Sample Technology Labs",
+      "date": "2024",
+      "duration": "6 months",
+      "description": "Supported API development, automated deployment tasks, and interface improvements across internal applications.",
+      "technologies": ["Python", "FastAPI", "React", "GitHub Actions"]
+    }
+  ],
+  "achievements": [
+    {
+      "title": "Cloud Native Project Showcase",
+      "date": "2025",
+      "description": "Recognized for building a containerized project deployment and observability demonstration."
+    }
+  ],
+  "opensource": [
+    {
+      "title": "Developer Tooling Contributions",
+      "organization": "Open Source Community",
+      "date": "2024 - Present",
+      "description": "Contributed documentation and small improvements to developer-focused open source projects.",
+      "technologies": ["Git", "GitHub", "Python"]
+    }
+  ],
+  "hackathons": [
+    {
+      "title": "Build for Better Hackathon",
+      "organization": "Community Hackathon",
+      "date": "2024",
+      "description": "Built a prototype IoT dashboard for monitoring environmental sensor data.",
+      "technologies": ["Flutter", "Python", "IoT"]
+    }
+  ],
+  "volunteer": [
+    {
+      "title": "Peer Technology Mentor",
+      "organization": "Campus Developer Community",
+      "date": "2023 - 2024",
+      "description": "Helped students learn web development, Git workflows, and project deployment basics.",
+      "technologies": ["Git", "HTML", "JavaScript"]
+    }
+  ],
   "visible": true,
   "status": "published"
 }

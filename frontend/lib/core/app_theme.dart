@@ -3,12 +3,20 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  static const Color background = Color(0xFF050505);
-  static const Color surface = Color(0xFF0D0D0D);
-  static const Color card = Color(0xFF111111);
-  static const Color border = Color(0xFF2A2A2A);
-  static const Color text = Color(0xFFF6F4EF);
-  static const Color textMuted = Color(0xFFB9B4AA);
+  static const Color backgroundDark = Color(0xFF050505);
+  static const Color surfaceDark = Color(0xFF0D0D0D);
+  static const Color cardDark = Color(0xFF111111);
+  static const Color borderDark = Color(0xFF2A2A2A);
+  static const Color textDark = Color(0xFFF6F4EF);
+  static const Color textMutedDark = Color(0xFFB9B4AA);
+
+  static const Color backgroundLight = Color(0xFFF7F3EC);
+  static const Color surfaceLight = Color(0xFFFFFFFF);
+  static const Color cardLight = Color(0xFFFFFCF7);
+  static const Color borderLight = Color(0xFFD8CCBC);
+  static const Color textLight = Color(0xFF181512);
+  static const Color textMutedLight = Color(0xFF62584B);
+
   static const Color button = Color(0xFFFFB067);
   static const Color buttonSoft = Color(0x33FFB067);
   static const Color neonGreen = Color(0xFF7DFF6A);
@@ -37,50 +45,53 @@ class AppRadius {
 }
 
 class AppThemeData {
-  const AppThemeData();
+  final bool isDark;
 
-  Color get background => AppColors.background;
-  Color get surface => AppColors.surface;
-  Color get card => AppColors.card;
-  Color get border => AppColors.border;
-  Color get text => AppColors.text;
-  Color get textMuted => AppColors.textMuted;
+  const AppThemeData.dark() : isDark = true;
+  const AppThemeData.light() : isDark = false;
+
+  Color get background => isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+  Color get surface => isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+  Color get card => isDark ? AppColors.cardDark : AppColors.cardLight;
+  Color get border => isDark ? AppColors.borderDark : AppColors.borderLight;
+  Color get text => isDark ? AppColors.textDark : AppColors.textLight;
+  Color get textMuted => isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
   Color get button => AppColors.button;
   Color get buttonSoft => AppColors.buttonSoft;
   Color get neonGreen => AppColors.neonGreen;
 
-  TextStyle get display => const TextStyle(
+  TextStyle get display => TextStyle(
         fontSize: 52,
         fontWeight: FontWeight.w800,
-        color: AppColors.text,
+        color: text,
         height: 1,
         letterSpacing: -1.8,
       );
 
-  TextStyle get heading => const TextStyle(
+  TextStyle get heading => TextStyle(
         fontSize: 30,
         fontWeight: FontWeight.w700,
-        color: AppColors.text,
+        color: text,
         height: 1.1,
       );
 
-  TextStyle get subheading => const TextStyle(
+  TextStyle get subheading => TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.w600,
-        color: AppColors.text,
+        color: text,
       );
 
-  TextStyle get body => const TextStyle(
+  TextStyle get body => TextStyle(
         fontSize: 15,
         fontWeight: FontWeight.w400,
-        color: AppColors.textMuted,
+        color: textMuted,
         height: 1.6,
       );
 
-  TextStyle get label => const TextStyle(
+  TextStyle get label => TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.w600,
-        color: AppColors.textMuted,
+        color: textMuted,
         letterSpacing: 0.3,
       );
 }
@@ -88,36 +99,66 @@ class AppThemeData {
 class AppTheme {
   AppTheme._();
 
-  static AppThemeData of(BuildContext context) => const AppThemeData();
+  static AppThemeData of(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+    return brightness == Brightness.dark
+        ? const AppThemeData.dark()
+        : const AppThemeData.light();
+  }
 
   static ThemeData dark() {
-    const colors = AppThemeData();
+    return _themeData(const AppThemeData.dark(), Brightness.dark);
+  }
+
+  static ThemeData light() {
+    return _themeData(const AppThemeData.light(), Brightness.light);
+  }
+
+  static ThemeData _themeData(AppThemeData colors, Brightness brightness) {
+    final baseScheme = brightness == Brightness.dark
+        ? ColorScheme.dark(
+            surface: colors.card,
+            primary: colors.button,
+            secondary: colors.neonGreen,
+            error: AppColors.danger,
+          )
+        : ColorScheme.light(
+            surface: colors.card,
+            primary: colors.button,
+            secondary: colors.neonGreen,
+            error: AppColors.danger,
+          );
+
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
+      brightness: brightness,
       scaffoldBackgroundColor: colors.background,
-      colorScheme: const ColorScheme.dark(
-        surface: AppColors.card,
-        primary: AppColors.button,
-        secondary: AppColors.neonGreen,
-        error: AppColors.danger,
+      colorScheme: baseScheme,
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: colors.card,
+        contentTextStyle: TextStyle(color: colors.text),
       ),
-      textTheme: const TextTheme(
-        displayLarge: TextStyle(
-          fontSize: 52,
-          fontWeight: FontWeight.w800,
-          color: AppColors.text,
+      tooltipTheme: TooltipThemeData(
+        decoration: BoxDecoration(
+          color: colors.card,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          border: Border.all(color: colors.border),
         ),
-        headlineMedium: TextStyle(
-          fontSize: 30,
-          fontWeight: FontWeight.w700,
-          color: AppColors.text,
+        textStyle: TextStyle(
+          color: colors.text,
+          fontSize: 12,
         ),
-        bodyLarge: TextStyle(
-          fontSize: 15,
-          color: AppColors.textMuted,
-          height: 1.6,
-        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: colors.surface,
+      ),
+      textTheme: TextTheme(
+        displayLarge: colors.display,
+        headlineMedium: colors.heading,
+        titleMedium: colors.subheading,
+        bodyLarge: colors.body,
+        labelLarge: colors.label,
       ),
     );
   }
