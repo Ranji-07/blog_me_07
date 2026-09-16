@@ -48,7 +48,8 @@ class _ShimmerBoxState extends State<ShimmerBox>
         height: widget.height,
         decoration: BoxDecoration(
           shape: widget.circle ? BoxShape.circle : BoxShape.rectangle,
-          borderRadius: widget.circle ? null : BorderRadius.circular(widget.radius),
+          borderRadius:
+              widget.circle ? null : BorderRadius.circular(widget.radius),
           gradient: LinearGradient(
             begin: Alignment(-1.5 + (_controller.value * 3), 0),
             end: Alignment(-0.5 + (_controller.value * 3), 0),

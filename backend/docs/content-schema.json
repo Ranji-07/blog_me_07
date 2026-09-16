@@ -4,7 +4,7 @@
   "title": "Portfolio Content Schema",
   "type": "object",
   "additionalProperties": false,
-  "required": ["about", "projects", "experience", "contact"],
+  "required": ["about", "projects", "experience", "journey", "contact"],
   "properties": {
     "about": {
       "$ref": "#/$defs/aboutSection"
@@ -14,6 +14,9 @@
     },
     "experience": {
       "$ref": "#/$defs/experienceSection"
+    },
+    "journey": {
+      "$ref": "#/$defs/journeySection"
     },
     "contact": {
       "$ref": "#/$defs/contactSection"
@@ -83,6 +86,9 @@
               "title": { "type": "string" },
               "organization": { "type": "string" },
               "date": { "type": "string" },
+              "timeline_date": { "type": "string", "format": "date" },
+              "timeline_label": { "type": "string" },
+              "timeline_parent": { "type": "string" },
               "credential_id": { "type": "string" },
               "credential_url": { "type": "string" },
               "asset_url": { "type": "string" },
@@ -141,10 +147,15 @@
           "type": "string",
           "enum": ["AI", "Mobile", "Web", "Cloud", "IoT", "DevOps", "Machine Learning", "Open Source"]
         },
+        "timeline_date": { "type": "string", "format": "date" },
+        "timeline_label": { "type": "string" },
+        "timeline_parent": { "type": "string" },
+        "current": { "type": "boolean" },
         "featured": { "type": "boolean" },
         "short_description": { "type": "string" },
         "description": { "type": "string" },
         "technologies": { "$ref": "#/$defs/stringArray" },
+        "highlights": { "$ref": "#/$defs/stringArray" },
         "features": { "$ref": "#/$defs/stringArray" },
         "images": { "$ref": "#/$defs/stringArray" },
         "github": { "type": "string" },
@@ -174,9 +185,14 @@
         "company": { "type": "string" },
         "organization": { "type": "string" },
         "date": { "type": "string" },
+        "timeline_date": { "type": "string", "format": "date" },
+        "timeline_label": { "type": "string" },
+        "timeline_parent": { "type": "string" },
+        "current": { "type": "boolean" },
         "duration": { "type": "string" },
         "description": { "type": "string" },
         "technologies": { "$ref": "#/$defs/stringArray" },
+        "highlights": { "$ref": "#/$defs/stringArray" },
         "links": {
           "type": "object",
           "additionalProperties": {
@@ -224,6 +240,38 @@
           "type": "array",
           "items": { "$ref": "#/$defs/timelineItem" }
         },
+        "visible": { "type": "boolean" },
+        "status": { "$ref": "#/$defs/publishState" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "journeyEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "date", "timeline_date", "organization", "title", "timeline_label", "description"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["Education", "Work", "Certification"] },
+        "date": { "type": "string" },
+        "timeline_date": { "type": "string", "format": "date" },
+        "organization": { "type": "string" },
+        "title": { "type": "string" },
+        "timeline_label": { "type": "string" },
+        "current": { "type": "boolean" },
+        "description": { "type": "string" },
+        "technologies": { "$ref": "#/$defs/stringArray" },
+        "highlights": { "$ref": "#/$defs/stringArray" },
+        "link": { "type": "string" }
+      }
+    },
+    "journeySection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "subtitle", "events", "visible", "status"],
+      "properties": {
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "events": { "type": "array", "items": { "$ref": "#/$defs/journeyEvent" } },
         "visible": { "type": "boolean" },
         "status": { "$ref": "#/$defs/publishState" },
         "updated_at": { "type": "string", "format": "date-time" }

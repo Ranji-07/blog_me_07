@@ -26,6 +26,7 @@ def _load_portfolio_sections() -> list[tuple[str, dict]]:
         ("about", CONTENT_DIR / "about.json"),
         ("projects", CONTENT_DIR / "projects.json"),
         ("experience", CONTENT_DIR / "experience.json"),
+        ("journey", CONTENT_DIR / "journey.json"),
         ("contact", CONTENT_DIR / "contact.json"),
     ]
 

@@ -83,18 +83,29 @@ class _ContactScreenState extends State<ContactScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('Contact', style: t.display),
+                    Text(
+                      "Let's Build Something",
+                      style: t.display.copyWith(color: t.button),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 560),
+                      child: Text(
+                        'Reach out about a project, collaboration, opportunity, or simply to connect.',
+                        style: t.body.copyWith(fontSize: isMobile ? 15 : 16),
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.xl),
                     ContactForm(
                       ownerName: content.ownerName,
                       recipientEmail: content.email,
                     ),
-                    const SizedBox(height: AppSpacing.xxl),
+                    const SizedBox(height: 40),
                     ContactLinksSection(
                       email: content.email,
                       githubUrl: content.githubUrl,
                       linkedinUrl: content.linkedinUrl,
-                      spacing: isMobile ? 18 : 24,
+                      spacing: isMobile ? 22 : 28,
                     ),
                     const SizedBox(height: AppSpacing.md),
                     ContactFooterLine(

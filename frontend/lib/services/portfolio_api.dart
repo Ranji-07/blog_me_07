@@ -36,6 +36,20 @@ class PortfolioApi {
     return decoded;
   }
 
+  static Future<Map<String, dynamic>> fetchJourney() async {
+    final response =
+        await http.get(Uri.parse('$baseUrl/api/portfolio/journey'));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Unable to load journey content.');
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      throw Exception('Invalid journey response.');
+    }
+    return decoded;
+  }
+
   static Future<void> recordVisit() async {
     await http.post(Uri.parse('$baseUrl/api/analytics/visit'));
   }
@@ -56,7 +70,23 @@ class PortfolioApi {
     );
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Unable to send your message. Please try again.');
+      var message = 'Unable to send your message. Please try again.';
+      try {
+        final decoded = jsonDecode(response.body);
+        final detail =
+            decoded is Map<String, dynamic> ? decoded['detail'] : null;
+        if (detail is List && detail.isNotEmpty) {
+          final first = detail.first;
+          if (first is Map<String, dynamic> && first['msg'] is String) {
+            message = first['msg'] as String;
+          }
+        } else if (detail is String && detail.isNotEmpty) {
+          message = detail;
+        }
+      } on FormatException {
+        // Keep the safe fallback when a proxy returns a non-JSON response.
+      }
+      throw Exception(message);
     }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:portfolio/core/app_theme.dart';
+import 'package:portfolio/core/responsive.dart';
 import 'package:portfolio/screens/widgets/contact_success_dialog.dart';
 import 'package:portfolio/services/portfolio_api.dart';
 
@@ -19,7 +20,12 @@ class ContactForm extends StatefulWidget {
 }
 
 class _ContactFormState extends State<ContactForm> {
-  static const _emailDomains = ['gmail.com', 'outlook.com', 'edu', 'in'];
+  static const _emailDomains = [
+    'gmail.com',
+    'outlook.com',
+    'icloud.com',
+    'company.in',
+  ];
   static const _messageSuggestions = [
     "I'd like to discuss a collaboration.",
     "I'm interested in learning more about your work.",
@@ -38,6 +44,7 @@ class _ContactFormState extends State<ContactForm> {
   int _messageSuggestionIndex = 0;
   bool _dismissedNameSuggestion = false;
   bool _isSubmitting = false;
+  bool _submitHovered = false;
 
   @override
   void initState() {
@@ -258,13 +265,15 @@ Sent from your Portfolio Website''';
         _dismissedNameSuggestion = false;
         _messageSuggestionIndex = 0;
       });
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(
-            content: Text('Your message could not be sent. Please try again.'),
+          SnackBar(
+            content: Text(
+              error.toString().replaceFirst('Exception: ', ''),
+            ),
           ),
         );
     } finally {
@@ -289,6 +298,8 @@ Sent from your Portfolio Website''';
       isDense: true,
       contentPadding: const EdgeInsets.fromLTRB(0, 16, 0, 12),
       hintStyle: t.body.copyWith(color: t.text.withValues(alpha: 0.36)),
+      labelStyle: t.label.copyWith(color: t.textMuted),
+      errorStyle: t.label.copyWith(color: AppColors.danger),
       border: border,
       enabledBorder: border,
       focusedBorder: border.copyWith(
@@ -303,6 +314,46 @@ Sent from your Portfolio Website''';
     );
   }
 
+  Widget _nameField(BuildContext context) => Focus(
+        onKeyEvent: _handleNameKey,
+        child: TextFormField(
+          controller: _name,
+          focusNode: _nameFocus,
+          autofillHints: const [AutofillHints.name],
+          textInputAction: TextInputAction.next,
+          decoration: _decoration(
+            context,
+            label: 'Name',
+            hint: _suggestedName.isEmpty
+                ? 'Your name'
+                : 'Suggested: $_suggestedName (Tab to use)',
+            hideHint: _nameFocus.hasFocus,
+          ),
+          validator: _validateName,
+        ),
+      );
+
+  Widget _emailField(BuildContext context) => Focus(
+        onKeyEvent: _handleEmailKey,
+        child: TextFormField(
+          controller: _email,
+          focusNode: _emailFocus,
+          autofillHints: const [AutofillHints.email],
+          keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
+          decoration: _decoration(
+            context,
+            label: 'Email',
+            hint: 'you@example.com',
+            hideHint: _emailFocus.hasFocus,
+          ),
+          validator: (value) => RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+                  .hasMatch(value?.trim() ?? '')
+              ? null
+              : 'Please enter a valid email address.',
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
@@ -312,45 +363,19 @@ Sent from your Portfolio Website''';
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Focus(
-              onKeyEvent: _handleNameKey,
-              child: TextFormField(
-                controller: _name,
-                focusNode: _nameFocus,
-                autofillHints: const [AutofillHints.name],
-                textInputAction: TextInputAction.next,
-                decoration: _decoration(
-                  context,
-                  label: 'Name',
-                  hint: _suggestedName.isEmpty
-                      ? 'Your name'
-                      : 'Suggested: $_suggestedName (Tab to use)',
-                  hideHint: _nameFocus.hasFocus,
-                ),
-                validator: _validateName,
+            if (Responsive.isMobile(context)) ...[
+              _nameField(context),
+              const SizedBox(height: AppSpacing.lg),
+              _emailField(context),
+            ] else
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: _nameField(context)),
+                  const SizedBox(width: AppSpacing.lg),
+                  Expanded(child: _emailField(context)),
+                ],
               ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Focus(
-              onKeyEvent: _handleEmailKey,
-              child: TextFormField(
-                controller: _email,
-                focusNode: _emailFocus,
-                autofillHints: const [AutofillHints.email],
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.next,
-                decoration: _decoration(
-                  context,
-                  label: 'Email',
-                  hint: 'you@example.com',
-                  hideHint: _emailFocus.hasFocus,
-                ),
-                validator: (value) => RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
-                        .hasMatch(value?.trim() ?? '')
-                    ? null
-                    : 'Please enter a valid email address.',
-              ),
-            ),
             AnimatedSize(
               duration: const Duration(milliseconds: 160),
               curve: Curves.easeOutCubic,
@@ -436,7 +461,7 @@ Sent from your Portfolio Website''';
                     )
                   : const SizedBox.shrink(),
             ),
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               'Your information is used only to respond to your inquiry. It is stored securely for that purpose and is not shared.',
               style: t.label,
@@ -444,20 +469,47 @@ Sent from your Portfolio Website''';
             const SizedBox(height: AppSpacing.md),
             Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton(
-                onPressed: _isSubmitting ? null : _submit,
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(156, 48),
-                  backgroundColor: t.button,
-                  foregroundColor: Colors.black,
+              child: MouseRegion(
+                onEnter: (_) => setState(() => _submitHovered = true),
+                onExit: (_) => setState(() => _submitHovered = false),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  transform: Matrix4.translationValues(
+                    0,
+                    _submitHovered ? -2 : 0,
+                    0,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    boxShadow: _submitHovered
+                        ? [
+                            BoxShadow(
+                              color: t.button.withValues(alpha: 0.28),
+                              blurRadius: 16,
+                              offset: const Offset(0, 7),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: FilledButton(
+                    onPressed: _isSubmitting ? null : _submit,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(172, 50),
+                      backgroundColor: t.button,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                    ),
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Start a Conversation'),
+                  ),
                 ),
-                child: _isSubmitting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Prepare message'),
               ),
             ),
           ],

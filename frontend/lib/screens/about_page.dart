@@ -3,7 +3,6 @@ import 'package:portfolio/core/app_theme.dart';
 import 'package:portfolio/core/responsive.dart';
 import 'package:portfolio/models/about_profile.dart';
 import 'package:portfolio/screens/widgets/about_intro_card.dart';
-import 'package:portfolio/screens/widgets/education_timeline.dart';
 import 'package:portfolio/screens/widgets/skill_category_grid.dart';
 import 'package:portfolio/services/portfolio_api.dart';
 
@@ -78,29 +77,20 @@ class _AboutScreenState extends State<AboutScreen> {
               ),
               child: Padding(
                 padding: EdgeInsets.fromLTRB(
-                  isMobile ? AppSpacing.md : AppSpacing.xxl,
+                  isMobile ? AppSpacing.md : AppSpacing.xl,
                   112,
-                  isMobile ? AppSpacing.md : AppSpacing.xxl,
+                  isMobile ? AppSpacing.md : AppSpacing.xl,
                   AppSpacing.xxl,
                 ),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1040),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AboutIntroCard(paragraphs: profile.aboutMe),
-                        const SizedBox(height: AppSpacing.xxl),
-                        Text('CORE SKILLS', style: t.heading),
-                        const SizedBox(height: AppSpacing.md),
-                        SkillCategoryGrid(categories: profile.skillCategories),
-                        const SizedBox(height: AppSpacing.xxl),
-                        Text('EDUCATION & CERTIFICATIONS', style: t.heading),
-                        const SizedBox(height: AppSpacing.lg),
-                        EducationTimeline(entries: profile.timeline),
-                      ],
-                    ),
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('A Little About Me', style: t.heading),
+                    const SizedBox(height: AppSpacing.md),
+                    AboutIntroCard(paragraphs: profile.aboutMe),
+                    const SizedBox(height: AppSpacing.xl),
+                    SkillCategoryGrid(categories: profile.skillCategories),
+                  ],
                 ),
               ),
             );

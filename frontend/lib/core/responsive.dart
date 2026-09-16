@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 // ─────────────────────────── Breakpoints ─────────────────────────────────────
 class Breakpoints {
   Breakpoints._();
-  static const double mobile  = 0;
-  static const double tablet  = 600;
+  static const double mobile = 0;
+  static const double tablet = 600;
   static const double desktop = 1024;
 }
 
@@ -12,29 +12,34 @@ class Breakpoints {
 class Responsive {
   Responsive._();
 
-  static double _w(BuildContext context) =>
-      MediaQuery.of(context).size.width;
+  static double _w(BuildContext context) => MediaQuery.of(context).size.width;
 
-  static bool isMobile(BuildContext context)  => _w(context) < Breakpoints.tablet;
-  static bool isTablet(BuildContext context)  => _w(context) >= Breakpoints.tablet && _w(context) < Breakpoints.desktop;
-  static bool isDesktop(BuildContext context) => _w(context) >= Breakpoints.desktop;
+  static bool isMobile(BuildContext context) =>
+      _w(context) < Breakpoints.tablet;
+  static bool isTablet(BuildContext context) =>
+      _w(context) >= Breakpoints.tablet && _w(context) < Breakpoints.desktop;
+  static bool isDesktop(BuildContext context) =>
+      _w(context) >= Breakpoints.desktop;
 
   /// Returns one of three values depending on device class.
   /// Falls back gracefully: tablet → desktop value, mobile → tablet value.
-  static T value<T>(BuildContext context, {required T mobile, T? tablet, required T desktop}) {
+  static T value<T>(BuildContext context,
+      {required T mobile, T? tablet, required T desktop}) {
     if (isDesktop(context)) return desktop;
-    if (isTablet(context))  return tablet ?? desktop;
+    if (isTablet(context)) return tablet ?? desktop;
     return mobile;
   }
 
   /// Responsive font size — scales between [min] and [max] based on screen width.
-  static double fontSize(BuildContext context, {required double mobile, required double desktop, double? tablet}) {
+  static double fontSize(BuildContext context,
+      {required double mobile, required double desktop, double? tablet}) {
     return value(context, mobile: mobile, tablet: tablet, desktop: desktop);
   }
 
   /// Responsive padding
-  static EdgeInsets padding(BuildContext context, {
-    EdgeInsets mobile  = const EdgeInsets.all(16),
+  static EdgeInsets padding(
+    BuildContext context, {
+    EdgeInsets mobile = const EdgeInsets.all(16),
     EdgeInsets? tablet,
     EdgeInsets desktop = const EdgeInsets.all(48),
   }) {
@@ -43,14 +48,15 @@ class Responsive {
 
   /// Responsive horizontal padding for page content
   static EdgeInsets pagePadding(BuildContext context) => padding(
-    context,
-    mobile:  const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-    tablet:  const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
-    desktop: const EdgeInsets.symmetric(horizontal: 56, vertical: 48),
-  );
+        context,
+        mobile: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        tablet: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
+        desktop: const EdgeInsets.symmetric(horizontal: 56, vertical: 48),
+      );
 
   /// Column count for a grid
-  static int gridColumns(BuildContext context, {int mobile = 1, int tablet = 2, int desktop = 3}) {
+  static int gridColumns(BuildContext context,
+      {int mobile = 1, int tablet = 2, int desktop = 3}) {
     return value(context, mobile: mobile, tablet: tablet, desktop: desktop);
   }
 }
@@ -59,7 +65,9 @@ class Responsive {
 
 /// Renders different children based on screen size.
 class ResponsiveBuilder extends StatelessWidget {
-  final Widget Function(BuildContext context, bool isMobile, bool isTablet, bool isDesktop) builder;
+  final Widget Function(
+          BuildContext context, bool isMobile, bool isTablet, bool isDesktop)
+      builder;
   const ResponsiveBuilder({super.key, required this.builder});
 
   @override
@@ -84,7 +92,10 @@ class ResponsiveContainer extends StatelessWidget {
     return Padding(
       padding: Responsive.pagePadding(context),
       child: maxWidth != null
-          ? Center(child: ConstrainedBox(constraints: BoxConstraints(maxWidth: maxWidth!), child: child))
+          ? Center(
+              child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: maxWidth!),
+                  child: child))
           : child,
     );
   }
@@ -102,17 +113,17 @@ class AdaptiveGrid extends StatelessWidget {
   const AdaptiveGrid({
     super.key,
     required this.children,
-    this.mobileColumns  = 1,
-    this.tabletColumns  = 2,
+    this.mobileColumns = 1,
+    this.tabletColumns = 2,
     this.desktopColumns = 3,
-    this.spacing    = 16,
+    this.spacing = 16,
     this.runSpacing = 16,
   });
 
   @override
   Widget build(BuildContext context) {
     final cols = Responsive.gridColumns(context,
-      mobile: mobileColumns, tablet: tabletColumns, desktop: desktopColumns);
+        mobile: mobileColumns, tablet: tabletColumns, desktop: desktopColumns);
     final total = children.length;
     if (total == 0) return const SizedBox.shrink();
 
@@ -150,10 +161,16 @@ class ResponsiveValue<T> extends StatelessWidget {
   final T? tablet;
   final T desktop;
   final Widget Function(T value) builder;
-  const ResponsiveValue({super.key, required this.mobile, this.tablet, required this.desktop, required this.builder});
+  const ResponsiveValue(
+      {super.key,
+      required this.mobile,
+      this.tablet,
+      required this.desktop,
+      required this.builder});
 
   @override
   Widget build(BuildContext context) {
-    return builder(Responsive.value(context, mobile: mobile, tablet: tablet, desktop: desktop));
+    return builder(Responsive.value(context,
+        mobile: mobile, tablet: tablet, desktop: desktop));
   }
 }

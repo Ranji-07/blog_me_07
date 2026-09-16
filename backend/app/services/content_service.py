@@ -13,6 +13,7 @@ from app.schemas import CommandType
 SECTION_ITEM_COLLECTION = {
     "projects": "projects",
     "experience": "work",
+    "journey": "events",
     "contact": None,
     "about": None,
 }
@@ -21,6 +22,7 @@ SECTION_DEF_MAP = {
     "about": "aboutSection",
     "projects": "projectsSection",
     "experience": "experienceSection",
+    "journey": "journeySection",
     "contact": "contactSection",
 }
 

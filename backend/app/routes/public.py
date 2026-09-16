@@ -90,9 +90,14 @@ async def get_contact(db: Session = Depends(get_db)):
     return _load_visible_section(db, "contact")
 
 
+@router.get("/api/portfolio/journey", tags=["Portfolio"])
+async def get_journey(db: Session = Depends(get_db)):
+    return _load_visible_section(db, "journey")
+
+
 @router.get("/api/portfolio/all", tags=["Portfolio"])
 async def get_all_portfolio(db: Session = Depends(get_db)):
-    sections = ["about", "projects", "experience", "contact"]
+    sections = ["about", "projects", "experience", "journey", "contact"]
     result = {}
     for section in sections:
         data = db.query(PortfolioData).filter(

@@ -7,7 +7,7 @@ import 'package:portfolio/core/responsive.dart';
 import 'package:portfolio/screens/about_page.dart';
 import 'package:portfolio/screens/contact_page.dart';
 import 'package:portfolio/screens/landing_page.dart';
-import 'package:portfolio/screens/projects_page.dart';
+import 'package:portfolio/screens/journey_page.dart';
 import 'package:portfolio/screens/resume_dialog.dart';
 
 class AppShell extends StatefulWidget {
@@ -48,7 +48,8 @@ class _AppShellState extends State<AppShell> {
   }
 
   void _cachePortfolioContent(Map<String, dynamic> content) {
-    _portfolioContent = content;
+    if (!mounted) return;
+    setState(() => _portfolioContent = content);
   }
 
   void _updateActiveSection() {
@@ -123,7 +124,7 @@ class _AppShellState extends State<AppShell> {
                   ),
                   KeyedSubtree(
                     key: _sectionKeys[PortfolioSection.projects],
-                    child: const ProjectsScreen(),
+                    child: const JourneyPage(),
                   ),
                   ConstrainedBox(
                     key: _sectionKeys[PortfolioSection.contact],
@@ -243,7 +244,7 @@ class _FloatingMobileNav extends StatelessWidget {
           _NavIcon(
               icon: showResumeDone
                   ? Icons.download_done_outlined
-                  : Icons.document_scanner,
+                  : Icons.article_outlined,
               active: showResumeDone,
               color: t.button,
               onTap: onResumeTap),
@@ -253,7 +254,7 @@ class _FloatingMobileNav extends StatelessWidget {
   }
 }
 
-class _TopNavText extends StatelessWidget {
+class _TopNavText extends StatefulWidget {
   final String label;
   final bool active;
   final VoidCallback onTap;
@@ -261,13 +262,38 @@ class _TopNavText extends StatelessWidget {
       {required this.label, required this.active, required this.onTap});
 
   @override
+  State<_TopNavText> createState() => _TopNavTextState();
+}
+
+class _TopNavTextState extends State<_TopNavText> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
-    return TextButton(
-      onPressed: onTap,
-      style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-      child: Text(label,
-          style: t.subheading.copyWith(color: active ? t.button : t.text)),
+    final highlighted = widget.active || _hovered;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        decoration: BoxDecoration(
+          color: highlighted ? t.buttonSoft : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppRadius.full),
+        ),
+        child: TextButton(
+          onPressed: widget.onTap,
+          style: TextButton.styleFrom(
+            minimumSize: const Size(48, 48),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          ),
+          child: Text(
+            widget.label,
+            style: t.label.copyWith(color: highlighted ? t.button : t.text),
+          ),
+        ),
+      ),
     );
   }
 }

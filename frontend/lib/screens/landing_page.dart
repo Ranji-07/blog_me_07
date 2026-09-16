@@ -471,7 +471,7 @@ class _StatusResumeState extends State<_StatusResume>
             onPressed: _showResume,
             constraints: const BoxConstraints.tightFor(width: 48, height: 48),
             icon: Icon(
-              _resumeDone ? Icons.check_rounded : Icons.download_outlined,
+              _resumeDone ? Icons.check_rounded : Icons.article_outlined,
               color: _resumeDone ? color : t.text,
             ),
           ),
@@ -515,14 +515,23 @@ class _LandingButtonState extends State<_LandingButton> {
     final button = widget.outlined
         ? OutlinedButton.icon(
             onPressed: onPressed,
-            icon: Icon(widget.icon),
+            icon: widget.icon == null
+                ? const SizedBox.shrink()
+                : AnimatedSlide(
+                    duration: const Duration(milliseconds: 180),
+                    offset: _hovered ? const Offset(0.16, 0) : Offset.zero,
+                    child: Icon(widget.icon, size: 18),
+                  ),
             label: Text(widget.label),
             style: OutlinedButton.styleFrom(
-              foregroundColor: t.button,
-              side: BorderSide(color: t.button),
+              foregroundColor: _hovered ? t.button : t.text,
+              side: BorderSide(color: _hovered ? t.button : t.border),
               minimumSize: Size(buttonWidth, buttonHeight),
               padding: EdgeInsets.symmetric(
                 horizontal: widget.compact ? 10 : AppSpacing.lg,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
             ),
           )
@@ -542,12 +551,14 @@ class _LandingButtonState extends State<_LandingButton> {
         duration: const Duration(milliseconds: 150),
         transform: Matrix4.translationValues(0, _hovered ? -2 : 0, 0),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.full),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           boxShadow: _hovered
               ? [
                   BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.18),
-                      blurRadius: 12)
+                    color: t.button.withValues(alpha: 0.16),
+                    blurRadius: 16,
+                    offset: const Offset(0, 7),
+                  )
                 ]
               : const [],
         ),

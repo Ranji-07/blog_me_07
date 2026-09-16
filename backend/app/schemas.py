@@ -31,6 +31,7 @@ class PortfolioSection(str, Enum):
     ABOUT = "about"
     PROJECTS = "projects"
     EXPERIENCE = "experience"
+    JOURNEY = "journey"
     CONTACT = "contact"
 
 

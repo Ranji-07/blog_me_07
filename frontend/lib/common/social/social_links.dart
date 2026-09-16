@@ -172,12 +172,17 @@ class ContactLinksSection extends StatelessWidget {
                     vertical: AppSpacing.md,
                   ),
                   decoration: BoxDecoration(
-                    color: AppTheme.of(dialogContext).surface.withValues(alpha: 0.5),
+                    color: AppTheme.of(dialogContext)
+                        .surface
+                        .withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border.all(color: AppTheme.of(dialogContext).border),
+                    border:
+                        Border.all(color: AppTheme.of(dialogContext).border),
                   ),
                   child: Text(
-                    email.isEmpty ? 'Email address available on request' : email,
+                    email.isEmpty
+                        ? 'Email address available on request'
+                        : email,
                     style: AppTheme.of(dialogContext).subheading,
                   ),
                 ),
@@ -360,9 +365,8 @@ class _ContactIconButtonState extends State<_ContactIconButton> {
               onTapUp: widget.enabled
                   ? (_) => setState(() => _pressed = false)
                   : null,
-              onTap: widget.enabled
-                  ? () => _runAction(widget.onPrimaryTap)
-                  : null,
+              onTap:
+                  widget.enabled ? () => _runAction(widget.onPrimaryTap) : null,
               onSecondaryTap: widget.enabled
                   ? () => _runAction(widget.onSecondaryTap)
                   : null,
@@ -373,50 +377,55 @@ class _ContactIconButtonState extends State<_ContactIconButton> {
                 scale: effectiveScale,
                 duration: const Duration(milliseconds: 160),
                 curve: Curves.easeOut,
-                child: AnimatedContainer(
+                child: AnimatedSlide(
                   duration: const Duration(milliseconds: 160),
                   curve: Curves.easeOut,
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: widget.showBackground
-                        ? (_hovered
-                            ? t.buttonSoft
-                            : t.surface.withValues(alpha: 0.32))
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(AppRadius.full),
-                    border: _focused
-                        ? Border.all(color: t.button, width: 1.6)
-                        : (widget.showBackground
-                            ? Border.all(
-                                color: _hovered ? t.button : t.border,
-                              )
-                            : null),
-                    boxShadow: _hovered && widget.enabled
-                        ? [
-                            BoxShadow(
-                              color: t.button.withValues(alpha: 0.18),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Center(
-                    child: _busy
-                        ? SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
+                  offset: _hovered ? const Offset(0, -0.08) : Offset.zero,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    curve: Curves.easeOut,
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: widget.showBackground
+                          ? (_hovered
+                              ? t.buttonSoft
+                              : t.surface.withValues(alpha: 0.32))
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                      border: _focused
+                          ? Border.all(color: t.button, width: 1.6)
+                          : (widget.showBackground
+                              ? Border.all(
+                                  color: _hovered ? t.button : t.border,
+                                )
+                              : null),
+                      boxShadow: _hovered && widget.enabled
+                          ? [
+                              BoxShadow(
+                                color: t.button.withValues(alpha: 0.18),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Center(
+                      child: _busy
+                          ? SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: iconColor,
+                              ),
+                            )
+                          : Icon(
+                              widget.iconData ?? widget.icon,
                               color: iconColor,
+                              size: 22,
                             ),
-                          )
-                        : Icon(
-                            widget.iconData ?? widget.icon,
-                            color: iconColor,
-                            size: 22,
-                          ),
+                    ),
                   ),
                 ),
               ),

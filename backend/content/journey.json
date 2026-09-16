@@ -1,0 +1,81 @@
+{
+  "title": "The Journey So Far",
+  "subtitle": "A continuous view of education, engineering work, and certifications.",
+  "events": [
+    {
+      "id": "be-it-2024",
+      "type": "Education",
+      "date": "May 2024",
+      "timeline_date": "2024-05-01",
+      "organization": "B.E. IT",
+      "title": "Bachelor of Engineering - Information Technology",
+      "timeline_label": "CGPA 7",
+      "description": "Graduated from Annamalai University with CGPA 7 and earned the NCC C Certificate.",
+      "technologies": [],
+      "highlights": ["Annamalai University", "NCC C Certificate"]
+    },
+    {
+      "id": "boodskap-intern",
+      "type": "Work",
+      "date": "Sep 2024 - Apr 2025",
+      "timeline_date": "2024-09-01",
+      "organization": "Boodskap",
+      "title": "Project Intern",
+      "timeline_label": "Project Intern",
+      "description": "Worked on connected IoT products across device, cloud, and application layers.",
+      "technologies": ["Flutter", "Dart", "C++", "IoT", "MQTT", "Docker", "PostgreSQL"],
+      "highlights": ["Contributed to firmware, embedded board R&D, sensor integration, and Flutter IoT interfaces."]
+    },
+    {
+      "id": "boodskap-engineer",
+      "type": "Work",
+      "date": "Apr 2025 - Oct 2025",
+      "timeline_date": "2025-04-01",
+      "organization": "Boodskap",
+      "title": "Software Engineer",
+      "timeline_label": "Software Engineer",
+      "description": "Built connected IoT products and platform capabilities across device, cloud, and application layers.",
+      "technologies": ["Flutter", "Dart", "C++", "IoT", "MQTT", "Docker", "PostgreSQL"],
+      "highlights": ["Developed device and application capabilities for connected IoT workflows.", "Worked across embedded integration, telemetry, and Flutter interfaces."]
+    },
+    {
+      "id": "genai-certification",
+      "type": "Certification",
+      "date": "Jun 2025",
+      "timeline_date": "2025-06-01",
+      "organization": "MIT (AU-KBC)",
+      "title": "Generative AI: Math Foundation to Modelling",
+      "timeline_label": "GenAI Certification",
+      "description": "Generative AI certification covering mathematical foundations through modelling.",
+      "technologies": ["Generative AI", "LLM", "RAG"],
+      "highlights": []
+    },
+    {
+      "id": "buddi-sde",
+      "type": "Work",
+      "date": "Nov 2025 - Present",
+      "timeline_date": "2025-11-01",
+      "organization": "Buddi.AI",
+      "title": "Software Development Engineer",
+      "timeline_label": "SDE",
+      "current": true,
+      "description": "Building AI-integrated production systems, Python data pipelines, medical-data analytics workflows, and Scala/LLM processing features.",
+      "technologies": ["Python", "Scala", "LLM", "APIs", "Medical Data Analytics"],
+      "highlights": ["Built Python pipelines combining JSON files, Excel datasets, and live API endpoints.", "Reduced end-to-end analysis time from approximately 3 hours to 45 minutes.", "Generated structured Excel reports for QA and medical-coder/SME review.", "Automated text-to-JSON and XML-to-text transformations.", "Delivered Scala feature updates, bug fixes, and regression testing for LLM input processing."]
+    },
+    {
+      "id": "devops-certification",
+      "type": "Certification",
+      "date": "Jun 2026",
+      "timeline_date": "2026-06-01",
+      "organization": "GUVI x HCL",
+      "title": "DevOps Certification",
+      "timeline_label": "DevOps Certification",
+      "description": "DevOps certification milestone focused on delivery, automation, and operations practices.",
+      "technologies": ["Docker", "Kubernetes", "Terraform", "CI/CD"],
+      "highlights": []
+    }
+  ],
+  "visible": true,
+  "status": "published"
+}

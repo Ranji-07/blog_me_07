@@ -32,12 +32,6 @@
     "Embedded / IoT": ["Embedded Systems", "Microcontrollers", "Sensors", "Communication Protocols"],
     "Version Control": ["Git", "GitHub", "GitLab"]
   },
-  "education_timeline": [
-    {"year": "2021", "type": "Degree", "title": "Bachelor of Technology", "organization": "Example Institute of Technology", "date": "2021 - 2025", "description": "Computer Science foundation with practical software engineering projects."},
-    {"year": "2023", "type": "Certification", "title": "Cloud Foundations", "organization": "Learning milestone", "date": "2023", "description": "Initial cloud infrastructure and deployment learning milestone."},
-    {"year": "2024", "type": "Certification", "title": "DevOps & Containers", "organization": "Learning milestone", "date": "2024", "description": "Containerization, CI/CD, and observability practice milestone."},
-    {"year": "2025", "type": "Degree", "title": "Bachelor of Technology", "organization": "Example Institute of Technology", "date": "2021 - 2025", "description": "Completed Computer Science degree with production-oriented engineering work."}
-  ],
   "tagline": "AI • Cloud • Mobile • Backend • DevOps",
   "role_font_size": 32,
   "value_statement": "Building intelligent systems at the intersection of software engineering, cloud infrastructure, and AI.",

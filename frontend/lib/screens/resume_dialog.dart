@@ -372,8 +372,7 @@ class _ResumePage extends StatelessWidget {
         SizedBox(height: 18),
         _ResumeSection(
           title: 'Education',
-          content:
-              'Bachelor of Technology in Computer Science\n2021 - 2025',
+          content: 'Bachelor of Technology in Computer Science\n2021 - 2025',
         ),
         SizedBox(height: 18),
         _ResumeSection(

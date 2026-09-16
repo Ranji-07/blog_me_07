@@ -24,6 +24,14 @@ def _allowed_origins() -> list[str]:
         raise RuntimeError("CORS_ALLOW_ORIGINS must list explicit origins")
     return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
 
+
+def _allowed_origin_regex() -> str | None:
+    # Flutter Web selects a new local port on each dev-server restart.
+    return os.getenv(
+        "CORS_ALLOW_ORIGIN_REGEX",
+        r"^http://(localhost|127\.0\.0\.1):\d+$",
+    ) or None
+
 app = FastAPI(
     title="Portfolio API",
     description="Professional Portfolio Management System with Email Control",
@@ -35,6 +43,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins(),
+    allow_origin_regex=_allowed_origin_regex(),
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

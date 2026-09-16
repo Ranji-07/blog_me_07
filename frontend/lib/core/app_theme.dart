@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
   AppColors._();
 
-  static const Color backgroundDark = Color(0xFF050505);
-  static const Color surfaceDark = Color(0xFF0D0D0D);
-  static const Color cardDark = Color(0xFF111111);
-  static const Color borderDark = Color(0xFF2A2A2A);
-  static const Color textDark = Color(0xFFF6F4EF);
-  static const Color textMutedDark = Color(0xFFB9B4AA);
+  static const Color backgroundDark = Color(0xFF090909);
+  static const Color surfaceDark = Color(0xFF10100F);
+  static const Color cardDark = Color(0xFF151412);
+  static const Color borderDark = Color(0xFF302E2A);
+  static const Color textDark = Color(0xFFF3F0E9);
+  static const Color textMutedDark = Color(0xFFA9A49A);
 
   static const Color backgroundLight = Color(0xFFF7F3EC);
   static const Color surfaceLight = Color(0xFFFFFFFF);
@@ -17,8 +18,8 @@ class AppColors {
   static const Color textLight = Color(0xFF181512);
   static const Color textMutedLight = Color(0xFF62584B);
 
-  static const Color button = Color(0xFFFFB067);
-  static const Color buttonSoft = Color(0x33FFB067);
+  static const Color button = Color(0xFFFFA85B);
+  static const Color buttonSoft = Color(0x24FFA85B);
   static const Color neonGreen = Color(0xFF7DFF6A);
   static const Color danger = Color(0xFFFF6B6B);
 }
@@ -50,45 +51,47 @@ class AppThemeData {
   const AppThemeData.dark() : isDark = true;
   const AppThemeData.light() : isDark = false;
 
-  Color get background => isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+  Color get background =>
+      isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
   Color get surface => isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
   Color get card => isDark ? AppColors.cardDark : AppColors.cardLight;
   Color get border => isDark ? AppColors.borderDark : AppColors.borderLight;
   Color get text => isDark ? AppColors.textDark : AppColors.textLight;
-  Color get textMuted => isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
+  Color get textMuted =>
+      isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
   Color get button => AppColors.button;
   Color get buttonSoft => AppColors.buttonSoft;
   Color get neonGreen => AppColors.neonGreen;
 
-  TextStyle get display => TextStyle(
+  TextStyle get display => GoogleFonts.outfit(
         fontSize: 52,
-        fontWeight: FontWeight.w800,
+        fontWeight: FontWeight.w700,
         color: text,
-        height: 1,
-        letterSpacing: -1.8,
+        height: 0.98,
+        letterSpacing: -1.7,
       );
 
-  TextStyle get heading => TextStyle(
+  TextStyle get heading => GoogleFonts.outfit(
         fontSize: 30,
         fontWeight: FontWeight.w700,
         color: text,
         height: 1.1,
       );
 
-  TextStyle get subheading => TextStyle(
+  TextStyle get subheading => GoogleFonts.outfit(
         fontSize: 18,
         fontWeight: FontWeight.w600,
         color: text,
       );
 
-  TextStyle get body => TextStyle(
+  TextStyle get body => GoogleFonts.manrope(
         fontSize: 15,
         fontWeight: FontWeight.w400,
         color: textMuted,
         height: 1.6,
       );
 
-  TextStyle get label => TextStyle(
+  TextStyle get label => GoogleFonts.manrope(
         fontSize: 13,
         fontWeight: FontWeight.w600,
         color: textMuted,
@@ -131,6 +134,7 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
+      fontFamily: GoogleFonts.manrope().fontFamily,
       brightness: brightness,
       scaffoldBackgroundColor: colors.background,
       colorScheme: baseScheme,
@@ -150,8 +154,8 @@ class AppTheme {
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: colors.surface,
+        filled: false,
+        floatingLabelStyle: TextStyle(color: colors.button),
       ),
       textTheme: TextTheme(
         displayLarge: colors.display,
