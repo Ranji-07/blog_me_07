@@ -23,7 +23,40 @@ class PortfolioApi {
     return decoded;
   }
 
+  static Future<Map<String, dynamic>> fetchAbout() async {
+    final response = await http.get(Uri.parse('$baseUrl/api/portfolio/about'));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Unable to load profile content.');
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      throw Exception('Invalid profile response.');
+    }
+    return decoded;
+  }
+
   static Future<void> recordVisit() async {
     await http.post(Uri.parse('$baseUrl/api/analytics/visit'));
+  }
+
+  static Future<void> submitContactForm({
+    required String name,
+    required String email,
+    required String message,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/portfolio/contact-form'),
+      headers: const {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'name': name,
+        'email': email,
+        'message': message,
+      }),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Unable to send your message. Please try again.');
+    }
   }
 }

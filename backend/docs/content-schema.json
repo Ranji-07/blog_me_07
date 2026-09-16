@@ -66,6 +66,30 @@
         "title": { "type": "string" },
         "roles": { "$ref": "#/$defs/stringArray" },
         "bio": { "type": "string" },
+        "about_me": { "$ref": "#/$defs/stringArray" },
+        "skill_categories": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/stringArray" }
+        },
+        "education_timeline": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["year", "type", "title", "organization", "date", "description"],
+            "properties": {
+              "year": { "type": "string" },
+              "type": { "type": "string" },
+              "title": { "type": "string" },
+              "organization": { "type": "string" },
+              "date": { "type": "string" },
+              "credential_id": { "type": "string" },
+              "credential_url": { "type": "string" },
+              "asset_url": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        },
         "tagline": { "type": "string" },
         "role_font_size": { "type": "number", "minimum": 10, "maximum": 48 },
         "value_statement": { "type": "string" },

@@ -1,5 +1,6 @@
 import logging
 import json
+from html import escape
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from sqlalchemy import text
@@ -9,13 +10,11 @@ from app.database import get_db
 from app.models import ContactSubmission, PortfolioData, VisitLog
 from app.schemas import APIResponse, ContactFormRequest
 from app.services.email_service import (
-    ADMIN_API_KEY,
     ADMIN_EMAIL,
-    can_send_real_email,
-    get_email_delivery_mode,
-    is_email_configured,
     send_email,
 )
+from app.services.contact_retention import purge_expired_submissions
+from app.services.rate_limiter import get_client_ip, rate_limiter
 from app.utils.time import utc_display, utc_isoformat, utc_now
 
 logger = logging.getLogger(__name__)
@@ -31,10 +30,6 @@ async def root():
         "status": "running",
         "docs": "/docs",
         "health": "/health",
-        "admin_configured": ADMIN_EMAIL is not None,
-        "admin_auth_configured": bool(ADMIN_EMAIL and ADMIN_API_KEY),
-        "email_delivery_mode": get_email_delivery_mode(),
-        "real_email_ready": can_send_real_email(),
     }
 
 
@@ -44,16 +39,12 @@ async def health_check(db: Session = Depends(get_db)):
         db.execute(text("SELECT 1"))
         db_status = "healthy"
     except Exception as exc:
-        db_status = f"unhealthy: {str(exc)}"
+        db_status = "unhealthy"
 
     return {
         "status": "healthy" if db_status == "healthy" else "degraded",
         "timestamp": utc_isoformat(utc_now()),
         "database": db_status,
-        "email_configured": is_email_configured(),
-        "email_delivery_mode": get_email_delivery_mode(),
-        "real_email_ready": can_send_real_email(),
-        "admin_auth_configured": bool(ADMIN_EMAIL and ADMIN_API_KEY),
     }
 
 
@@ -114,10 +105,13 @@ async def get_all_portfolio(db: Session = Depends(get_db)):
 
 @router.post("/api/analytics/visit", tags=["Analytics"], status_code=204)
 async def record_visit(request: Request, db: Session = Depends(get_db)):
-    forwarded_for = request.headers.get("x-forwarded-for", "")
-    client_ip = forwarded_for.split(",")[0].strip() if forwarded_for else None
-    if not client_ip and request.client:
-        client_ip = request.client.host
+    await rate_limiter.enforce(
+        request,
+        scope="analytics",
+        limit=120,
+        window_seconds=60,
+    )
+    client_ip = get_client_ip(request)
 
     db.add(
         VisitLog(
@@ -130,39 +124,48 @@ async def record_visit(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/api/portfolio/contact-form", tags=["Contact"], response_model=APIResponse)
 async def submit_contact_form(
-    request: ContactFormRequest,
+    form: ContactFormRequest,
     background_tasks: BackgroundTasks,
+    http_request: Request,
     db: Session = Depends(get_db),
 ):
+    await rate_limiter.enforce(
+        http_request,
+        scope="contact",
+        limit=5,
+        window_seconds=3600,
+    )
+    purge_expired_submissions(db)
     submission = ContactSubmission(
-        name=request.name,
-        email=request.email,
-        contact=request.contact,
-        message=request.message,
+        name=form.name,
+        email=form.email,
+        message=form.message,
     )
     db.add(submission)
     db.commit()
 
     if ADMIN_EMAIL:
+        name = escape(form.name)
+        email = escape(str(form.email))
+        message = escape(form.message).replace("\n", "<br>")
         email_body = f"""
         <h2>New Contact Form Submission</h2>
         <table style="width:100%; border-collapse: collapse;">
-            <tr><td style="padding:8px; border-bottom:1px solid #333;"><strong>Name:</strong></td><td style="padding:8px; border-bottom:1px solid #333;">{request.name}</td></tr>
-            <tr><td style="padding:8px; border-bottom:1px solid #333;"><strong>Email:</strong></td><td style="padding:8px; border-bottom:1px solid #333;">{request.email}</td></tr>
-            <tr><td style="padding:8px; border-bottom:1px solid #333;"><strong>Contact:</strong></td><td style="padding:8px; border-bottom:1px solid #333;">{request.contact}</td></tr>
+            <tr><td style="padding:8px; border-bottom:1px solid #333;"><strong>Name:</strong></td><td style="padding:8px; border-bottom:1px solid #333;">{name}</td></tr>
+            <tr><td style="padding:8px; border-bottom:1px solid #333;"><strong>Email:</strong></td><td style="padding:8px; border-bottom:1px solid #333;">{email}</td></tr>
         </table>
         <h3>Message:</h3>
-        <p style="background:#0F172A; padding:15px; border-radius:8px;">{request.message}</p>
+        <p style="background:#0F172A; padding:15px; border-radius:8px;">{message}</p>
         <p style="color:#94A3B8; font-size:12px;">Received at: {utc_display(utc_now())}</p>
         """
         background_tasks.add_task(
             send_email,
             ADMIN_EMAIL,
-            f"Portfolio Contact: {request.name}",
+            f"Portfolio Contact: {form.name}",
             email_body,
         )
 
-    logger.info("Contact form submitted by %s", request.name)
+    logger.info("Contact form submitted by %s", form.name)
     return APIResponse(
         status="success",
         message="Message sent successfully. We'll get back to you soon!",

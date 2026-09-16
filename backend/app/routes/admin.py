@@ -3,9 +3,11 @@ import logging
 import os
 import secrets
 from datetime import timedelta
+from html import escape
 from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Header, HTTPException, Query, UploadFile
+from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
 from app.database import BASE_DIR, get_db
@@ -20,6 +22,7 @@ from app.services.email_service import (
     generate_confirmation_token,
     send_email,
 )
+from app.services.contact_retention import purge_expired_submissions
 from app.utils.time import ensure_utc, utc_isoformat, utc_now
 
 logger = logging.getLogger(__name__)
@@ -40,15 +43,6 @@ def ensure_admin(auth_email: str, admin_token: Optional[str]) -> None:
         raise HTTPException(status_code=403, detail="Invalid admin token")
 
 
-def resolve_admin_token(
-    body_token: Optional[str] = None,
-    query_token: Optional[str] = None,
-    form_token: Optional[str] = None,
-    header_token: Optional[str] = None,
-) -> Optional[str]:
-    return header_token or body_token or query_token or form_token
-
-
 @router.post("/email-command", tags=["Admin"], response_model=APIResponse)
 async def process_email_command(
     request: EmailCommandRequest,
@@ -56,7 +50,7 @@ async def process_email_command(
     x_admin_token: Optional[str] = Header(default=None, alias="X-Admin-Token"),
     db: Session = Depends(get_db),
 ):
-    ensure_admin(request.auth_email, resolve_admin_token(request.admin_token, header_token=x_admin_token))
+    ensure_admin(request.auth_email, x_admin_token)
 
     command_data = request.model_dump()
     token = generate_confirmation_token()
@@ -91,8 +85,6 @@ async def process_email_command(
         status="pending",
         message="Confirmation email sent. Check your inbox.",
         data={
-            "token": token,
-            "confirmation_url": confirmation_url,
             "action": request.action.value,
             "section": request.section.value,
             "target_id": request.target_id,
@@ -100,30 +92,44 @@ async def process_email_command(
     )
 
 
-@router.get("/confirm/{token}", tags=["Admin"])
-async def confirm_update(
-    token: str,
-    auth_email: str = Query(...),
-    admin_token: Optional[str] = Query(default=None),
-    x_admin_token: Optional[str] = Header(default=None, alias="X-Admin-Token"),
-    db: Session = Depends(get_db),
-):
-    ensure_admin(auth_email, resolve_admin_token(query_token=admin_token, header_token=x_admin_token))
+def _get_pending_command(token: str, db: Session) -> EmailCommand:
     email_cmd = db.query(EmailCommand).filter(
         EmailCommand.token == token,
         EmailCommand.confirmed == False,
     ).first()
-
     if not email_cmd:
         raise HTTPException(status_code=404, detail="Invalid or expired token")
-
     if email_cmd.expires_at and ensure_utc(email_cmd.expires_at) < utc_now():
         raise HTTPException(status_code=410, detail="Token has expired")
+    return email_cmd
+
+
+@router.get("/confirm/{token}", tags=["Admin"], response_class=HTMLResponse)
+async def confirm_update_page(
+    token: str,
+    db: Session = Depends(get_db),
+):
+    _get_pending_command(token, db)
+    safe_token = escape(token)
+    return f"""
+    <!doctype html><html><body>
+    <h1>Confirm portfolio update</h1>
+    <p>This action is ready to be applied.</p>
+    <form method="post" action="/api/admin/confirm/{safe_token}">
+      <button type="submit">Confirm update</button>
+    </form>
+    </body></html>
+    """
+
+
+@router.post("/confirm/{token}", tags=["Admin"], response_model=APIResponse)
+async def confirm_update(
+    token: str,
+    db: Session = Depends(get_db),
+):
+    email_cmd = _get_pending_command(token, db)
 
     command = json.loads(email_cmd.data)
-    if command.get("auth_email") != auth_email:
-        raise HTTPException(status_code=403, detail="Confirmation email mismatch")
-
     result = apply_admin_command(command, db, command_token=token)
 
     email_cmd.confirmed = True
@@ -151,31 +157,41 @@ async def confirm_update(
 async def upload_image(
     file: UploadFile = File(...),
     auth_email: str = Form(...),
-    admin_token: str = Form(...),
+    x_admin_token: Optional[str] = Header(default=None, alias="X-Admin-Token"),
     asset_type: str = Form("image"),
 ):
-    ensure_admin(auth_email, admin_token)
+    ensure_admin(auth_email, x_admin_token)
 
-    allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+    allowed_types = {
+        "image/jpeg": (b"\xff\xd8\xff", ".jpg"),
+        "image/png": (b"\x89PNG\r\n\x1a\n", ".png"),
+        "image/gif": (b"GIF8", ".gif"),
+        "image/webp": (b"RIFF", ".webp"),
+    }
     if file.content_type not in allowed_types:
         raise HTTPException(status_code=400, detail="Invalid file type. Allowed: JPEG, PNG, GIF, WebP")
 
-    contents = await file.read()
+    contents = await file.read(5 * 1024 * 1024 + 1)
     if len(contents) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large. Max 5MB")
+    signature, extension = allowed_types[file.content_type]
+    is_webp = file.content_type == "image/webp" and contents[8:12] == b"WEBP"
+    if not contents.startswith(signature) or (file.content_type == "image/webp" and not is_webp):
+        raise HTTPException(status_code=400, detail="Uploaded content does not match the declared image type")
 
     upload_dir = BASE_DIR / "uploaded_images"
     upload_dir.mkdir(exist_ok=True)
-    file_path = upload_dir / file.filename
+    filename = f"{secrets.token_urlsafe(18)}{extension}"
+    file_path = upload_dir / filename
     file_path.write_bytes(contents)
 
-    asset_url = f"/images/{file.filename}"
-    logger.info("Image uploaded: %s", file.filename)
+    asset_url = f"/images/{filename}"
+    logger.info("Image uploaded: %s", filename)
     return APIResponse(
         status="success",
         message="Asset uploaded successfully",
         data={
-            "filename": file.filename,
+            "filename": filename,
             "asset_type": asset_type,
             "asset": {
                 "url": asset_url,
@@ -191,10 +207,9 @@ async def upload_image(
 @router.post("/seed", tags=["Admin"], response_model=APIResponse)
 async def seed_database(
     auth_email: str = Query(...),
-    admin_token: Optional[str] = Query(default=None),
     x_admin_token: Optional[str] = Header(default=None, alias="X-Admin-Token"),
 ):
-    ensure_admin(auth_email, resolve_admin_token(query_token=admin_token, header_token=x_admin_token))
+    ensure_admin(auth_email, x_admin_token)
     try:
         from app.init_db import init_database
 
@@ -208,13 +223,12 @@ async def seed_database(
 @router.get("/history", tags=["Admin"], response_model=APIResponse)
 async def get_portfolio_history(
     auth_email: str = Query(...),
-    admin_token: Optional[str] = Query(default=None),
     section: Optional[str] = Query(default=None),
     limit: int = Query(50, ge=1, le=200),
     x_admin_token: Optional[str] = Header(default=None, alias="X-Admin-Token"),
     db: Session = Depends(get_db),
 ):
-    ensure_admin(auth_email, resolve_admin_token(query_token=admin_token, header_token=x_admin_token))
+    ensure_admin(auth_email, x_admin_token)
 
     query = db.query(PortfolioVersion)
     if section:
@@ -247,11 +261,10 @@ async def get_portfolio_history(
 async def rollback_portfolio_version(
     version_id: int,
     auth_email: str = Query(...),
-    admin_token: Optional[str] = Query(default=None),
     x_admin_token: Optional[str] = Header(default=None, alias="X-Admin-Token"),
     db: Session = Depends(get_db),
 ):
-    ensure_admin(auth_email, resolve_admin_token(query_token=admin_token, header_token=x_admin_token))
+    ensure_admin(auth_email, x_admin_token)
 
     version = db.query(PortfolioVersion).filter(PortfolioVersion.id == version_id).first()
     if not version:
@@ -285,12 +298,11 @@ async def get_schema(name: str):
 @router.get("/submissions", tags=["Admin"])
 async def get_contact_submissions(
     auth_email: str = Query(...),
-    admin_token: Optional[str] = Query(default=None),
     limit: int = Query(50, ge=1, le=100),
     x_admin_token: Optional[str] = Header(default=None, alias="X-Admin-Token"),
     db: Session = Depends(get_db),
 ):
-    ensure_admin(auth_email, resolve_admin_token(query_token=admin_token, header_token=x_admin_token))
+    ensure_admin(auth_email, x_admin_token)
     submissions = db.query(ContactSubmission).order_by(
         ContactSubmission.created_at.desc()
     ).limit(limit).all()
@@ -301,7 +313,6 @@ async def get_contact_submissions(
                 "id": item.id,
                 "name": item.name,
                 "email": item.email,
-                "contact": item.contact,
                 "message": item.message,
                 "created_at": utc_isoformat(item.created_at),
                 "is_read": item.is_read,
@@ -309,3 +320,34 @@ async def get_contact_submissions(
             for item in submissions
         ]
     }
+
+
+@router.delete("/submissions/{submission_id}", tags=["Admin"], response_model=APIResponse)
+async def delete_contact_submission(
+    submission_id: int,
+    auth_email: str = Query(...),
+    x_admin_token: Optional[str] = Header(default=None, alias="X-Admin-Token"),
+    db: Session = Depends(get_db),
+):
+    ensure_admin(auth_email, x_admin_token)
+    submission = db.query(ContactSubmission).filter(ContactSubmission.id == submission_id).first()
+    if not submission:
+        raise HTTPException(status_code=404, detail="Contact submission not found")
+    db.delete(submission)
+    db.commit()
+    return APIResponse(status="success", message="Contact submission deleted")
+
+
+@router.post("/submissions/purge", tags=["Admin"], response_model=APIResponse)
+async def purge_contact_submissions(
+    auth_email: str = Query(...),
+    x_admin_token: Optional[str] = Header(default=None, alias="X-Admin-Token"),
+    db: Session = Depends(get_db),
+):
+    ensure_admin(auth_email, x_admin_token)
+    deleted = purge_expired_submissions(db)
+    return APIResponse(
+        status="success",
+        message="Expired contact submissions purged",
+        data={"deleted": deleted},
+    )

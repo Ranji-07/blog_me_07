@@ -1,6 +1,6 @@
 # Portfolio Build Status
 
-Last verified: 2026-09-04
+Last verified: 2026-09-16
 
 ## Phase 0 - FastAPI CMS Backend
 
@@ -24,7 +24,7 @@ Last verified: 2026-09-04
 - [x] Responsive helpers include breakpoints, container, and adaptive grid utilities.
 - [x] Secure external-link opener uses `noopener,noreferrer` on web.
 - [x] Resume opens as a preview dialog with Share and Save actions; mobile shows a five-second action state.
-- [ ] Verify desktop and mobile rendering manually in a browser before production.
+- [x] Verify desktop and mobile rendering manually in a browser.
 
 ## Phase 2 - Landing Page
 
@@ -36,4 +36,51 @@ Last verified: 2026-09-04
 - [x] Explore Portfolio records a visit without delaying navigation; View Projects routes to `/auth-demo`.
 - [x] Resume and contact actions reuse the existing shared widgets.
 - [x] Visit logging stores IP, user agent, and timestamp through `POST /api/analytics/visit`.
-- [ ] Verify the final desktop and mobile layout in a running Flutter browser session.
+- [x] Verify the final desktop and mobile layout in a running Flutter browser session.
+
+## Phase 3 - About Page
+
+- [x] `PortfolioApi.fetchAbout()` loads the public about endpoint when no landing cache is available.
+- [x] `AboutProfile` parses profile, image, skills, technology, and highlight data.
+- [x] Landing content is reused when available, avoiding a second request after Explore Portfolio.
+- [x] The About page has loading, error, and data states through `FutureBuilder`.
+- [x] Profile, skills, and highlights are separated into reusable screen widgets.
+- [x] Layout adapts from one column on mobile to two columns on larger screens and fades in after load.
+- [x] Verify the final desktop and mobile layout in a running Flutter browser session.
+
+## Navigation and Simplified Contact - Complete
+
+- [x] The portfolio uses one continuous outer scroll: Landing, About, Projects, and Contact.
+- [x] Desktop and mobile navigation smoothly scroll to each section.
+- [x] The Contact section has Name, Email, and Message fields and submits through the FastAPI contact endpoint.
+- [x] The destination email, social links, and footer metadata load from portfolio content.
+- [x] Shared navigation and the simplified Contact flow were manually verified on desktop and mobile.
+
+## Pre-Projects Backend Hardening - Complete
+
+- [x] CORS allows explicit origins only, security response headers are applied, and public configuration state is not exposed.
+- [x] Admin credentials use request headers only; they are not stored with commands or included in confirmation URLs.
+- [x] Confirmation links open a review page and require a separate POST to apply a pending write.
+- [x] Uploads use server-generated filenames, MIME/signature matching, and a 5 MB read limit.
+- [x] Contact and analytics endpoints have request limits, contact payloads are validated server-side, and email HTML escapes user content.
+- [x] SMTP uses a verified TLS context and connection timeout.
+- [x] Contact submissions have automatic retention cleanup plus authenticated deletion and purge endpoints.
+- [ ] Before production: configure HTTPS, explicit production CORS origins, real SMTP credentials, and a shared Redis rate limiter for multi-instance deployment.
+
+## Phase 5 - Contact Page
+
+- [x] Shared Email, GitHub, and LinkedIn icons support secure opening, tooltips, copy feedback, focus, pressed, busy, and long-press states.
+- [x] The email dialog shows the loaded email address and provides Mail Him, Copy Email, and Close actions.
+- [x] The simplified contact form includes Name, Email, and Message only.
+- [x] Email suffix suggestions, opt-in name suggestion, and keyboard/touch message suggestions are implemented.
+- [x] Validation rejects empty, placeholder, repeated-character, malformed, and out-of-range required values with field-level errors.
+- [x] The form accepts Unicode, emojis, pasted text, and pasted links; backend email HTML safely escapes user content.
+- [x] FastAPI stores the submission and sends the owner notification; the success dialog also prepares the visitor's encoded `mailto:` draft.
+- [x] Privacy copy, native mobile keyboard types, 48px submit target, screen-reader labels, and keyboard focus flow are implemented.
+- [ ] Manually verify the complete contact flow across supported desktop and mobile browsers.
+- [ ] Rework the visual design after the final Contact behavior is complete.
+
+## Deferred Phase 3 Work
+
+- [ ] Redesign the About section after Phase 5.
+- [ ] Add the education and certification timeline, desktop horizontal layout, mobile swipe/auto-advance behavior, and detail dialog.

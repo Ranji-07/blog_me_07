@@ -1,7 +1,7 @@
 import os
 import logging
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
@@ -16,9 +16,12 @@ Base.metadata.create_all(bind=engine)
 
 
 def _allowed_origins() -> list[str]:
-    raw_origins = os.getenv("CORS_ALLOW_ORIGINS", "*")
+    raw_origins = os.getenv(
+        "CORS_ALLOW_ORIGINS",
+        "http://127.0.0.1:58115,http://localhost:58115",
+    )
     if raw_origins.strip() == "*":
-        return ["*"]
+        raise RuntimeError("CORS_ALLOW_ORIGINS must list explicit origins")
     return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
 
 app = FastAPI(
@@ -32,13 +35,23 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins(),
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 app.include_router(public_router)
 app.include_router(admin_router)
+
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    return response
 
 
 @app.get("/images/{filename}", tags=["Assets"])

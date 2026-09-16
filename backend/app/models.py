@@ -33,7 +33,6 @@ class ContactSubmission(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100))
     email = Column(String(255))
-    contact = Column(String(50))
     message = Column(Text)
     created_at = Column(DateTime(timezone=True), default=utc_now)
     is_read = Column(Boolean, default=False)

@@ -1,7 +1,9 @@
 from enum import Enum
 from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, EmailStr, Field
+import re
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class CommandType(str, Enum):
@@ -33,19 +35,45 @@ class PortfolioSection(str, Enum):
 
 
 class EmailCommandRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     action: CommandType
     section: PortfolioSection
     target_id: Optional[str] = None
     payload: Dict[str, Any] = Field(default_factory=dict)
     auth_email: EmailStr
-    admin_token: str = Field(..., min_length=16, max_length=256)
 
 
 class ContactFormRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: str = Field(..., min_length=2, max_length=100)
     email: EmailStr
-    contact: str = Field(..., min_length=5, max_length=50)
-    message: str = Field(..., min_length=10, max_length=2000)
+    message: str = Field(..., min_length=15, max_length=1000)
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, value: str) -> str:
+        normalized = value.strip()
+        if normalized.lower() in {"xxx", "test", "abc", "123", "asdf"}:
+            raise ValueError("Please enter a meaningful name")
+        if re.fullmatch(r"(.)\1{2,}", normalized.lower()):
+            raise ValueError("Please enter a meaningful name")
+        if not re.fullmatch(r"[A-Za-z]+(?:[ '-][A-Za-z]+)*", normalized):
+            raise ValueError("Name must contain alphabetic characters only")
+        return normalized
+
+    @field_validator("message")
+    @classmethod
+    def validate_message(cls, value: str) -> str:
+        normalized = value.strip()
+        if "\x00" in normalized:
+            raise ValueError("Message contains an invalid character")
+        if normalized.lower() in {"xxx", "test", "abc", "123", "asdf"}:
+            raise ValueError("Please enter a meaningful message")
+        if re.fullmatch(r"(.)\1{2,}", normalized.lower()):
+            raise ValueError("Please enter a meaningful message")
+        return normalized
 
 
 class APIResponse(BaseModel):

@@ -1,31 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:portfolio/common/social/social_links.dart';
 import 'package:portfolio/core/app_theme.dart';
 import 'package:portfolio/core/responsive.dart';
-import 'package:portfolio/common/social/social_links.dart';
+import 'package:portfolio/screens/widgets/contact_form.dart';
 import 'package:portfolio/services/portfolio_api.dart';
 
-class ContactScreen extends StatelessWidget {
+class ContactScreen extends StatefulWidget {
   final Map<String, dynamic>? cachedContent;
 
-  const ContactScreen({
-    super.key,
-    this.cachedContent,
-  });
+  const ContactScreen({super.key, this.cachedContent});
 
-  Future<_ContactPageContent> _fetchContactPageContent() async {
-    if (cachedContent != null) {
-      return _contentFromDecoded(cachedContent!);
-    }
+  @override
+  State<ContactScreen> createState() => _ContactScreenState();
+}
 
-    return _contentFromDecoded(await PortfolioApi.fetchAll());
+class _ContactScreenState extends State<ContactScreen> {
+  late final Future<_ContactPageContent> _contentFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _contentFuture = _loadContent();
   }
 
-  _ContactPageContent _contentFromDecoded(Map<String, dynamic> decoded) {
+  Future<_ContactPageContent> _loadContent() async {
+    final decoded = widget.cachedContent ?? await PortfolioApi.fetchAll();
     final about = (decoded['about'] as Map<String, dynamic>?) ?? const {};
     final contact = (decoded['contact'] as Map<String, dynamic>?) ?? const {};
     final social = (contact['social'] as Map<String, dynamic>?) ?? const {};
     final footer = (contact['footer'] as Map<String, dynamic>?) ?? const {};
-
     return _ContactPageContent(
       ownerName: (about['name'] as String?) ?? '',
       email: (contact['email'] as String?) ?? '',
@@ -41,111 +44,72 @@ class ContactScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
-    final horizontalPadding = Responsive.value(
-      context,
-      mobile: 18.0,
-      tablet: 24.0,
-      desktop: 28.0,
-    );
-    final topPadding = Responsive.value(
-      context,
-      mobile: 92.0,
-      tablet: 104.0,
-      desktop: 108.0,
-    );
-    final bottomPadding = Responsive.value(
-      context,
-      mobile: 32.0,
-      tablet: 28.0,
-      desktop: 24.0,
-    );
-    final iconSpacing = Responsive.value(
-      context,
-      mobile: 18.0,
-      tablet: 22.0,
-      desktop: 24.0,
-    );
+    final isMobile = Responsive.isMobile(context);
+    final padding = isMobile ? AppSpacing.md : AppSpacing.xxl;
 
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            t.background,
-            t.surface,
-            t.background,
-          ],
+          colors: [t.background, t.surface, t.background],
         ),
       ),
-      child: SafeArea(
-        child: FutureBuilder<_ContactPageContent>(
-          future: _fetchContactPageContent(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
-              return Center(
-                child: CircularProgressIndicator(color: t.button),
-              );
-            }
-
-            if (snapshot.hasError || !snapshot.hasData) {
-              return Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                  child: Text(
-                    'Unable to load contact details right now.',
-                    textAlign: TextAlign.center,
-                    style: t.body.copyWith(color: t.text),
-                  ),
-                ),
-              );
-            }
-
-            final content = snapshot.data!;
-
+      child: FutureBuilder<_ContactPageContent>(
+        future: _contentFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError || !snapshot.hasData) {
             return Padding(
-              padding: EdgeInsets.fromLTRB(
-                horizontalPadding,
-                topPadding,
-                horizontalPadding,
-                bottomPadding,
-              ),
-              child: Column(
-                children: [
-                  const Spacer(),
-                  TweenAnimationBuilder<double>(
-                    tween: Tween<double>(begin: 0, end: 1),
-                    duration: const Duration(milliseconds: 420),
-                    curve: Curves.easeOutCubic,
-                    builder: (context, value, child) {
-                      return Opacity(
-                        opacity: value,
-                        child: Transform.translate(
-                          offset: Offset(0, 24 * (1 - value)),
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: ContactLinksSection(
+              padding: EdgeInsets.all(padding),
+              child: Text('Unable to load contact details right now.',
+                  style: t.body),
+            );
+          }
+
+          final content = snapshot.data!;
+          return Padding(
+            padding: EdgeInsets.fromLTRB(
+              padding,
+              isMobile ? 96 : 128,
+              padding,
+              isMobile ? AppSpacing.xl : AppSpacing.xxl,
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text('Contact', style: t.display),
+                    const SizedBox(height: AppSpacing.xl),
+                    ContactForm(
+                      ownerName: content.ownerName,
+                      recipientEmail: content.email,
+                    ),
+                    const SizedBox(height: AppSpacing.xxl),
+                    ContactLinksSection(
                       email: content.email,
                       githubUrl: content.githubUrl,
                       linkedinUrl: content.linkedinUrl,
-                      spacing: iconSpacing,
+                      spacing: isMobile ? 18 : 24,
                     ),
-                  ),
-                  const SizedBox(height: 18),
-                  ContactFooterLine(
-                    ownerName: content.ownerName,
-                    buildYear: content.buildYear,
-                    builtWith: content.builtWith,
-                    appVersion: content.appVersion,
-                    note: content.footerNote,
-                  ),
-                ],
+                    const SizedBox(height: AppSpacing.md),
+                    ContactFooterLine(
+                      ownerName: content.ownerName,
+                      buildYear: content.buildYear,
+                      builtWith: content.builtWith,
+                      appVersion: content.appVersion,
+                      note: content.footerNote,
+                    ),
+                  ],
+                ),
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }

@@ -7,15 +7,16 @@ import 'package:portfolio/core/responsive.dart';
 import 'package:portfolio/services/portfolio_api.dart';
 import 'package:portfolio/common/social/social_links.dart';
 import 'package:portfolio/screens/resume_dialog.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class LandingScreen extends StatefulWidget {
   final VoidCallback onEnter;
+  final VoidCallback onProjects;
   final ValueChanged<Map<String, dynamic>> onPortfolioContentLoaded;
 
   const LandingScreen({
     super.key,
     required this.onEnter,
+    required this.onProjects,
     required this.onPortfolioContentLoaded,
   });
 
@@ -82,10 +83,6 @@ class _LandingScreenState extends State<LandingScreen> {
     }
   }
 
-  Future<void> _openAuthDemo() async {
-    await launchUrl(Uri.base.resolve('/auth-demo'), webOnlyWindowName: '_self');
-  }
-
   @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
@@ -108,7 +105,7 @@ class _LandingScreenState extends State<LandingScreen> {
                       content: _content!,
                       roleIndex: _roleIndex,
                       onExplore: _explorePortfolio,
-                      onProjects: _openAuthDemo,
+                      onProjects: widget.onProjects,
                     ),
         ),
       ),
@@ -120,7 +117,7 @@ class _LandingLayout extends StatelessWidget {
   final _LandingContent content;
   final int roleIndex;
   final VoidCallback onExplore;
-  final Future<void> Function() onProjects;
+  final VoidCallback onProjects;
 
   const _LandingLayout({
     required this.content,
@@ -173,13 +170,13 @@ class _LandingLayout extends StatelessWidget {
             avatarUrl: _absoluteImageUrl(content.avatarUrl),
             fontFamily: content.nameFontFamily ?? 'Outfit',
             fontSize: (content.nameFontSize ?? 20).clamp(16, 28).toDouble(),
-            fontWeight: (content.nameFontWeight ?? 600).clamp(100, 900).toDouble(),
+            fontWeight:
+                (content.nameFontWeight ?? 600).clamp(100, 900).toDouble(),
           ),
         ),
         Positioned(
-          top: isMobile ? 68 : 24,
-          left: isMobile ? horizontal : null,
-          right: isMobile ? null : horizontal,
+          top: isMobile ? 16 : 24,
+          right: horizontal,
           child: _StatusResume(availability: content.availability),
         ),
         Align(
@@ -192,7 +189,9 @@ class _LandingLayout extends StatelessWidget {
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 400),
                   child: Text(
-                    content.roles.isEmpty ? content.title : content.roles[roleIndex],
+                    content.roles.isEmpty
+                        ? content.title
+                        : content.roles[roleIndex],
                     key: ValueKey(roleIndex),
                     textAlign: TextAlign.center,
                     style: t.heading.copyWith(
@@ -235,22 +234,46 @@ class _LandingLayout extends StatelessWidget {
           right: horizontal,
           left: isMobile ? horizontal : null,
           bottom: isMobile ? 92 : 28,
-          child: Flex(
-            direction: isMobile ? Axis.vertical : Axis.horizontal,
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment:
-                isMobile ? CrossAxisAlignment.stretch : CrossAxisAlignment.center,
-            children: [
-              _LandingButton(label: 'Explore Portfolio', onPressed: onExplore),
-              SizedBox(width: isMobile ? 0 : 16, height: isMobile ? 12 : 0),
-              _LandingButton(
-                label: 'View Projects',
-                icon: Icons.arrow_forward_rounded,
-                outlined: true,
-                onPressed: onProjects,
-              ),
-            ],
-          ),
+          child: isMobile
+              ? Row(
+                  children: [
+                    Expanded(
+                      child: _LandingButton(
+                        label: 'Explore Portfolio',
+                        outlined: true,
+                        compact: true,
+                        onPressed: onExplore,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _LandingButton(
+                        label: 'View Projects',
+                        icon: Icons.arrow_forward_rounded,
+                        outlined: true,
+                        compact: true,
+                        onPressed: onProjects,
+                      ),
+                    ),
+                  ],
+                )
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _LandingButton(
+                      label: 'Explore Portfolio',
+                      outlined: true,
+                      onPressed: onExplore,
+                    ),
+                    const SizedBox(width: 16),
+                    _LandingButton(
+                      label: 'View Projects',
+                      icon: Icons.arrow_forward_rounded,
+                      outlined: true,
+                      onPressed: onProjects,
+                    ),
+                  ],
+                ),
         ),
       ],
     );
@@ -315,7 +338,11 @@ class _IdentityBlockState extends State<_IdentityBlock> {
               shape: BoxShape.circle,
               border: Border.all(color: t.button, width: 1.5),
               boxShadow: _hovered
-                  ? [BoxShadow(color: t.button.withValues(alpha: 0.5), blurRadius: 10)]
+                  ? [
+                      BoxShadow(
+                          color: t.button.withValues(alpha: 0.5),
+                          blurRadius: 10)
+                    ]
                   : const [],
             ),
             child: ClipOval(
@@ -327,7 +354,8 @@ class _IdentityBlockState extends State<_IdentityBlock> {
                     : Image.network(
                         widget.avatarUrl!,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _AvatarFallback(initials: initials),
+                        errorBuilder: (_, __, ___) =>
+                            _AvatarFallback(initials: initials),
                       ),
               ),
             ),
@@ -363,7 +391,8 @@ class _AvatarFallback extends StatelessWidget {
       child: Center(
         child: Text(
           initials.isEmpty ? 'VP' : initials,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+          style:
+              const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
         ),
       ),
     );
@@ -381,8 +410,6 @@ class _StatusResume extends StatefulWidget {
 
 class _StatusResumeState extends State<_StatusResume>
     with SingleTickerProviderStateMixin {
-  static bool _hasShownHint = false;
-  final _tooltipKey = GlobalKey<TooltipState>();
   late final AnimationController _pulse;
   Timer? _resumeTimer;
   bool _resumeDone = false;
@@ -390,14 +417,9 @@ class _StatusResumeState extends State<_StatusResume>
   @override
   void initState() {
     super.initState();
-    _pulse = AnimationController(vsync: this, duration: const Duration(milliseconds: 1300))
+    _pulse = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1300))
       ..repeat(reverse: true);
-    if (!_hasShownHint) {
-      _hasShownHint = true;
-      Future<void>.delayed(const Duration(milliseconds: 1500), () {
-        if (mounted) _tooltipKey.currentState?.ensureTooltipVisible();
-      });
-    }
   }
 
   @override
@@ -429,11 +451,8 @@ class _StatusResumeState extends State<_StatusResume>
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Tooltip(
-          key: _tooltipKey,
-          message: label,
-          waitDuration: const Duration(milliseconds: 250),
-          showDuration: const Duration(seconds: 2),
+        Semantics(
+          label: label,
           child: ScaleTransition(
             scale: Tween<double>(begin: 0.88, end: 1.12).animate(_pulse),
             child: Container(
@@ -466,6 +485,7 @@ class _LandingButton extends StatefulWidget {
   final String label;
   final IconData? icon;
   final bool outlined;
+  final bool compact;
   final FutureOr<void> Function() onPressed;
 
   const _LandingButton({
@@ -473,6 +493,7 @@ class _LandingButton extends StatefulWidget {
     required this.onPressed,
     this.icon,
     this.outlined = false,
+    this.compact = false,
   });
 
   @override
@@ -485,9 +506,12 @@ class _LandingButtonState extends State<_LandingButton> {
   @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
+    final buttonHeight = widget.compact ? 44.0 : 48.0;
+    final buttonWidth = widget.compact ? 0.0 : 180.0;
     void onPressed() {
       Future.sync(widget.onPressed);
     }
+
     final button = widget.outlined
         ? OutlinedButton.icon(
             onPressed: onPressed,
@@ -496,7 +520,10 @@ class _LandingButtonState extends State<_LandingButton> {
             style: OutlinedButton.styleFrom(
               foregroundColor: t.button,
               side: BorderSide(color: t.button),
-              minimumSize: const Size(180, 52),
+              minimumSize: Size(buttonWidth, buttonHeight),
+              padding: EdgeInsets.symmetric(
+                horizontal: widget.compact ? 10 : AppSpacing.lg,
+              ),
             ),
           )
         : FilledButton(
@@ -504,7 +531,7 @@ class _LandingButtonState extends State<_LandingButton> {
             style: FilledButton.styleFrom(
               backgroundColor: t.button,
               foregroundColor: Colors.white,
-              minimumSize: const Size(180, 52),
+              minimumSize: Size(buttonWidth, buttonHeight),
             ),
             child: Text(widget.label),
           );
@@ -517,7 +544,11 @@ class _LandingButtonState extends State<_LandingButton> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppRadius.full),
           boxShadow: _hovered
-              ? [BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 12)]
+              ? [
+                  BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.18),
+                      blurRadius: 12)
+                ]
               : const [],
         ),
         child: button,

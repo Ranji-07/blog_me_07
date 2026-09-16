@@ -1,9 +1,11 @@
 import logging
 import os
 import secrets
+import ssl
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from html import escape
 from pathlib import Path
 
 import smtplib
@@ -108,8 +110,8 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
         msg["Subject"] = subject
         msg.attach(MIMEText(html_body, "html"))
 
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-            server.starttls()
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10) as server:
+            server.starttls(context=ssl.create_default_context())
             server.login(SMTP_EMAIL, SMTP_PASSWORD)
             server.send_message(msg)
 
@@ -127,7 +129,7 @@ def generate_confirmation_token() -> str:
 def build_confirmation_email(command: EmailCommandRequest, confirmation_url: str) -> str:
     import json
 
-    payload_json = json.dumps(command.payload, indent=2)
+    payload_json = escape(json.dumps(command.payload, indent=2))
     return f"""
     <h2>Confirm Portfolio Update</h2>
     <p>A portfolio admin action is pending confirmation.</p>

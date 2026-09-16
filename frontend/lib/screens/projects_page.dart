@@ -8,7 +8,7 @@ class ProjectsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
 
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.xl,
         120,

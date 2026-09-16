@@ -1,4 +1,5 @@
 import os
+import json
 import tempfile
 import unittest
 import warnings
@@ -10,6 +11,7 @@ os.environ.setdefault("ADMIN_API_KEY", "super-secret-admin-key")
 os.environ.setdefault("SMTP_EMAIL", "admin@portfolio.dev")
 os.environ.setdefault("SMTP_PASSWORD", "dummy-password")
 os.environ.setdefault("EMAIL_DELIVERY_MODE", "disabled")
+os.environ.setdefault("TRUST_PROXY_HEADERS", "true")
 
 warnings.filterwarnings(
     "ignore",
@@ -25,10 +27,11 @@ warnings.simplefilter("ignore", DeprecationWarning)
 
 from fastapi.testclient import TestClient
 
-from app.database import Base, SessionLocal, engine
+from app.database import BASE_DIR, Base, SessionLocal, engine
 from app.init_db import init_database
 from app.main import app
-from app.models import VisitLog
+from app.models import ContactSubmission, EmailCommand, VisitLog
+from app.services.rate_limiter import rate_limiter
 
 
 class PortfolioApiTests(unittest.TestCase):
@@ -45,6 +48,25 @@ class PortfolioApiTests(unittest.TestCase):
         response = self.client.get("/api/portfolio/about")
         self.assertEqual(response.status_code, 200)
         self.assertIn("name", response.json())
+
+    def test_cors_allows_only_configured_local_origins(self):
+        allowed = self.client.options(
+            "/api/portfolio/contact-form",
+            headers={
+                "origin": "http://127.0.0.1:58115",
+                "access-control-request-method": "POST",
+            },
+        )
+        self.assertEqual(allowed.headers.get("access-control-allow-origin"), "http://127.0.0.1:58115")
+
+        denied = self.client.options(
+            "/api/portfolio/contact-form",
+            headers={
+                "origin": "https://untrusted.example",
+                "access-control-request-method": "POST",
+            },
+        )
+        self.assertIsNone(denied.headers.get("access-control-allow-origin"))
 
     def test_visit_analytics_is_recorded(self):
         response = self.client.post(
@@ -65,6 +87,54 @@ class PortfolioApiTests(unittest.TestCase):
         finally:
             db.close()
 
+    def test_contact_form_accepts_the_simplified_public_fields(self):
+        response = self.client.post(
+            "/api/portfolio/contact-form",
+            json={
+                "name": "Jordan Lee",
+                "email": "jordan@example.com",
+                "message": "I would like to discuss a collaboration. https://example.com 👋",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+
+        db = SessionLocal()
+        try:
+            submission = db.query(ContactSubmission).order_by(ContactSubmission.id.desc()).first()
+            self.assertIsNotNone(submission)
+            self.assertEqual(submission.name, "Jordan Lee")
+            self.assertIn("https://example.com", submission.message)
+            self.assertIn("👋", submission.message)
+        finally:
+            db.close()
+
+    def test_contact_form_is_rate_limited(self):
+        rate_limiter._events.clear()
+        payload = {
+            "name": "Jordan Lee",
+            "email": "jordan@example.com",
+            "message": "I would like to discuss a collaboration with you.",
+        }
+        for _ in range(5):
+            self.assertEqual(
+                self.client.post("/api/portfolio/contact-form", json=payload).status_code,
+                200,
+            )
+        self.assertEqual(
+            self.client.post("/api/portfolio/contact-form", json=payload).status_code,
+            429,
+        )
+        rate_limiter._events.clear()
+
+    def test_upload_rejects_mismatched_content_type(self):
+        response = self.client.post(
+            "/api/admin/upload-image",
+            headers=self.admin_headers,
+            data={"auth_email": "admin@portfolio.dev"},
+            files={"file": ("profile.jpg", b"\x89PNG\r\n\x1a\n", "image/jpeg")},
+        )
+        self.assertEqual(response.status_code, 400)
+
     def test_admin_command_can_be_confirmed_end_to_end(self):
         request_payload = {
             "action": "set_status",
@@ -74,16 +144,19 @@ class PortfolioApiTests(unittest.TestCase):
                 "status": "draft"
             },
             "auth_email": "admin@portfolio.dev",
-            "admin_token": "super-secret-admin-key",
         }
         pending = self.client.post("/api/admin/email-command", json=request_payload, headers=self.admin_headers)
         self.assertEqual(pending.status_code, 200)
-        token = pending.json()["data"]["token"]
+        db = SessionLocal()
+        try:
+            command = db.query(EmailCommand).order_by(EmailCommand.id.desc()).first()
+            token = command.token
+            self.assertNotIn("admin_token", json.loads(command.data))
+        finally:
+            db.close()
 
-        confirmed = self.client.get(
+        confirmed = self.client.post(
             f"/api/admin/confirm/{token}",
-            params={"auth_email": "admin@portfolio.dev", "admin_token": "super-secret-admin-key"},
-            headers=self.admin_headers,
         )
         self.assertEqual(confirmed.status_code, 200)
         self.assertEqual(confirmed.json()["data"]["action"], "set_status")
@@ -94,7 +167,7 @@ class PortfolioApiTests(unittest.TestCase):
 
         history = self.client.get(
             "/api/admin/history",
-            params={"auth_email": "admin@portfolio.dev", "admin_token": "super-secret-admin-key", "section": "about"},
+            params={"auth_email": "admin@portfolio.dev", "section": "about"},
             headers=self.admin_headers,
         )
         self.assertEqual(history.status_code, 200)
@@ -111,16 +184,17 @@ class PortfolioApiTests(unittest.TestCase):
                 "name": "Broken Payload"
             },
             "auth_email": "admin@portfolio.dev",
-            "admin_token": "super-secret-admin-key",
         }
         pending = self.client.post("/api/admin/email-command", json=request_payload, headers=self.admin_headers)
         self.assertEqual(pending.status_code, 200)
-        token = pending.json()["data"]["token"]
+        db = SessionLocal()
+        try:
+            token = db.query(EmailCommand).order_by(EmailCommand.id.desc()).first().token
+        finally:
+            db.close()
 
-        confirmed = self.client.get(
+        confirmed = self.client.post(
             f"/api/admin/confirm/{token}",
-            params={"auth_email": "admin@portfolio.dev", "admin_token": "super-secret-admin-key"},
-            headers=self.admin_headers,
         )
         self.assertEqual(confirmed.status_code, 400)
         self.assertIn("Schema validation failed", confirmed.json()["detail"])
@@ -133,7 +207,6 @@ class PortfolioApiTests(unittest.TestCase):
                 "status": "published"
             },
             "auth_email": "admin@portfolio.dev",
-            "admin_token": "wrong-token-but-long-enough",
         }
         response = self.client.post("/api/admin/email-command", json=request_payload)
         self.assertEqual(response.status_code, 403)
@@ -146,16 +219,17 @@ class PortfolioApiTests(unittest.TestCase):
                 "status": "published"
             },
             "auth_email": "admin@portfolio.dev",
-            "admin_token": "super-secret-admin-key",
         }
         baseline_pending = self.client.post("/api/admin/email-command", json=baseline_payload, headers=self.admin_headers)
         self.assertEqual(baseline_pending.status_code, 200)
-        baseline_token = baseline_pending.json()["data"]["token"]
+        db = SessionLocal()
+        try:
+            baseline_token = db.query(EmailCommand).order_by(EmailCommand.id.desc()).first().token
+        finally:
+            db.close()
 
-        baseline_confirmed = self.client.get(
+        baseline_confirmed = self.client.post(
             f"/api/admin/confirm/{baseline_token}",
-            params={"auth_email": "admin@portfolio.dev", "admin_token": "super-secret-admin-key"},
-            headers=self.admin_headers,
         )
         self.assertEqual(baseline_confirmed.status_code, 200)
 
@@ -166,22 +240,23 @@ class PortfolioApiTests(unittest.TestCase):
                 "status": "draft"
             },
             "auth_email": "admin@portfolio.dev",
-            "admin_token": "super-secret-admin-key",
         }
         pending = self.client.post("/api/admin/email-command", json=request_payload, headers=self.admin_headers)
         self.assertEqual(pending.status_code, 200)
-        token = pending.json()["data"]["token"]
+        db = SessionLocal()
+        try:
+            token = db.query(EmailCommand).order_by(EmailCommand.id.desc()).first().token
+        finally:
+            db.close()
 
-        confirmed = self.client.get(
+        confirmed = self.client.post(
             f"/api/admin/confirm/{token}",
-            params={"auth_email": "admin@portfolio.dev", "admin_token": "super-secret-admin-key"},
-            headers=self.admin_headers,
         )
         self.assertEqual(confirmed.status_code, 200)
 
         history = self.client.get(
             "/api/admin/history",
-            params={"auth_email": "admin@portfolio.dev", "admin_token": "super-secret-admin-key", "section": "about"},
+            params={"auth_email": "admin@portfolio.dev", "section": "about"},
             headers=self.admin_headers,
         )
         self.assertEqual(history.status_code, 200)
@@ -192,7 +267,7 @@ class PortfolioApiTests(unittest.TestCase):
 
         rollback = self.client.post(
             f"/api/admin/history/{target_version['id']}/rollback",
-            params={"auth_email": "admin@portfolio.dev", "admin_token": "super-secret-admin-key"},
+            params={"auth_email": "admin@portfolio.dev"},
             headers=self.admin_headers,
         )
         self.assertEqual(rollback.status_code, 200)
@@ -204,7 +279,7 @@ class PortfolioApiTests(unittest.TestCase):
 
         history_after = self.client.get(
             "/api/admin/history",
-            params={"auth_email": "admin@portfolio.dev", "admin_token": "super-secret-admin-key", "section": "about"},
+            params={"auth_email": "admin@portfolio.dev", "section": "about"},
             headers=self.admin_headers,
         )
         self.assertEqual(history_after.status_code, 200)
