@@ -5,7 +5,10 @@ backend/.venv*/
 backend/*.log
 backend/portfolio_dev.db
 backend/.env
+backend/.secrets/
 backend/dev_outbox/
+backend/app/uploaded_images/
+backend/app/pending_uploads/
 
 # Flutter / Dart
 frontend/.dart_tool/

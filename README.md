@@ -51,6 +51,6 @@ Default local URLs:
 ## Deployment Notes
 
 - The backend now includes `backend/render.yaml` and `backend/Procfile`.
-- Hosted admin email links use `APP_BASE_URL`.
+- Contact notifications use Gmail API after the local OAuth setup in `backend/README.md`; the backend sends a copy to the visitor.
 - Hosted frontend origins should be added to `CORS_ALLOW_ORIGINS`.
 - The Flutter frontend now supports `--dart-define=API_BASE_URL=...` so you can point it at local or hosted backend without editing source.

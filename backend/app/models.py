@@ -14,19 +14,6 @@ class PortfolioData(Base):
     is_active = Column(Boolean, default=True)
 
 
-class EmailCommand(Base):
-    __tablename__ = "email_commands"
-
-    id = Column(Integer, primary_key=True, index=True)
-    command_type = Column(String(50))
-    email_from = Column(String(255))
-    data = Column(Text)
-    token = Column(String(64), unique=True, index=True)
-    confirmed = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone=True), default=utc_now)
-    expires_at = Column(DateTime(timezone=True))
-
-
 class ContactSubmission(Base):
     __tablename__ = "contact_submissions"
 
@@ -45,17 +32,3 @@ class VisitLog(Base):
     ip = Column(String(64), nullable=True)
     user_agent = Column(Text, nullable=True)
     visited_at = Column(DateTime(timezone=True), default=utc_now, index=True)
-
-
-class PortfolioVersion(Base):
-    __tablename__ = "portfolio_versions"
-
-    id = Column(Integer, primary_key=True, index=True)
-    section = Column(String(50), index=True)
-    action = Column(String(50), index=True)
-    actor_email = Column(String(255), index=True)
-    target_id = Column(String(255), nullable=True)
-    command_token = Column(String(64), nullable=True, index=True)
-    snapshot_before = Column(Text, nullable=True)
-    snapshot_after = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), default=utc_now, index=True)

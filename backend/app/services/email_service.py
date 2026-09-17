@@ -1,40 +1,37 @@
 import logging
 import os
-import secrets
-import ssl
+import base64
 from datetime import datetime
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from html import escape
+from email.message import EmailMessage
 from pathlib import Path
+from string import Template
 
-import smtplib
-
-from app.schemas import EmailCommandRequest
+from app.database import PROJECT_DIR
+from app.services.gmail_auth import token_path, load_send_credentials
 from app.utils.time import utc_display, utc_now
 
 logger = logging.getLogger(__name__)
 
-SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_EMAIL = os.getenv("SMTP_EMAIL")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "ranjithvijay1225@gmail.com")
 ADMIN_API_KEY = os.getenv("ADMIN_API_KEY")
+GMAIL_SENDER_EMAIL = os.getenv("GMAIL_SENDER_EMAIL", ADMIN_EMAIL)
 EMAIL_DELIVERY_MODE = os.getenv("EMAIL_DELIVERY_MODE", "log").strip().lower()
 EMAIL_OUTBOX_DIR = Path(os.getenv("EMAIL_OUTBOX_DIR", "./dev_outbox"))
+TEMPLATE_DIR = PROJECT_DIR.parent / "email_template"
 
 
-def get_email_delivery_mode() -> str:
-    return EMAIL_DELIVERY_MODE
+def render_template(name: str, *, css_name: str, **values: str) -> str:
+    html = (TEMPLATE_DIR / name).read_text(encoding="utf-8")
+    css = (TEMPLATE_DIR / css_name).read_text(encoding="utf-8")
+    return Template(html).substitute(css=css, **values)
 
 
 def can_send_real_email() -> bool:
-    return EMAIL_DELIVERY_MODE == "smtp" and all([SMTP_EMAIL, SMTP_PASSWORD, ADMIN_EMAIL])
+    return EMAIL_DELIVERY_MODE == "gmail_api" and bool(GMAIL_SENDER_EMAIL and ADMIN_EMAIL and token_path().is_file())
 
 
 def is_email_configured() -> bool:
-    if EMAIL_DELIVERY_MODE in {"log", "disabled"}:
+    if EMAIL_DELIVERY_MODE == "log":
         return True
     return can_send_real_email()
 
@@ -87,8 +84,8 @@ def _write_email_to_outbox(to_email: str, subject: str, html_body: str) -> Path:
     return output_path
 
 
-def send_email(to_email: str, subject: str, body: str) -> bool:
-    html_body = _render_email_html(body)
+def send_email(to_email: str, subject: str, body: str, *, reply_to: str | None = None, plain_body: str | None = None) -> bool:
+    html_body = body if body.lstrip().lower().startswith("<!doctype html>") else _render_email_html(body)
 
     if EMAIL_DELIVERY_MODE == "disabled":
         logger.info("Email delivery disabled. Skipping send for subject '%s'.", subject)
@@ -99,55 +96,30 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
         logger.info("Email written to dev outbox: %s", output_path)
         return True
 
-    if not all([SMTP_EMAIL, SMTP_PASSWORD, ADMIN_EMAIL]):
-        logger.warning("SMTP email not fully configured. Skipping email send.")
+    if EMAIL_DELIVERY_MODE != "gmail_api":
+        logger.error("Unknown email delivery mode: %s", EMAIL_DELIVERY_MODE)
+        return False
+
+    if not can_send_real_email():
+        logger.warning("Gmail API is not configured or authorized. Skipping email send.")
         return False
 
     try:
-        msg = MIMEMultipart("alternative")
-        msg["From"] = SMTP_EMAIL
+        from googleapiclient.discovery import build
+
+        msg = EmailMessage()
+        msg["From"] = GMAIL_SENDER_EMAIL
         msg["To"] = to_email
         msg["Subject"] = subject
-        msg.attach(MIMEText(html_body, "html"))
-
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10) as server:
-            server.starttls(context=ssl.create_default_context())
-            server.login(SMTP_EMAIL, SMTP_PASSWORD)
-            server.send_message(msg)
-
-        logger.info("Email sent to %s: %s", to_email, subject)
+        if reply_to:
+            msg["Reply-To"] = reply_to
+        msg.set_content(plain_body or "Portfolio message. Please view the HTML version.")
+        msg.add_alternative(html_body, subtype="html")
+        encoded = base64.urlsafe_b64encode(msg.as_bytes()).decode("ascii")
+        gmail = build("gmail", "v1", credentials=load_send_credentials(), cache_discovery=False)
+        result = gmail.users().messages().send(userId="me", body={"raw": encoded}).execute()
+        logger.info("Gmail accepted email to %s: message_id=%s", to_email, result.get("id"))
         return True
     except Exception as exc:
-        logger.error("Email error: %s", exc)
+        logger.error("Gmail send failed: %s", exc)
         return False
-
-
-def generate_confirmation_token() -> str:
-    return secrets.token_urlsafe(32)
-
-
-def build_confirmation_email(command: EmailCommandRequest, confirmation_url: str) -> str:
-    import json
-
-    payload_json = escape(json.dumps(command.payload, indent=2))
-    return f"""
-    <h2>Confirm Portfolio Update</h2>
-    <p>A portfolio admin action is pending confirmation.</p>
-    <ul>
-      <li><strong>Action:</strong> {command.action.value}</li>
-      <li><strong>Section:</strong> {command.section.value}</li>
-      <li><strong>Target ID:</strong> {command.target_id or 'section-root'}</li>
-    </ul>
-    <pre>{payload_json}</pre>
-    <p><a href="{confirmation_url}" class="button">Confirm Action</a></p>
-    <p style="color:#94A3B8;">This link expires in 24 hours.</p>
-    """
-
-
-def build_success_email(action: str, section: str, detail: str) -> str:
-    return f"""
-    <h2>Portfolio Action Completed</h2>
-    <p><strong>Action:</strong> {action}</p>
-    <p><strong>Section:</strong> {section}</p>
-    <p>{detail}</p>
-    """

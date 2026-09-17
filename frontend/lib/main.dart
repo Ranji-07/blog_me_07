@@ -4,6 +4,7 @@ import 'package:portfolio/core/app_theme.dart';
 import 'package:portfolio/core/app_shell.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   final light = AppTheme.light();
   final dark = AppTheme.dark();
   runApp(

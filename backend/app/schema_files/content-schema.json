@@ -58,7 +58,7 @@
     "aboutSection": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "title", "bio", "visible", "status"],
+      "required": ["name", "visible", "status"],
       "properties": {
         "name": { "type": "string" },
         "name_font_family": { "type": "string" },

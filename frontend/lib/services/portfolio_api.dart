@@ -50,11 +50,30 @@ class PortfolioApi {
     return decoded;
   }
 
+  static Future<List<Map<String, dynamic>>> fetchProjects(
+      {String? category}) async {
+    final uri = Uri.parse('$baseUrl/api/portfolio/projects').replace(
+      queryParameters: category == null ? null : {'category': category},
+    );
+    final response = await http.get(uri);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Unable to load projects.');
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      throw Exception('Invalid projects response.');
+    }
+    return (decoded['projects'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .toList();
+  }
+
   static Future<void> recordVisit() async {
     await http.post(Uri.parse('$baseUrl/api/analytics/visit'));
   }
 
-  static Future<void> submitContactForm({
+  static Future<bool> submitContactForm({
     required String name,
     required String email,
     required String message,
@@ -88,5 +107,8 @@ class PortfolioApi {
       }
       throw Exception(message);
     }
+    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+    final data = decoded['data'] as Map<String, dynamic>?;
+    return data?['visitor_copy_sent'] == true;
   }
 }

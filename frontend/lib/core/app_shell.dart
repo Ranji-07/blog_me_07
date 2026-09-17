@@ -9,6 +9,7 @@ import 'package:portfolio/screens/contact_page.dart';
 import 'package:portfolio/screens/landing_page.dart';
 import 'package:portfolio/screens/journey_page.dart';
 import 'package:portfolio/screens/resume_dialog.dart';
+import 'package:portfolio/services/admin_contact.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -18,7 +19,10 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
-  static const String _brandLabel = 'Tarzan';
+  static const String _brandLabel = String.fromEnvironment(
+    'PORTFOLIO_NAME',
+    defaultValue: 'Tarzan',
+  );
   final _scrollController = ScrollController();
   final _sectionKeys = {
     PortfolioSection.landing: GlobalKey(),
@@ -99,6 +103,12 @@ class _AppShellState extends State<AppShell> {
     final t = AppTheme.of(context);
     final isMobile = Responsive.isMobile(context);
     final showNavigation = _current != PortfolioSection.landing;
+    final aboutContent = _portfolioContent?['about'];
+    final loadedName = aboutContent is Map<String, dynamic>
+        ? (aboutContent['name'] as String?)?.trim()
+        : null;
+    final brandLabel =
+        loadedName == null || loadedName.isEmpty ? _brandLabel : loadedName;
 
     return Scaffold(
       backgroundColor: t.background,
@@ -124,7 +134,7 @@ class _AppShellState extends State<AppShell> {
                   ),
                   KeyedSubtree(
                     key: _sectionKeys[PortfolioSection.projects],
-                    child: const JourneyPage(),
+                    child: JourneyPage(cachedContent: _portfolioContent),
                   ),
                   ConstrainedBox(
                     key: _sectionKeys[PortfolioSection.contact],
@@ -136,7 +146,7 @@ class _AppShellState extends State<AppShell> {
               ),
             ),
           ),
-          if (showNavigation) const _BrandMark(label: _brandLabel),
+          if (showNavigation) _BrandMark(label: brandLabel),
           if (showNavigation && !isMobile)
             _FloatingTopNav(
               current: _current,
@@ -166,8 +176,20 @@ class _BrandMark extends StatelessWidget {
     return Positioned(
       top: Responsive.isMobile(context) ? 22 : 28,
       left: Responsive.isMobile(context) ? 20 : 32,
-      child: Text(label,
-          style: t.subheading.copyWith(fontWeight: FontWeight.w700)),
+      child: Tooltip(
+        message: 'Email the portfolio owner',
+        child: TextButton(
+          onPressed: () async {
+            await openAdminRequestEmail(context, source: 'Portfolio');
+          },
+          style: TextButton.styleFrom(
+            minimumSize: const Size(48, 48),
+            foregroundColor: t.text,
+          ),
+          child: Text(label,
+              style: t.subheading.copyWith(fontWeight: FontWeight.w700)),
+        ),
+      ),
     );
   }
 }

@@ -1,86 +1,32 @@
-# Portfolio Build Status
+# Portfolio status and next work
 
-Last verified: 2026-09-16
+Last reviewed: 2026-09-17. This is the single status document in `docs/`.
 
-## Phase 0 - FastAPI CMS Backend
+## Current product
 
-- [x] Content files exist for about, projects, experience, and contact.
-- [x] Content validates against the JSON schema and seeds four active database rows.
-- [x] Public endpoints return seeded dummy data, including project category filtering and the bundled response.
-- [x] Contact-form endpoint saves submissions and can dispatch admin email through a background task.
-- [x] Admin confirmation, schema validation, version history, and rollback are covered by backend tests.
-- [x] Image upload endpoint applies MIME and 5 MB limits.
-- [ ] Replace all dummy profile, project, experience, and contact values with real portfolio data before production.
-- [ ] Verify SMTP delivery with real production credentials before production.
+- Flutter Web shows Landing, About, Work/Projects/Journey, and Contact. Public `/200`, `/under-construction`, and 404 screens use a build-time fallback name when content is unavailable.
+- FastAPI serves JSON sections from SQLite. Editable source data is in `backend/content/`; runtime schemas are in `backend/app/schema_files/`. The current field inventory is `email_template/JSON_FIELDS.md`.
+- The contact form stores name, email, and message. The backend sends an HTML notification to `ADMIN_EMAIL` with `Reply-To` set to the visitor, then emails the visitor a copy with `Reply-To` set to the owner. Replies continue in ordinary mail clients. The messages use `email_template/contact_admin.html`, `contact_visitor.html`, and `contact_email.css`.
+- Gmail API is the selected sender. It requests only the `gmail.send` scope and stores its OAuth token in ignored `backend/.secrets/`. The earlier Gmail SMTP test reached Google but was rejected with `535 5.7.8`; SMTP is no longer the selected delivery mode.
+- Admin API access is limited to reading, deleting, and purging stored contact submissions. Content upload, emailed approvals, email commands, and content update routes were removed. Existing historical database tables remain so local data is not destroyed.
 
-## Phase 1 - Flutter Shell
+## What is needed before a live contact email
 
-- [x] Dark and light themes use the near-black, cream, and orange brand palette.
-- [x] Outfit font, spacing, radii, and text tokens are defined in the Flutter theme.
-- [x] AppShell routes between Landing, About, Projects, and Contact using `PortfolioSection`.
-- [x] Landing hides navigation until Enter is selected.
-- [x] Desktop text navigation and mobile icon navigation are responsive and use 48px targets.
-- [x] Screen navigation uses a fade transition.
-- [x] Responsive helpers include breakpoints, container, and adaptive grid utilities.
-- [x] Secure external-link opener uses `noopener,noreferrer` on web.
-- [x] Resume opens as a preview dialog with Share and Save actions; mobile shows a five-second action state.
-- [x] Verify desktop and mobile rendering manually in a browser.
+1. Enable Gmail API and create a Google OAuth Desktop client, then place its downloaded JSON at `backend/.secrets/gmail_client.json`. Follow `backend/README.md` and Google's linked setup instructions.
+2. Run `backend/.venv312/Scripts/python.exe -m app.authorize_gmail` **from `backend/`** and authorize the account matching `GMAIL_SENDER_EMAIL`. This saves the private refresh token at `backend/.secrets/gmail_token.json`.
+3. Restart the API so it reads `EMAIL_DELIVERY_MODE=gmail_api` from ignored `backend/.env`. Submit one contact form using a real visitor inbox. Check delivery to both addresses and that Reply works in each direction.
+4. For deployment, put the OAuth token and client file on private persistent storage; the checked-in Render service definition does not create that storage.
 
-## Phase 2 - Landing Page
+Until Gmail authorization is complete, the contact endpoint returns 503 instead of claiming an email was sent. `EMAIL_DELIVERY_MODE=log` is available for local template review in `backend/dev_outbox/`.
 
-- [x] Landing fetches the bundled portfolio response once and passes it into Contact as cached content.
-- [x] Skeleton placeholders and a shimmer transition prevent a blank first render.
-- [x] The responsive visual layout uses top-left identity, top-right status and resume controls, a centered editorial hero layer, bottom-left social icons, and bottom CTA actions.
-- [x] Backend-controlled name typography, availability state, role size, cycling roles, value statement, avatar URL, and portrait URL are implemented with fallbacks.
-- [x] Avatar failures fall back to initials, and portrait failures leave the atmospheric background clean.
-- [x] Explore Portfolio records a visit without delaying navigation; View Projects routes to `/auth-demo`.
-- [x] Resume and contact actions reuse the existing shared widgets.
-- [x] Visit logging stores IP, user agent, and timestamp through `POST /api/analytics/visit`.
-- [x] Verify the final desktop and mobile layout in a running Flutter browser session.
+## Data and UI still to review
 
-## Phase 3 - About Page
+- The edited About and Contact seed files are valid, but the local SQLite rows can still hold older versions. Reseed only when it is acceptable to overwrite stored sections. Confirm brand name (`Tarzan`), sample phone number, `tarzan.dev` link, resume and image paths, and optional About value statement.
+- Projects have eight records; several lack GitHub links and all lack demos/images. Missing links are hidden in the current UI. Review descriptions, ownership, and whether images are needed before polishing the cards.
+- Check responsive layouts, status pages, keyboard focus, form validation, and the two-email success/failure states in a browser. Work now keeps Projects visible if Journey fails. Configure the web host separately if unknown URLs must return an HTTP 404 status.
+- Replace the hardcoded summary in `frontend/lib/screens/resume_dialog.dart` with verified resume details or show the PDF itself. Confirm whether `Tarzan` is the final public brand before changing the name fallback in Flutter.
+- Plan content editing and publishing separately later. The current manual path is to edit the seed JSON, validate it, back up the database, and deliberately run `python -m app.init_db`.
 
-- [x] `PortfolioApi.fetchAbout()` loads the public about endpoint when no landing cache is available.
-- [x] `AboutProfile` parses profile, image, skills, technology, and highlight data.
-- [x] Landing content is reused when available, avoiding a second request after Explore Portfolio.
-- [x] The About page has loading, error, and data states through `FutureBuilder`.
-- [x] Profile, skills, and highlights are separated into reusable screen widgets.
-- [x] Layout adapts from one column on mobile to two columns on larger screens and fades in after load.
-- [x] Verify the final desktop and mobile layout in a running Flutter browser session.
+## Verification
 
-## Navigation and Simplified Contact - Complete
-
-- [x] The portfolio uses one continuous outer scroll: Landing, About, Projects, and Contact.
-- [x] Desktop and mobile navigation smoothly scroll to each section.
-- [x] The Contact section has Name, Email, and Message fields and submits through the FastAPI contact endpoint.
-- [x] The destination email, social links, and footer metadata load from portfolio content.
-- [x] Shared navigation and the simplified Contact flow were manually verified on desktop and mobile.
-
-## Pre-Projects Backend Hardening - Complete
-
-- [x] CORS allows explicit origins only, security response headers are applied, and public configuration state is not exposed.
-- [x] Admin credentials use request headers only; they are not stored with commands or included in confirmation URLs.
-- [x] Confirmation links open a review page and require a separate POST to apply a pending write.
-- [x] Uploads use server-generated filenames, MIME/signature matching, and a 5 MB read limit.
-- [x] Contact and analytics endpoints have request limits, contact payloads are validated server-side, and email HTML escapes user content.
-- [x] SMTP uses a verified TLS context and connection timeout.
-- [x] Contact submissions have automatic retention cleanup plus authenticated deletion and purge endpoints.
-- [ ] Before production: configure HTTPS, explicit production CORS origins, real SMTP credentials, and a shared Redis rate limiter for multi-instance deployment.
-
-## Phase 5 - Contact Page
-
-- [x] Shared Email, GitHub, and LinkedIn icons support secure opening, tooltips, copy feedback, focus, pressed, busy, and long-press states.
-- [x] The email dialog shows the loaded email address and provides Mail Him, Copy Email, and Close actions.
-- [x] The simplified contact form includes Name, Email, and Message only.
-- [x] Email suffix suggestions, opt-in name suggestion, and keyboard/touch message suggestions are implemented.
-- [x] Validation rejects empty, placeholder, repeated-character, malformed, and out-of-range required values with field-level errors.
-- [x] The form accepts Unicode, emojis, pasted text, and pasted links; backend email HTML safely escapes user content.
-- [x] FastAPI stores the submission and sends the owner notification; the success dialog also prepares the visitor's encoded `mailto:` draft.
-- [x] Privacy copy, native mobile keyboard types, 48px submit target, screen-reader labels, and keyboard focus flow are implemented.
-- [ ] Manually verify the complete contact flow across supported desktop and mobile browsers.
-- [ ] Rework the visual design after the final Contact behavior is complete.
-
-## Deferred Phase 3 Work
-
-- [ ] Redesign the About section after Phase 5.
-- [ ] Add the education and certification timeline, desktop horizontal layout, mobile swipe/auto-advance behavior, and detail dialog.
+Ten backend tests pass with `.venv312/Scripts/python.exe -m unittest discover -s tests -q` from `backend/`, and Flutter `dart analyze lib` reports no issues. The Gmail API message format was checked with a mocked send. A live Gmail API send requires the one-time Google OAuth authorization above.

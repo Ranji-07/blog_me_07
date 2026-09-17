@@ -1,14 +1,11 @@
 {
-  "email": "tarzan.dev@example.com",
+  "email": "ranjithvijay1225@gmail.com",
   "phone": "+91 98765 43210",
   "location": "India",
   "timezone": "Asia/Kolkata",
   "social": {
-    "github": "https://github.com/tarzan-dev",
-    "linkedin": "https://www.linkedin.com/in/tarzan-dev/",
-    "twitter": "",
-    "leetcode": "",
-    "hackerrank": "",
+    "github": "https://github.com/Ranji-07",
+    "linkedin": "https://www.linkedin.com/in/ranjith-v-p07",
     "portfolio": "https://tarzan.dev"
   },
   "availability": {

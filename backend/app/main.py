@@ -1,5 +1,6 @@
 import os
 import logging
+import re
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -65,6 +66,8 @@ async def add_security_headers(request: Request, call_next):
 
 @app.get("/images/{filename}", tags=["Assets"])
 async def get_image(filename: str):
+    if not re.fullmatch(r"[A-Za-z0-9_-]+\.(?:jpg|png|gif|webp)", filename):
+        raise HTTPException(status_code=404, detail="Image not found")
     file_path = BASE_DIR / "uploaded_images" / filename
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="Image not found")

@@ -6,11 +6,6 @@ class JourneyContent {
   const JourneyContent(
       {required this.title, required this.subtitle, required this.events});
 
-  factory JourneyContent.fromPortfolio(Map<String, dynamic> content) {
-    final journey = content['journey'] as Map<String, dynamic>? ?? const {};
-    return JourneyContent.fromJson(journey);
-  }
-
   factory JourneyContent.fromJson(Map<String, dynamic> journey) {
     final events = (journey['events'] as List<dynamic>? ?? const [])
         .whereType<Map<String, dynamic>>()

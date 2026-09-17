@@ -2,7 +2,7 @@ import logging
 import json
 from html import escape
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -11,6 +11,8 @@ from app.models import ContactSubmission, PortfolioData, VisitLog
 from app.schemas import APIResponse, ContactFormRequest
 from app.services.email_service import (
     ADMIN_EMAIL,
+    is_email_configured,
+    render_template,
     send_email,
 )
 from app.services.contact_retention import purge_expired_submissions
@@ -80,11 +82,6 @@ async def get_projects(
     return projects
 
 
-@router.get("/api/portfolio/experience", tags=["Portfolio"])
-async def get_experience(db: Session = Depends(get_db)):
-    return _load_visible_section(db, "experience")
-
-
 @router.get("/api/portfolio/contact", tags=["Portfolio"])
 async def get_contact(db: Session = Depends(get_db)):
     return _load_visible_section(db, "contact")
@@ -97,7 +94,7 @@ async def get_journey(db: Session = Depends(get_db)):
 
 @router.get("/api/portfolio/all", tags=["Portfolio"])
 async def get_all_portfolio(db: Session = Depends(get_db)):
-    sections = ["about", "projects", "experience", "journey", "contact"]
+    sections = ["about", "projects", "journey", "contact"]
     result = {}
     for section in sections:
         data = db.query(PortfolioData).filter(
@@ -130,7 +127,6 @@ async def record_visit(request: Request, db: Session = Depends(get_db)):
 @router.post("/api/portfolio/contact-form", tags=["Contact"], response_model=APIResponse)
 async def submit_contact_form(
     form: ContactFormRequest,
-    background_tasks: BackgroundTasks,
     http_request: Request,
     db: Session = Depends(get_db),
 ):
@@ -140,6 +136,8 @@ async def submit_contact_form(
         limit=5,
         window_seconds=3600,
     )
+    if not is_email_configured():
+        raise HTTPException(status_code=503, detail="Contact email is not configured yet. Please try again later.")
     purge_expired_submissions(db)
     submission = ContactSubmission(
         name=form.name,
@@ -149,29 +147,40 @@ async def submit_contact_form(
     db.add(submission)
     db.commit()
 
-    if ADMIN_EMAIL:
-        name = escape(form.name)
-        email = escape(str(form.email))
-        message = escape(form.message).replace("\n", "<br>")
-        email_body = f"""
-        <h2>New Contact Form Submission</h2>
-        <table style="width:100%; border-collapse: collapse;">
-            <tr><td style="padding:8px; border-bottom:1px solid #333;"><strong>Name:</strong></td><td style="padding:8px; border-bottom:1px solid #333;">{name}</td></tr>
-            <tr><td style="padding:8px; border-bottom:1px solid #333;"><strong>Email:</strong></td><td style="padding:8px; border-bottom:1px solid #333;">{email}</td></tr>
-        </table>
-        <h3>Message:</h3>
-        <p style="background:#0F172A; padding:15px; border-radius:8px;">{message}</p>
-        <p style="color:#94A3B8; font-size:12px;">Received at: {utc_display(utc_now())}</p>
-        """
-        background_tasks.add_task(
-            send_email,
-            ADMIN_EMAIL,
-            f"Portfolio Contact: {form.name}",
-            email_body,
-        )
+    owner = db.query(PortfolioData).filter(PortfolioData.section == "about").first()
+    owner_name = json.loads(owner.content).get("name", "Portfolio owner") if owner else "Portfolio owner"
+    values = {
+        "visitor_name": escape(form.name),
+        "visitor_email": escape(str(form.email)),
+        "message_html": escape(form.message).replace("\n", "<br>"),
+        "received_at": escape(utc_display(utc_now())),
+        "owner_name": escape(str(owner_name)),
+        "admin_email": escape(ADMIN_EMAIL),
+    }
+    admin_body = render_template("contact_admin.html", css_name="contact_email.css", **values)
+    visitor_body = render_template("contact_visitor.html", css_name="contact_email.css", **values)
+    admin_sent = send_email(
+        ADMIN_EMAIL,
+        f"Portfolio contact from {form.name}",
+        admin_body,
+        reply_to=str(form.email),
+        plain_body=f"Name: {form.name}\nEmail: {form.email}\n\n{form.message}",
+    )
+    if not admin_sent:
+        logger.error("Contact submission %s was saved but admin notification failed", submission.id)
+        raise HTTPException(status_code=503, detail="Message saved, but email delivery failed. Please contact the owner directly.")
+
+    visitor_sent = send_email(
+        str(form.email),
+        "We received your portfolio message",
+        visitor_body,
+        reply_to=ADMIN_EMAIL,
+        plain_body=f"Thanks for contacting {owner_name}. Your message:\n\n{form.message}\n\nReply to this email to continue the conversation.",
+    )
 
     logger.info("Contact form submitted by %s", form.name)
     return APIResponse(
         status="success",
-        message="Message sent successfully. We'll get back to you soon!",
+        message="Message sent to the owner." if not visitor_sent else "Message sent. A copy was emailed to you.",
+        data={"visitor_copy_sent": visitor_sent},
     )

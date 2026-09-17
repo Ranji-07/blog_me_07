@@ -1,48 +1,8 @@
-from enum import Enum
 from typing import Any, Dict, Optional
 
 import re
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
-
-
-class CommandType(str, Enum):
-    CREATE = "create"
-    UPDATE = "update"
-    DELETE = "delete"
-    SET_VISIBILITY = "set_visibility"
-    SET_STATUS = "set_status"
-    UPLOAD_ASSET = "upload_asset"
-
-
-class VisibilityState(str, Enum):
-    VISIBLE = "visible"
-    HIDDEN = "hidden"
-    IN_PROGRESS = "in_progress"
-
-
-class PublishState(str, Enum):
-    DRAFT = "draft"
-    PUBLISHED = "published"
-    ARCHIVED = "archived"
-
-
-class PortfolioSection(str, Enum):
-    ABOUT = "about"
-    PROJECTS = "projects"
-    EXPERIENCE = "experience"
-    JOURNEY = "journey"
-    CONTACT = "contact"
-
-
-class EmailCommandRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    action: CommandType
-    section: PortfolioSection
-    target_id: Optional[str] = None
-    payload: Dict[str, Any] = Field(default_factory=dict)
-    auth_email: EmailStr
 
 
 class ContactFormRequest(BaseModel):

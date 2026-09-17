@@ -25,10 +25,13 @@ def _load_portfolio_sections() -> list[tuple[str, dict]]:
     section_files = [
         ("about", CONTENT_DIR / "about.json"),
         ("projects", CONTENT_DIR / "projects.json"),
-        ("experience", CONTENT_DIR / "experience.json"),
         ("journey", CONTENT_DIR / "journey.json"),
         ("contact", CONTENT_DIR / "contact.json"),
     ]
+
+    experience_file = CONTENT_DIR / "experience.json"
+    if experience_file.exists():
+        section_files.append(("experience", experience_file))
 
     missing = [str(path) for _, path in section_files if not path.exists()]
     if missing:

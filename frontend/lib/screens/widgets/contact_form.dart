@@ -6,14 +6,7 @@ import 'package:portfolio/screens/widgets/contact_success_dialog.dart';
 import 'package:portfolio/services/portfolio_api.dart';
 
 class ContactForm extends StatefulWidget {
-  final String ownerName;
-  final String recipientEmail;
-
-  const ContactForm({
-    super.key,
-    required this.ownerName,
-    required this.recipientEmail,
-  });
+  const ContactForm({super.key});
 
   @override
   State<ContactForm> createState() => _ContactFormState();
@@ -221,41 +214,18 @@ class _ContactFormState extends State<ContactForm> {
     return null;
   }
 
-  Uri _mailtoUri() {
-    final body = '''Hello ${widget.ownerName},
-
-Someone would like to connect with you through your portfolio.
-
-Name: ${_name.text.trim()}
-
-Email: ${_email.text.trim()}
-
-Message: ${_message.text.trim()}
-
----
-
-Sent from your Portfolio Website''';
-    return Uri(
-      scheme: 'mailto',
-      path: widget.recipientEmail,
-      queryParameters: {
-        'subject': 'Portfolio Contact Request - ${_name.text.trim()}',
-        'body': body,
-      },
-    );
-  }
-
   Future<void> _submit() async {
     if (_isSubmitting || !(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _isSubmitting = true);
     try {
-      await PortfolioApi.submitContactForm(
+      final visitorCopySent = await PortfolioApi.submitContactForm(
         name: _name.text.trim(),
         email: _email.text.trim(),
         message: _message.text.trim(),
       );
       if (!mounted) return;
-      await ContactSuccessDialog.show(context, _mailtoUri());
+      await ContactSuccessDialog.show(context,
+          visitorCopySent: visitorCopySent);
       if (!mounted) return;
       _formKey.currentState?.reset();
       _name.clear();
@@ -463,7 +433,7 @@ Sent from your Portfolio Website''';
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Your information is used only to respond to your inquiry. It is stored securely for that purpose and is not shared.',
+              'Your message is saved and emailed to the portfolio owner. We also email you a copy so you can reply directly.',
               style: t.label,
             ),
             const SizedBox(height: AppSpacing.md),

@@ -204,18 +204,20 @@ class _LandingLayout extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.md),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 520),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: horizontal),
-                  child: Text(
-                    content.valueStatement,
-                    textAlign: TextAlign.center,
-                    style: t.body.copyWith(fontSize: isMobile ? 15 : 17),
+              if (content.valueStatement.trim().isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.md),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 520),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: horizontal),
+                    child: Text(
+                      content.valueStatement,
+                      textAlign: TextAlign.center,
+                      style: t.body.copyWith(fontSize: isMobile ? 15 : 17),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
@@ -319,7 +321,7 @@ class _IdentityBlockState extends State<_IdentityBlock> {
     final isMobile = Responsive.isMobile(context);
     final avatarSize = isMobile ? 36.0 : 44.0;
     final initials = widget.name
-        .split(RegExp(r'\\s+'))
+        .split(RegExp(r'\s+'))
         .where((part) => part.isNotEmpty)
         .take(2)
         .map((part) => part[0])
