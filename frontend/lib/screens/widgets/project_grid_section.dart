@@ -99,8 +99,6 @@ class _ProjectGridSectionState extends State<ProjectGridSection> {
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('Selected Projects', style: t.heading.copyWith(color: t.button)),
-      const SizedBox(height: AppSpacing.md),
       ProjectFilterBar(
           categories: _categories,
           selectedCategory: _selectedCategory,
