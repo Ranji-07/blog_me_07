@@ -1,0 +1,330 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://portfolio.local/schemas/content-schema.json",
+  "title": "Portfolio Content Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["about", "projects", "experience", "journey", "contact"],
+  "properties": {
+    "about": {
+      "$ref": "#/$defs/aboutSection"
+    },
+    "projects": {
+      "$ref": "#/$defs/projectsSection"
+    },
+    "experience": {
+      "$ref": "#/$defs/experienceSection"
+    },
+    "journey": {
+      "$ref": "#/$defs/journeySection"
+    },
+    "contact": {
+      "$ref": "#/$defs/contactSection"
+    }
+  },
+  "$defs": {
+    "publishState": {
+      "type": "string",
+      "enum": ["draft", "published", "archived"]
+    },
+    "stringArray": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "educationItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["degree", "branch", "institution", "duration"],
+      "properties": {
+        "degree": { "type": "string" },
+        "branch": { "type": "string" },
+        "institution": { "type": "string" },
+        "duration": { "type": "string" }
+      }
+    },
+    "certificationItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string" },
+        "issuer": { "type": "string" },
+        "date": { "type": "string" },
+        "credential_id": { "type": "string" },
+        "credential_url": { "type": "string" }
+      }
+    },
+    "aboutSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "visible", "status"],
+      "properties": {
+        "name": { "type": "string" },
+        "name_font_family": { "type": "string" },
+        "name_font_size": { "type": "number", "minimum": 12, "maximum": 96 },
+        "name_font_weight": { "type": "integer", "minimum": 100, "maximum": 900 },
+        "avatar_url": { "type": "string" },
+        "portrait_url": { "type": "string" },
+        "title": { "type": "string" },
+        "roles": { "$ref": "#/$defs/stringArray" },
+        "bio": { "type": "string" },
+        "about_me": { "$ref": "#/$defs/stringArray" },
+        "skill_categories": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/stringArray" }
+        },
+        "education_timeline": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["year", "type", "title", "organization", "date", "description"],
+            "properties": {
+              "year": { "type": "string" },
+              "type": { "type": "string" },
+              "title": { "type": "string" },
+              "organization": { "type": "string" },
+              "date": { "type": "string" },
+              "timeline_date": { "type": "string", "format": "date" },
+              "timeline_label": { "type": "string" },
+              "timeline_parent": { "type": "string" },
+              "credential_id": { "type": "string" },
+              "credential_url": { "type": "string" },
+              "asset_url": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        },
+        "tagline": { "type": "string" },
+        "role_font_size": { "type": "number", "minimum": 10, "maximum": 48 },
+        "value_statement": { "type": "string" },
+        "availability": {
+          "type": "string",
+          "enum": ["open", "freelance", "unavailable"]
+        },
+        "available_for_work": { "type": "boolean" },
+        "profile_image": { "type": "string" },
+        "resume": { "type": "string" },
+        "stats": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "projects": { "type": "integer", "minimum": 0 },
+            "experience_years": { "type": "integer", "minimum": 0 },
+            "technologies": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "tech_stack": { "$ref": "#/$defs/stringArray" },
+        "skills": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/stringArray"
+          }
+        },
+        "education": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/educationItem" }
+        },
+        "certifications": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/certificationItem" }
+        },
+        "visible": { "type": "boolean" },
+        "status": { "$ref": "#/$defs/publishState" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "projectItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "slug", "category", "featured", "description", "technologies", "images", "github", "live_demo", "status"],
+      "properties": {
+        "id": { "type": ["integer", "string"] },
+        "title": { "type": "string" },
+        "slug": { "type": "string" },
+        "category": {
+          "type": "string",
+          "enum": ["AI", "Mobile", "Web", "Cloud", "IoT", "DevOps", "Machine Learning", "Open Source"]
+        },
+        "timeline_date": { "type": "string", "format": "date" },
+        "timeline_label": { "type": "string" },
+        "timeline_parent": { "type": "string" },
+        "current": { "type": "boolean" },
+        "featured": { "type": "boolean" },
+        "short_description": { "type": "string" },
+        "description": { "type": "string" },
+        "technologies": { "$ref": "#/$defs/stringArray" },
+        "highlights": { "$ref": "#/$defs/stringArray" },
+        "features": { "$ref": "#/$defs/stringArray" },
+        "images": { "$ref": "#/$defs/stringArray" },
+        "github": { "type": "string" },
+        "live_demo": { "type": "string" },
+        "status": { "$ref": "#/$defs/publishState" }
+      }
+    },
+    "projectsSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projects", "visible", "status"],
+      "properties": {
+        "projects": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/projectItem" }
+        },
+        "visible": { "type": "boolean" },
+        "status": { "$ref": "#/$defs/publishState" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "timelineItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string" },
+        "company": { "type": "string" },
+        "organization": { "type": "string" },
+        "date": { "type": "string" },
+        "timeline_date": { "type": "string", "format": "date" },
+        "timeline_label": { "type": "string" },
+        "timeline_parent": { "type": "string" },
+        "current": { "type": "boolean" },
+        "duration": { "type": "string" },
+        "description": { "type": "string" },
+        "technologies": { "$ref": "#/$defs/stringArray" },
+        "highlights": { "$ref": "#/$defs/stringArray" },
+        "links": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "achievementItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "date", "description"],
+      "properties": {
+        "title": { "type": "string" },
+        "date": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "experienceSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["work", "internships", "achievements", "opensource", "hackathons", "volunteer", "visible", "status"],
+      "properties": {
+        "work": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/timelineItem" }
+        },
+        "internships": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/timelineItem" }
+        },
+        "achievements": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/achievementItem" }
+        },
+        "opensource": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/timelineItem" }
+        },
+        "hackathons": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/timelineItem" }
+        },
+        "volunteer": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/timelineItem" }
+        },
+        "visible": { "type": "boolean" },
+        "status": { "$ref": "#/$defs/publishState" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "journeyEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "date", "timeline_date", "organization", "title", "timeline_label", "description"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["Education", "Work", "Certification"] },
+        "date": { "type": "string" },
+        "timeline_date": { "type": "string", "format": "date" },
+        "organization": { "type": "string" },
+        "title": { "type": "string" },
+        "timeline_label": { "type": "string" },
+        "current": { "type": "boolean" },
+        "description": { "type": "string" },
+        "technologies": { "$ref": "#/$defs/stringArray" },
+        "highlights": { "$ref": "#/$defs/stringArray" },
+        "link": { "type": "string" }
+      }
+    },
+    "journeySection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "subtitle", "events", "visible", "status"],
+      "properties": {
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "events": { "type": "array", "items": { "$ref": "#/$defs/journeyEvent" } },
+        "visible": { "type": "boolean" },
+        "status": { "$ref": "#/$defs/publishState" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "availabilityConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "freelance": { "type": "boolean" },
+        "fulltime": { "type": "boolean" },
+        "internship": { "type": "boolean" },
+        "response_time": { "type": "string" }
+      }
+    },
+    "socialLinks": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "github": { "type": "string" },
+        "linkedin": { "type": "string" },
+        "twitter": { "type": "string" },
+        "leetcode": { "type": "string" },
+        "hackerrank": { "type": "string" },
+        "portfolio": { "type": "string" }
+      }
+    },
+    "footerConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "build_year": { "type": "integer", "minimum": 2000 },
+        "built_with": { "type": "string" },
+        "app_version": { "type": "string" },
+        "note": { "type": "string" }
+      }
+    },
+    "contactSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["email", "timezone", "social", "availability", "visible", "status"],
+      "properties": {
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "location": { "type": "string" },
+        "timezone": { "type": "string" },
+        "social": { "$ref": "#/$defs/socialLinks" },
+        "availability": { "$ref": "#/$defs/availabilityConfig" },
+        "footer": { "$ref": "#/$defs/footerConfig" },
+        "visible": { "type": "boolean" },
+        "status": { "$ref": "#/$defs/publishState" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

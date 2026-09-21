@@ -1,0 +1,31 @@
+{
+  "name": "Ranjith V P",
+  "name_font_family": "Outfit",
+  "name_font_size": 20,
+  "name_font_weight": 600,
+  "avatar_url": "",
+  "portrait_url": "",
+  "roles": ["Full Stack Developer","AI Engineer","Flutter Developer",
+    "DevOps Engineer","MLOps Engineer","Cloud Engineer","IoT Developer"
+  ],"availability": "open",
+  "available_for_work": true,
+  "profile_image": "/images/profile.png",
+  "resume": "/files/resume.pdf",
+  "about_me": ["Software Development Engineer with 2+ years of experience building AI-integrated production systems, Python-based data pipelines, and cloud infrastructure on AWS. Hands-on experience with LLM integration, medical data analytics, and deploying containerized applications using Kubernetes, Terraform, and Jenkins CI/CD. Certified in Generative AI (MIT AU-KBC) with practical experience fine-tuning LLaMA models and building RAG pipelines using LangChain - focused on engineering reliable, scalable AI systems."],
+  "skill_categories": {
+    "Programming & Scripting": ["C++", "Python", "Scala", "Dart", "Shell / Bash"],
+    "Cloud & Infrastructure": ["AWS", "EC2", "S3", "IAM", "VPC", "ECR", "EKS", "CloudWatch", "CodePipeline", "Azure - Learning"],
+    "Containers & Orchestration": ["Docker", "Kubernetes", "Amazon EKS", "DockerHub", "Helm"],
+    "CI/CD & Automation": ["Jenkins", "GitHub Webhooks", "CI/CD Pipeline Automation"],
+    "Infrastructure as Code": ["Terraform", "Ansible"],
+    "Monitoring & Observability": ["Prometheus", "Grafana"],
+    "Backend & APIs": ["Python", "Django - Learning", "REST APIs", "Microservices"],
+    "AI / ML": ["LLM Integration", "AI Automation", "Model Building", "Generative AI"],
+    "Frontend": ["Flutter - Familiar", "JavaScript", "HTML", "CSS", "Streamlit"],
+    "Embedded / IoT": ["Embedded Systems", "Microcontrollers", "Sensors", "Communication Protocols"],
+    "Version Control": ["Git", "GitHub", "GitLab"],
+    "Operating Systems": ["Windows", "Linux (Ubuntu)"]
+  },
+  "visible": true,
+  "status": "published"
+}

@@ -1,0 +1,25 @@
+{
+  "email": "ranjithvijay1225@gmail.com",
+  "phone": "+91 98765 43210",
+  "location": "India",
+  "timezone": "Asia/Kolkata",
+  "social": {
+    "github": "https://github.com/Ranji-07",
+    "linkedin": "https://www.linkedin.com/in/ranjith-v-p07",
+    "portfolio": "https://tarzan.dev"
+  },
+  "availability": {
+    "freelance": true,
+    "fulltime": true,
+    "internship": false,
+    "response_time": "24 hours"
+  },
+  "footer": {
+    "build_year": 2026,
+    "built_with": "Flutter",
+    "app_version": "1.0.0",
+    "note": "Responsive portfolio experience for web and mobile"
+  },
+  "visible": true,
+  "status": "published"
+}
