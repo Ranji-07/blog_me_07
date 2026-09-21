@@ -3,10 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:portfolio/core/app_theme.dart';
 import 'package:portfolio/core/responsive.dart';
 import 'package:portfolio/screens/widgets/contact_success_dialog.dart';
-import 'package:portfolio/services/portfolio_api.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ContactForm extends StatefulWidget {
-  const ContactForm({super.key});
+  final String recipientEmail;
+
+  const ContactForm({super.key, required this.recipientEmail});
 
   @override
   State<ContactForm> createState() => _ContactFormState();
@@ -218,14 +220,26 @@ class _ContactFormState extends State<ContactForm> {
     if (_isSubmitting || !(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _isSubmitting = true);
     try {
-      final visitorCopySent = await PortfolioApi.submitContactForm(
-        name: _name.text.trim(),
-        email: _email.text.trim(),
-        message: _message.text.trim(),
+      final recipient = widget.recipientEmail.trim();
+      if (recipient.isEmpty) {
+        throw Exception('Contact email is not configured yet.');
+      }
+      final uri = Uri(
+        scheme: 'mailto',
+        path: recipient,
+        queryParameters: {
+          'subject': 'Portfolio enquiry from ${_name.text.trim()}',
+          'body': 'Hello,\n\n${_message.text.trim()}\n\n'
+              'Name: ${_name.text.trim()}\n'
+              'Email: ${_email.text.trim()}',
+        },
       );
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened) {
+        throw Exception('No email app is configured on this device.');
+      }
       if (!mounted) return;
-      await ContactSuccessDialog.show(context,
-          visitorCopySent: visitorCopySent);
+      await ContactSuccessDialog.show(context);
       if (!mounted) return;
       _formKey.currentState?.reset();
       _name.clear();
@@ -237,15 +251,10 @@ class _ContactFormState extends State<ContactForm> {
       });
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(
-              error.toString().replaceFirst('Exception: ', ''),
-            ),
-          ),
-        );
+      await ContactSuccessDialog.showError(
+        context,
+        error.toString().replaceFirst('Exception: ', ''),
+      );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -433,7 +442,7 @@ class _ContactFormState extends State<ContactForm> {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Your message is saved and emailed to the portfolio owner. We also email you a copy so you can reply directly.',
+              'This opens a prepared message in your chosen email app. Review it and press Send there.',
               style: t.label,
             ),
             const SizedBox(height: AppSpacing.md),

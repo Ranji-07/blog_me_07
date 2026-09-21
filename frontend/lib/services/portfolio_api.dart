@@ -1,114 +1,69 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
+import 'package:flutter/services.dart';
 
+/// Reads the public portfolio from the bundled config file.
+///
+/// This keeps the public site independent of the FastAPI service, so the same
+/// build can be deployed to GitHub Pages or any other static web host.
 class PortfolioApi {
   PortfolioApi._();
 
+  /// Used only by the separate local admin tools. The public site reads the
+  /// bundled config and makes no API request.
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: 'http://127.0.0.1:8000',
   );
+  static const String configAsset = 'config/portfolio.json';
+  static Map<String, dynamic>? _content;
 
   static Future<Map<String, dynamic>> fetchAll() async {
-    final response = await http.get(Uri.parse('$baseUrl/api/portfolio/all'));
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Unable to load portfolio content.');
-    }
+    final cached = _content;
+    if (cached != null) return cached;
 
-    final decoded = jsonDecode(response.body);
+    final decoded = jsonDecode(await rootBundle.loadString(configAsset));
     if (decoded is! Map<String, dynamic>) {
-      throw Exception('Invalid portfolio response.');
+      throw const FormatException('Portfolio config must contain an object.');
     }
+    _content = decoded;
     return decoded;
   }
 
   static Future<Map<String, dynamic>> fetchAbout() async {
-    final response = await http.get(Uri.parse('$baseUrl/api/portfolio/about'));
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Unable to load profile content.');
+    final section = (await fetchAll())['about'];
+    if (section is! Map<String, dynamic>) {
+      throw const FormatException('Portfolio config is missing about content.');
     }
-
-    final decoded = jsonDecode(response.body);
-    if (decoded is! Map<String, dynamic>) {
-      throw Exception('Invalid profile response.');
-    }
-    return decoded;
+    return section;
   }
 
   static Future<Map<String, dynamic>> fetchJourney() async {
-    final response =
-        await http.get(Uri.parse('$baseUrl/api/portfolio/journey'));
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Unable to load journey content.');
+    final section = (await fetchAll())['journey'];
+    if (section is! Map<String, dynamic>) {
+      throw const FormatException(
+          'Portfolio config is missing journey content.');
     }
-
-    final decoded = jsonDecode(response.body);
-    if (decoded is! Map<String, dynamic>) {
-      throw Exception('Invalid journey response.');
-    }
-    return decoded;
+    return section;
   }
 
   static Future<List<Map<String, dynamic>>> fetchProjects(
       {String? category}) async {
-    final uri = Uri.parse('$baseUrl/api/portfolio/projects').replace(
-      queryParameters: category == null ? null : {'category': category},
-    );
-    final response = await http.get(uri);
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Unable to load projects.');
+    final projectsSection = (await fetchAll())['projects'];
+    if (projectsSection is! Map<String, dynamic>) {
+      throw const FormatException('Portfolio config is missing projects.');
     }
-
-    final decoded = jsonDecode(response.body);
-    if (decoded is! Map<String, dynamic>) {
-      throw Exception('Invalid projects response.');
-    }
-    return (decoded['projects'] as List<dynamic>? ?? const [])
-        .whereType<Map<String, dynamic>>()
+    final projects = (projectsSection['projects'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>();
+    if (category == null || category.trim().isEmpty) return projects.toList();
+    return projects
+        .where((project) =>
+            (project['category'] as String? ?? '').toLowerCase() ==
+            category.toLowerCase())
         .toList();
   }
 
-  static Future<void> recordVisit() async {
-    await http.post(Uri.parse('$baseUrl/api/analytics/visit'));
-  }
-
-  static Future<bool> submitContactForm({
-    required String name,
-    required String email,
-    required String message,
-  }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/api/portfolio/contact-form'),
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'name': name,
-        'email': email,
-        'message': message,
-      }),
-    );
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      var message = 'Unable to send your message. Please try again.';
-      try {
-        final decoded = jsonDecode(response.body);
-        final detail =
-            decoded is Map<String, dynamic> ? decoded['detail'] : null;
-        if (detail is List && detail.isNotEmpty) {
-          final first = detail.first;
-          if (first is Map<String, dynamic> && first['msg'] is String) {
-            message = first['msg'] as String;
-          }
-        } else if (detail is String && detail.isNotEmpty) {
-          message = detail;
-        }
-      } on FormatException {
-        // Keep the safe fallback when a proxy returns a non-JSON response.
-      }
-      throw Exception(message);
-    }
-    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-    final data = decoded['data'] as Map<String, dynamic>?;
-    return data?['visitor_copy_sent'] == true;
-  }
+  /// Kept for the existing landing interaction. Static hosting has no API to
+  /// record visits.
+  static Future<void> recordVisit() async {}
 }

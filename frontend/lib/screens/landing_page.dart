@@ -27,8 +27,10 @@ class LandingScreen extends StatefulWidget {
 class _LandingScreenState extends State<LandingScreen> {
   _LandingContent? _content;
   String? _error;
-  Timer? _roleTimer;
+  Timer? _typewriterTimer;
   int _roleIndex = 0;
+  int _visibleCharacters = 0;
+  bool _isDeleting = false;
 
   @override
   void initState() {
@@ -38,7 +40,7 @@ class _LandingScreenState extends State<LandingScreen> {
 
   @override
   void dispose() {
-    _roleTimer?.cancel();
+    _typewriterTimer?.cancel();
     super.dispose();
   }
 
@@ -50,7 +52,7 @@ class _LandingScreenState extends State<LandingScreen> {
       }
       widget.onPortfolioContentLoaded(decoded);
       setState(() => _content = _LandingContent.fromJson(decoded));
-      _startRoleTimer();
+      _startTypewriter();
     } catch (_) {
       if (mounted) {
         setState(() => _error = 'Unable to load portfolio details.');
@@ -58,16 +60,45 @@ class _LandingScreenState extends State<LandingScreen> {
     }
   }
 
-  void _startRoleTimer() {
-    _roleTimer?.cancel();
-    if ((_content?.roles.length ?? 0) < 2) {
+  void _startTypewriter() {
+    _typewriterTimer?.cancel();
+    final roles = _content?.displayRoles ?? const <String>[];
+    if (roles.isEmpty) {
       return;
     }
-    _roleTimer = Timer.periodic(const Duration(milliseconds: 3300), (_) {
-      if (mounted && _content != null) {
-        setState(() => _roleIndex = (_roleIndex + 1) % _content!.roles.length);
+    _roleIndex = 0;
+    _visibleCharacters = 0;
+    _isDeleting = false;
+    _scheduleTypewriterTick();
+  }
+
+  void _scheduleTypewriterTick() {
+    final roles = _content?.displayRoles ?? const <String>[];
+    if (!mounted || roles.isEmpty) {
+      return;
+    }
+    final role = roles[_roleIndex];
+    Duration delay = const Duration(milliseconds: 72);
+
+    if (!_isDeleting && _visibleCharacters < role.length) {
+      _visibleCharacters++;
+    } else if (!_isDeleting) {
+      if (roles.length == 1) {
+        return;
       }
-    });
+      _isDeleting = true;
+      delay = const Duration(milliseconds: 1250);
+    } else if (_visibleCharacters > 0) {
+      _visibleCharacters--;
+      delay = const Duration(milliseconds: 42);
+    } else {
+      _roleIndex = (_roleIndex + 1) % roles.length;
+      _isDeleting = false;
+      delay = const Duration(milliseconds: 380);
+    }
+
+    setState(() {});
+    _typewriterTimer = Timer(delay, _scheduleTypewriterTick);
   }
 
   void _explorePortfolio() {
@@ -104,6 +135,7 @@ class _LandingScreenState extends State<LandingScreen> {
                   : _LandingLayout(
                       content: _content!,
                       roleIndex: _roleIndex,
+                      visibleCharacters: _visibleCharacters,
                       onExplore: _explorePortfolio,
                       onProjects: widget.onProjects,
                     ),
@@ -116,12 +148,14 @@ class _LandingScreenState extends State<LandingScreen> {
 class _LandingLayout extends StatelessWidget {
   final _LandingContent content;
   final int roleIndex;
+  final int visibleCharacters;
   final VoidCallback onExplore;
   final VoidCallback onProjects;
 
   const _LandingLayout({
     required this.content,
     required this.roleIndex,
+    required this.visibleCharacters,
     required this.onExplore,
     required this.onProjects,
   });
@@ -131,37 +165,25 @@ class _LandingLayout extends StatelessWidget {
     final t = AppTheme.of(context);
     final isMobile = Responsive.isMobile(context);
     final horizontal = isMobile ? 20.0 : 34.0;
-    final portraitUrl = _absoluteImageUrl(content.portraitUrl);
+    final displayRoles = content.displayRoles;
+    final currentRole = displayRoles.isEmpty ? '' : displayRoles[roleIndex];
+    final visibleRole = currentRole.substring(
+      0,
+      visibleCharacters.clamp(0, currentRole.length),
+    );
+    final roleFontSize = (content.roleFontSize ?? 32)
+        .clamp(isMobile ? 28 : 40, isMobile ? 36 : 58)
+        .toDouble();
 
     return Stack(
       key: const ValueKey('landing-content'),
       children: [
-        if (portraitUrl != null)
-          Positioned.fill(
-            child: IgnorePointer(
-              child: Center(
-                child: TweenAnimationBuilder<double>(
-                  duration: const Duration(milliseconds: 400),
-                  tween: Tween(begin: 0, end: 1),
-                  builder: (context, opacity, child) => Opacity(
-                    opacity: opacity * 0.8,
-                    child: child,
-                  ),
-                  child: Image.network(
-                    portraitUrl,
-                    width: Responsive.value(
-                      context,
-                      mobile: 220.0,
-                      tablet: 350.0,
-                      desktop: 500.0,
-                    ),
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                  ),
-                ),
-              ),
-            ),
+        Positioned.fill(
+          child: _HeroBackground(
+            imageAsset: content.heroBackgroundAsset,
+            imageUrl: _absoluteImageUrl(content.heroBackgroundUrl),
           ),
+        ),
         Positioned(
           top: isMobile ? 16 : 24,
           left: horizontal,
@@ -180,45 +202,61 @@ class _LandingLayout extends StatelessWidget {
           child: _StatusResume(availability: content.availability),
         ),
         Align(
-          alignment: Alignment(0, isMobile ? -0.05 : -0.12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: horizontal),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 400),
-                  child: Text(
-                    content.roles.isEmpty
-                        ? content.title
-                        : content.roles[roleIndex],
-                    key: ValueKey(roleIndex),
-                    textAlign: TextAlign.center,
-                    style: t.heading.copyWith(
-                      fontSize: (content.roleFontSize ?? 32)
-                          .clamp(isMobile ? 24 : 28, 42)
-                          .toDouble(),
+          alignment:
+              Alignment(isMobile ? -0.78 : -0.7, isMobile ? -0.08 : -0.12),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: horizontal),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: isMobile ? 400 : 630),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "Hello, I'm a",
+                    style: t.subheading.copyWith(
+                      color: t.textMuted,
+                      fontSize: isMobile ? 19 : 24,
                       fontWeight: FontWeight.w500,
-                      color: t.text,
                     ),
                   ),
-                ),
+                  const SizedBox(height: AppSpacing.sm),
+                  SizedBox(
+                    height: roleFontSize * 2.15,
+                    child: RichText(
+                      maxLines: 2,
+                      overflow: TextOverflow.clip,
+                      text: TextSpan(
+                        style: t.display.copyWith(
+                          fontSize: roleFontSize,
+                          fontWeight: FontWeight.w700,
+                          color: t.text,
+                          height: 1.04,
+                        ),
+                        children: [
+                          TextSpan(text: visibleRole),
+                          WidgetSpan(
+                            alignment: PlaceholderAlignment.middle,
+                            child: _TypewriterCursor(fontSize: roleFontSize),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (content.valueStatement.trim().isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 520),
+                      child: Text(
+                        content.valueStatement,
+                        textAlign: TextAlign.start,
+                        style: t.body.copyWith(fontSize: isMobile ? 15 : 17),
+                      ),
+                    ),
+                  ],
+                ],
               ),
-              if (content.valueStatement.trim().isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.md),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 520),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: horizontal),
-                    child: Text(
-                      content.valueStatement,
-                      textAlign: TextAlign.center,
-                      style: t.body.copyWith(fontSize: isMobile ? 15 : 17),
-                    ),
-                  ),
-                ),
-              ],
-            ],
+            ),
           ),
         ),
         Positioned(
@@ -289,7 +327,140 @@ class _LandingLayout extends StatelessWidget {
     if (uri != null && uri.hasScheme) {
       return uri.toString();
     }
-    return Uri.parse(PortfolioApi.baseUrl).resolve(value).toString();
+    // Public static builds only support complete remote image URLs. Local hero
+    // artwork is configured separately as an asset in config/portfolio.json.
+    return null;
+  }
+}
+
+class HeroImageConfig {
+  HeroImageConfig._();
+
+  /// Override with `--dart-define=HERO_BACKGROUND_ASSET=assets/your-image.png`.
+  static const String defaultBackgroundAsset = String.fromEnvironment(
+    'HERO_BACKGROUND_ASSET',
+    defaultValue: 'assets/hero_portrait.png',
+  );
+}
+
+class _HeroBackground extends StatelessWidget {
+  final String imageAsset;
+  final String? imageUrl;
+
+  const _HeroBackground({required this.imageAsset, required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTheme.of(context);
+    final isMobile = Responsive.isMobile(context);
+    final image = imageUrl == null
+        ? Image.asset(
+            imageAsset.trim().isEmpty
+                ? HeroImageConfig.defaultBackgroundAsset
+                : imageAsset,
+            fit: BoxFit.cover,
+          )
+        : Image.network(
+            imageUrl!,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Image.asset(
+              HeroImageConfig.defaultBackgroundAsset,
+              fit: BoxFit.cover,
+            ),
+          );
+    return IgnorePointer(
+      child: TweenAnimationBuilder<double>(
+        duration: const Duration(milliseconds: 500),
+        tween: Tween(begin: 0, end: 1),
+        builder: (context, opacity, child) =>
+            Opacity(opacity: opacity, child: child),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            ColoredBox(color: t.background),
+            Positioned.fill(
+              child: Align(
+                alignment: isMobile
+                    ? const Alignment(0.52, -0.08)
+                    : Alignment.centerRight,
+                child: SizedBox.expand(child: image),
+              ),
+            ),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.96),
+                    Colors.black.withValues(alpha: isMobile ? 0.62 : 0.18),
+                    Colors.black.withValues(alpha: 0.28),
+                  ],
+                  stops: const [0, 0.56, 1],
+                ),
+              ),
+            ),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.22),
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.54),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TypewriterCursor extends StatefulWidget {
+  final double fontSize;
+
+  const _TypewriterCursor({required this.fontSize});
+
+  @override
+  State<_TypewriterCursor> createState() => _TypewriterCursorState();
+}
+
+class _TypewriterCursorState extends State<_TypewriterCursor>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: Tween<double>(begin: 0.2, end: 1).animate(_controller),
+      child: Text(
+        '|',
+        style: AppTheme.of(context).display.copyWith(
+              color: AppTheme.of(context).button,
+              fontSize: widget.fontSize * 0.88,
+              height: 1.04,
+            ),
+      ),
+    );
   }
 }
 
@@ -688,6 +859,8 @@ class _LandingContent {
   final double? roleFontSize;
   final String avatarUrl;
   final String portraitUrl;
+  final String heroBackgroundUrl;
+  final String heroBackgroundAsset;
   final String valueStatement;
   final String email;
   final String githubUrl;
@@ -704,11 +877,19 @@ class _LandingContent {
     required this.roleFontSize,
     required this.avatarUrl,
     required this.portraitUrl,
+    required this.heroBackgroundUrl,
+    required this.heroBackgroundAsset,
     required this.valueStatement,
     required this.email,
     required this.githubUrl,
     required this.linkedinUrl,
   });
+
+  List<String> get displayRoles => roles.isNotEmpty
+      ? roles
+      : title.trim().isEmpty
+          ? const []
+          : [title];
 
   factory _LandingContent.fromJson(Map<String, dynamic> json) {
     final about = (json['about'] as Map<String, dynamic>?) ?? const {};
@@ -729,6 +910,10 @@ class _LandingContent {
       roleFontSize: (about['role_font_size'] as num?)?.toDouble(),
       avatarUrl: (about['avatar_url'] as String?) ?? '',
       portraitUrl: (about['portrait_url'] as String?) ?? '',
+      heroBackgroundUrl: (about['hero_background_url'] as String?) ??
+          (about['portrait_url'] as String?) ??
+          '',
+      heroBackgroundAsset: (about['hero_background_asset'] as String?) ?? '',
       valueStatement: (about['value_statement'] as String?) ?? '',
       email: (contact['email'] as String?) ?? '',
       githubUrl: (social['github'] as String?) ?? '',

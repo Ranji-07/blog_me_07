@@ -4,14 +4,14 @@ services:
     runtime: python
     rootDir: backend
     buildCommand: pip install -r requirements.txt
-    startCommand: python -m app.init_db && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: python -m alembic upgrade head && python -m app.init_db && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     autoDeploy: true
     envVars:
       - key: DATABASE_URL
         sync: false
       - key: ADMIN_EMAIL
         sync: false
-      - key: ADMIN_API_KEY
+      - key: JWT_SECRET_KEY
         sync: false
       - key: EMAIL_DELIVERY_MODE
         value: gmail_api

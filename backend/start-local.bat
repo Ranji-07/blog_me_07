@@ -7,4 +7,8 @@ if not exist ".\.venv312\Scripts\python.exe" (
   echo Run setup-local.bat first.
   exit /b 1
 )
+call .\.venv312\Scripts\python.exe -m alembic upgrade head
+if errorlevel 1 exit /b %errorlevel%
+call .\.venv312\Scripts\python.exe -m app.init_db
+if errorlevel 1 exit /b %errorlevel%
 call .\.venv312\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000

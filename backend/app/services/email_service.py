@@ -1,5 +1,4 @@
 import logging
-import os
 import base64
 from datetime import datetime
 from email.message import EmailMessage
@@ -7,16 +6,16 @@ from pathlib import Path
 from string import Template
 
 from app.database import PROJECT_DIR
+from app.config import settings
 from app.services.gmail_auth import token_path, load_send_credentials
 from app.utils.time import utc_display, utc_now
 
 logger = logging.getLogger(__name__)
 
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "ranjithvijay1225@gmail.com")
-ADMIN_API_KEY = os.getenv("ADMIN_API_KEY")
-GMAIL_SENDER_EMAIL = os.getenv("GMAIL_SENDER_EMAIL", ADMIN_EMAIL)
-EMAIL_DELIVERY_MODE = os.getenv("EMAIL_DELIVERY_MODE", "log").strip().lower()
-EMAIL_OUTBOX_DIR = Path(os.getenv("EMAIL_OUTBOX_DIR", "./dev_outbox"))
+ADMIN_EMAIL = settings.admin_email
+GMAIL_SENDER_EMAIL = settings.gmail_sender_email
+EMAIL_DELIVERY_MODE = settings.email_delivery_mode
+EMAIL_OUTBOX_DIR = Path(settings.email_outbox_dir)
 TEMPLATE_DIR = PROJECT_DIR.parent / "email_template"
 
 

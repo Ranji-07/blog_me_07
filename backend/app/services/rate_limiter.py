@@ -1,9 +1,10 @@
 import asyncio
-import os
 import time
 from collections import defaultdict, deque
 
 from fastapi import HTTPException, Request
+
+from app.config import settings
 
 
 class InMemoryRateLimiter:
@@ -37,7 +38,7 @@ class InMemoryRateLimiter:
 
 
 def get_client_ip(request: Request) -> str:
-    if os.getenv("TRUST_PROXY_HEADERS", "false").lower() == "true":
+    if settings.trust_proxy_headers:
         forwarded_for = request.headers.get("x-forwarded-for", "")
         if forwarded_for:
             return forwarded_for.split(",")[0].strip()

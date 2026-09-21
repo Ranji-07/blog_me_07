@@ -3,23 +3,24 @@
 import os
 from pathlib import Path
 
+from app.config import settings
 from app.database import PROJECT_DIR
 
 GMAIL_SEND_SCOPE = "https://www.googleapis.com/auth/gmail.send"
 GMAIL_SCOPES = [GMAIL_SEND_SCOPE]
 
 
-def _secret_path(name: str, default: str) -> Path:
-    configured = Path(os.getenv(name, default))
+def _secret_path(configured_value: str) -> Path:
+    configured = Path(configured_value)
     return configured if configured.is_absolute() else PROJECT_DIR / configured
 
 
 def oauth_client_path() -> Path:
-    return _secret_path("GMAIL_OAUTH_CLIENT_FILE", ".secrets/gmail_client.json")
+    return _secret_path(settings.gmail_oauth_client_file)
 
 
 def token_path() -> Path:
-    return _secret_path("GMAIL_TOKEN_FILE", ".secrets/gmail_token.json")
+    return _secret_path(settings.gmail_token_file)
 
 
 def load_send_credentials():

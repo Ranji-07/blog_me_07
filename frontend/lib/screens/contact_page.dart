@@ -96,7 +96,7 @@ class _ContactScreenState extends State<ContactScreen> {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xl),
-                    const ContactForm(),
+                    ContactForm(recipientEmail: content.email),
                     const SizedBox(height: 40),
                     ContactLinksSection(
                       email: content.email,
