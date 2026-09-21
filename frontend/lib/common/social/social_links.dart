@@ -230,7 +230,7 @@ class ContactLinksSection extends StatelessWidget {
         _ContactIconButton(
           semanticLabel: 'GitHub',
           tooltip: _externalTooltip('GitHub', githubUrl),
-          iconData: FontAwesomeIcons.github,
+          faIcon: FontAwesomeIcons.github,
           showBackground: false,
           enabled: githubUrl.trim().isNotEmpty,
           onPrimaryTap: () => _openExternal(context, githubUrl),
@@ -244,7 +244,7 @@ class ContactLinksSection extends StatelessWidget {
         _ContactIconButton(
           semanticLabel: 'LinkedIn',
           tooltip: _externalTooltip('LinkedIn', linkedinUrl),
-          iconData: FontAwesomeIcons.linkedinIn,
+          faIcon: FontAwesomeIcons.linkedinIn,
           showBackground: false,
           enabled: linkedinUrl.trim().isNotEmpty,
           onPrimaryTap: () => _openExternal(context, linkedinUrl),
@@ -265,7 +265,7 @@ class _ContactIconButton extends StatefulWidget {
   final String semanticLabel;
   final String tooltip;
   final IconData? icon;
-  final IconData? iconData;
+  final FaIconData? faIcon;
   final Future<void> Function() onPrimaryTap;
   final Future<void> Function() onSecondaryTap;
   final Future<void> Function()? onLongPress;
@@ -279,7 +279,7 @@ class _ContactIconButton extends StatefulWidget {
     required this.onSecondaryTap,
     this.onLongPress,
     this.icon,
-    this.iconData,
+    this.faIcon,
     this.showBackground = true,
     this.enabled = true,
   });
@@ -420,11 +420,17 @@ class _ContactIconButtonState extends State<_ContactIconButton> {
                                 color: iconColor,
                               ),
                             )
-                          : Icon(
-                              widget.iconData ?? widget.icon,
-                              color: iconColor,
-                              size: 22,
-                            ),
+                          : widget.faIcon != null
+                              ? FaIcon(
+                                  widget.faIcon,
+                                  color: iconColor,
+                                  size: 22,
+                                )
+                              : Icon(
+                                  widget.icon,
+                                  color: iconColor,
+                                  size: 22,
+                                ),
                     ),
                   ),
                 ),
