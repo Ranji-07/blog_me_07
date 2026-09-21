@@ -35,6 +35,9 @@ jobs:
           flutter build web --release --base-href /${{ github.event.repository.name }}/
       - uses: actions/upload-pages-artifact@v3
         with:
+          name: portfolio-site
           path: frontend/build/web
       - id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: portfolio-site
