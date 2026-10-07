@@ -12,23 +12,40 @@ class ResumePreviewDialog extends StatelessWidget {
   static const String _resumeAssetPath = 'assets/assets/resume.pdf';
   static final Uri _resumeAssetUri = Uri.parse(_resumeAssetPath);
   final VoidCallback? onActionComplete;
+  final VoidCallback? onClose;
+  final VoidCallback? onDownload;
 
   const ResumePreviewDialog({
     super.key,
     this.onActionComplete,
+    this.onClose,
+    this.onDownload,
   });
 
   static Future<void> show(
     BuildContext context, {
     VoidCallback? onActionComplete,
-  }) {
-    return showDialog<void>(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.72),
-      builder: (_) => ResumePreviewDialog(
-        onActionComplete: onActionComplete,
-      ),
-    );
+  }) async {
+    final exitMotion = ValueNotifier<_PaperExit>(_PaperExit.close);
+    try {
+      await showGeneralDialog<void>(
+        context: context,
+        barrierDismissible: true,
+        barrierLabel: 'Resume preview',
+        barrierColor: Colors.black.withValues(alpha: 0.72),
+        transitionDuration: const Duration(milliseconds: 1100),
+        pageBuilder: (dialogContext, _, __) => ResumePreviewDialog(
+          onActionComplete: onActionComplete,
+          onClose: () => exitMotion.value = _PaperExit.close,
+          onDownload: () => exitMotion.value = _PaperExit.download,
+        ),
+        transitionBuilder: (dialogContext, animation, _, child) =>
+            _PaperTransition(
+                animation: animation, exitMotion: exitMotion, child: child),
+      );
+    } finally {
+      exitMotion.dispose();
+    }
   }
 
   Future<void> _shareResume(BuildContext context) async {
@@ -67,6 +84,9 @@ class ResumePreviewDialog extends StatelessWidget {
 
     if (saved) {
       onActionComplete?.call();
+      onDownload?.call();
+      await Future<void>.delayed(const Duration(milliseconds: 260));
+      if (context.mounted) Navigator.of(context).pop();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Resume download started')),
@@ -82,6 +102,9 @@ class ResumePreviewDialog extends StatelessWidget {
 
     if (launched) {
       onActionComplete?.call();
+      onDownload?.call();
+      await Future<void>.delayed(const Duration(milliseconds: 260));
+      if (context.mounted) Navigator.of(context).pop();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Opened resume PDF')),
@@ -158,78 +181,153 @@ class ResumePreviewDialog extends StatelessWidget {
     final sideInset = size.width < 760 ? 14.0 : 18.0;
     final bottomInset = size.width < 760 ? 18.0 : 22.0;
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(16),
-      child: SizedBox(
-        width: dialogWidth,
-        height: size.height * 0.9,
-        child: Center(
-          child: SizedBox(
-            width: pageWidth,
-            height: effectivePageHeight,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(32),
-                        child: const _ResumePage(),
+    return PopScope(
+      onPopInvokedWithResult: (_, __) => onClose?.call(),
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: SizedBox(
+          width: dialogWidth,
+          height: size.height * 0.9,
+          child: Center(
+            child: SizedBox(
+              width: pageWidth,
+              height: effectivePageHeight,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(32),
+                          child: const _ResumePage(),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                Positioned(
-                  top: topInset,
-                  right: sideInset,
-                  child: _FloatingIconButton(
-                    icon: Icons.close_rounded,
-                    onTap: () => Navigator.of(context).pop(),
+                  Positioned(
+                    top: topInset,
+                    right: sideInset,
+                    child: _FloatingIconButton(
+                      icon: Icons.close_rounded,
+                      onTap: () {
+                        onClose?.call();
+                        Navigator.of(context).pop();
+                      },
+                    ),
                   ),
-                ),
-                Positioned(
-                  left: sideInset,
-                  right: sideInset,
-                  bottom: bottomInset,
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final compact = constraints.maxWidth < 360;
-                      return Wrap(
-                        alignment: WrapAlignment.center,
-                        spacing: compact ? 8 : 10,
-                        runSpacing: compact ? 8 : 10,
-                        children: [
-                          _ResumeActionButton(
-                            label: 'Share',
-                            icon: Icons.share_outlined,
-                            compact: compact,
-                            onTap: () => _shareResume(context),
-                          ),
-                          _ResumeActionButton(
-                            label: 'Save',
-                            icon: Icons.save_alt_rounded,
-                            filled: true,
-                            compact: compact,
-                            onTap: () => _savePdf(context),
-                          ),
-                        ],
-                      );
-                    },
+                  Positioned(
+                    left: sideInset,
+                    right: sideInset,
+                    bottom: bottomInset,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final compact = constraints.maxWidth < 360;
+                        return Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: compact ? 8 : 10,
+                          runSpacing: compact ? 8 : 10,
+                          children: [
+                            _ResumeActionButton(
+                              label: 'Share',
+                              icon: Icons.share_outlined,
+                              compact: compact,
+                              onTap: () => _shareResume(context),
+                            ),
+                            _ResumeActionButton(
+                              label: 'Save',
+                              icon: Icons.save_alt_rounded,
+                              filled: true,
+                              compact: compact,
+                              onTap: () => _savePdf(context),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
   }
+}
+
+enum _PaperExit { close, download }
+
+class _PaperTransition extends StatelessWidget {
+  final Animation<double> animation;
+  final ValueNotifier<_PaperExit> exitMotion;
+  final Widget child;
+
+  const _PaperTransition({
+    required this.animation,
+    required this.exitMotion,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder<_PaperExit>(
+        valueListenable: exitMotion,
+        builder: (context, exit, _) {
+          final reverse = animation.status == AnimationStatus.reverse;
+          final reduced = MediaQuery.of(context).disableAnimations;
+          final progress = Curves.easeInOutCubic.transform(animation.value);
+          final fold = reverse ? 1 - progress : 1 - progress;
+          final target = exit == _PaperExit.download
+              ? const Offset(230, -280)
+              : const Offset(210, 330);
+          final movement = reverse
+              ? Offset(target.dx * fold, target.dy * fold)
+              : Offset(250 * (1 - progress), -210 * (1 - progress));
+          final scale =
+              reduced ? progress : (reverse ? progress : 0.2 + 0.8 * progress);
+          final rotation = reduced
+              ? 0.0
+              : (reverse
+                  ? (exit == _PaperExit.download ? -0.28 : 0.34) * fold
+                  : 0.28 * (1 - progress));
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              if (reverse && exit == _PaperExit.close)
+                Positioned(
+                  right: 34,
+                  bottom: 30,
+                  child: Opacity(
+                    opacity: fold.clamp(0.0, 1.0),
+                    child: const Icon(Icons.delete_outline_rounded,
+                        color: AppColors.button, size: 42),
+                  ),
+                ),
+              Center(
+                child: Transform.translate(
+                  offset: movement,
+                  child: Transform.rotate(
+                    angle: rotation,
+                    child: Transform.scale(
+                      scale: scale,
+                      child: ClipRRect(
+                        borderRadius:
+                            BorderRadius.circular(14 + 96 * (1 - progress)),
+                        child: child,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      );
 }
 
 class _FloatingIconButton extends StatelessWidget {

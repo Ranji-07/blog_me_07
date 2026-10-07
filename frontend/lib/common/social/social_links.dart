@@ -117,7 +117,19 @@ class ContactLinksSection extends StatelessWidget {
     }
   }
 
-  Future<void> _openQuickEmail(BuildContext context) async {
+  String get _mailSubject => 'Portfolio enquiry';
+
+  String get _mailBody =>
+      'Hello,\n\nI found your portfolio and would like to connect about ';
+
+  String _maskedEmail(String value) {
+    final parts = value.trim().split('@');
+    if (parts.length != 2 || parts.first.length < 5) return value;
+    final local = parts.first;
+    return '${local.substring(0, 3)}********${local.substring(local.length - 1)}@${parts.last}';
+  }
+
+  Future<void> _openQuickEmail(BuildContext context, _MailApp app) async {
     if (email.trim().isEmpty) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
@@ -130,15 +142,94 @@ class ContactLinksSection extends StatelessWidget {
       return;
     }
 
-    final mailUri = Uri(
-      scheme: 'mailto',
-      path: email,
-      queryParameters: const {
-        'subject': 'Portfolio Contact',
-      },
-    );
+    final query = <String, String>{
+      'subject': _mailSubject,
+      'body': _mailBody,
+    };
+    final mailUri = switch (app) {
+      _MailApp.defaultApp => Uri(
+          scheme: 'mailto',
+          path: email,
+          queryParameters: query,
+        ),
+      _MailApp.gmail => Uri.https('mail.google.com', '/mail/', {
+          'view': 'cm',
+          'fs': '1',
+          'to': email,
+          'su': _mailSubject,
+          'body': _mailBody,
+        }),
+      _MailApp.outlook => Uri.https(
+          'outlook.office.com',
+          '/mail/deeplink/compose',
+          {
+            'to': email,
+            ...query,
+          },
+        ),
+    };
 
     await _launchUri(context, mailUri);
+  }
+
+  Future<void> _showMailAppPicker(BuildContext context) {
+    return showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final t = AppTheme.of(sheetContext);
+        return SafeArea(
+          child: Container(
+            margin: const EdgeInsets.all(AppSpacing.md),
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: t.card,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: t.border),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Choose your mail app', style: t.subheading),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                    'Your message will open with the recipient and a draft ready.',
+                    style: t.body.copyWith(fontSize: 13)),
+                const SizedBox(height: AppSpacing.md),
+                _MailAppOption(
+                  icon: Icons.open_in_new_rounded,
+                  title: 'Default mail app',
+                  subtitle: 'Use your device email preference',
+                  onTap: () async {
+                    Navigator.pop(sheetContext);
+                    await _openQuickEmail(context, _MailApp.defaultApp);
+                  },
+                ),
+                _MailAppOption(
+                  icon: Icons.mail_outline_rounded,
+                  title: 'Gmail',
+                  subtitle: 'Open a Gmail compose window',
+                  onTap: () async {
+                    Navigator.pop(sheetContext);
+                    await _openQuickEmail(context, _MailApp.gmail);
+                  },
+                ),
+                _MailAppOption(
+                  icon: Icons.mark_email_read_outlined,
+                  title: 'Outlook',
+                  subtitle: 'Open an Outlook compose window',
+                  onTap: () async {
+                    Navigator.pop(sheetContext);
+                    await _openQuickEmail(context, _MailApp.outlook);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _showEmailDialog(BuildContext context) {
@@ -160,45 +251,26 @@ class ContactLinksSection extends StatelessWidget {
           child: Opacity(
             opacity: curved.value,
             child: _ContactActionDialog(
-              title: 'Contact via Email',
-              icon: Icons.mail_outline_rounded,
+              title: "Let's talk.",
               description:
-                  "I'd love to hear from you. Feel free to send me a message.",
-              body: SelectionArea(
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.md,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.of(dialogContext)
-                        .surface
-                        .withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    border:
-                        Border.all(color: AppTheme.of(dialogContext).border),
-                  ),
-                  child: Text(
-                    email.isEmpty
-                        ? 'Email address available on request'
-                        : email,
-                    style: AppTheme.of(dialogContext).subheading,
-                  ),
-                ),
+                  'Have an idea, opportunity, or just want to connect?',
+              statusLabel: 'Open to opportunities',
+              body: _EmailAddressAction(
+                email: email.isEmpty
+                    ? 'Email address available on request'
+                    : _maskedEmail(email),
+                onCopy: () => _copyValue(context, 'Email', email),
+                onSend: () async {
+                  Navigator.of(dialogContext).pop();
+                  await _showMailAppPicker(context);
+                },
               ),
-              primaryLabel: 'Mail Him',
+              primaryLabel: 'Send email',
+              showPrimaryAction: false,
               onPrimaryTap: () async {
                 Navigator.of(dialogContext).pop();
-                await _openQuickEmail(context);
+                await _showMailAppPicker(context);
               },
-              tertiaryLabel: 'Copy Email',
-              onTertiaryTap: () => _copyValue(
-                context,
-                'Email',
-                email,
-              ),
-              secondaryLabel: 'Close',
             ),
           ),
         );
@@ -257,6 +329,124 @@ class ContactLinksSection extends StatelessWidget {
               _copyValue(context, 'LinkedIn profile', linkedinUrl),
         ),
       ],
+    );
+  }
+}
+
+enum _MailApp { defaultApp, gmail, outlook }
+
+class _MailAppOption extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Future<void> Function() onTap;
+
+  const _MailAppOption({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTheme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.sm),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              border: Border.all(color: t.border),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: t.button),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: t.label.copyWith(color: t.text)),
+                      const SizedBox(height: 2),
+                      Text(subtitle, style: t.label.copyWith(fontSize: 11)),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right_rounded, color: t.textMuted),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmailAddressAction extends StatefulWidget {
+  final String email;
+  final Future<void> Function() onCopy;
+  final Future<void> Function() onSend;
+  const _EmailAddressAction(
+      {required this.email, required this.onCopy, required this.onSend});
+
+  @override
+  State<_EmailAddressAction> createState() => _EmailAddressActionState();
+}
+
+class _EmailAddressActionState extends State<_EmailAddressAction> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTheme.of(context);
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: Container(
+        width: double.infinity,
+        padding:
+            const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
+        decoration: BoxDecoration(
+          color: t.surface.withValues(alpha: 0.7),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: t.button.withValues(alpha: 0.42)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.mail_outline_rounded, size: 18, color: t.button),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: InkWell(
+                onTap: widget.onSend,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 160),
+                  child: Text(
+                    _hovered ? 'Send email  →' : widget.email,
+                    key: ValueKey(_hovered),
+                    overflow: TextOverflow.ellipsis,
+                    style: t.subheading.copyWith(
+                      color: _hovered ? t.button : t.text,
+                      decoration: TextDecoration.none,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            IconButton(
+              onPressed: widget.onCopy,
+              tooltip: 'Copy email',
+              icon: Icon(Icons.content_copy_outlined,
+                  size: 17, color: t.textMuted),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -324,6 +514,7 @@ class _ContactIconButtonState extends State<_ContactIconButton> {
 
     return Tooltip(
       message: widget.tooltip,
+      triggerMode: TooltipTriggerMode.manual,
       waitDuration: const Duration(milliseconds: 250),
       showDuration: const Duration(seconds: 3),
       child: Semantics(
@@ -488,24 +679,20 @@ class ContactFooterLine extends StatelessWidget {
 
 class _ContactActionDialog extends StatelessWidget {
   final String title;
-  final IconData icon;
   final String description;
+  final String? statusLabel;
   final Widget? body;
   final String primaryLabel;
+  final bool showPrimaryAction;
   final Future<void> Function() onPrimaryTap;
-  final String? tertiaryLabel;
-  final Future<void> Function()? onTertiaryTap;
-  final String secondaryLabel;
 
   const _ContactActionDialog({
     required this.title,
-    required this.icon,
     required this.description,
+    this.statusLabel,
     required this.primaryLabel,
+    this.showPrimaryAction = true,
     required this.onPrimaryTap,
-    this.tertiaryLabel,
-    this.onTertiaryTap,
-    required this.secondaryLabel,
     this.body,
   });
 
@@ -517,7 +704,12 @@ class _ContactActionDialog extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 440),
         child: Container(
           margin: const EdgeInsets.all(20),
-          padding: const EdgeInsets.all(AppSpacing.xl),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.lg,
+            AppSpacing.lg,
+          ),
           decoration: BoxDecoration(
             color: t.card,
             borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -530,88 +722,80 @@ class _ContactActionDialog extends StatelessWidget {
               ),
             ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: t.surface.withValues(alpha: 0.72),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: t.border),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: t.button,
-                    size: 30,
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Text(title, style: t.subheading.copyWith(color: t.text)),
-              const SizedBox(height: AppSpacing.sm),
-              Text(description, style: t.body),
-              if (body != null) ...[
-                const SizedBox(height: AppSpacing.lg),
-                body!,
-              ],
-              const SizedBox(height: AppSpacing.xl),
-              Wrap(
-                spacing: AppSpacing.md,
-                runSpacing: AppSpacing.md,
-                children: [
-                  SizedBox(
-                    width: 120,
-                    child: FilledButton(
-                      onPressed: onPrimaryTap,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: t.button,
-                        foregroundColor: Colors.black,
-                        minimumSize: const Size.fromHeight(48),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.full),
+          child: Material(
+            color: Colors.transparent,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    if (statusLabel != null) ...[
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF22C55E),
+                          shape: BoxShape.circle,
                         ),
                       ),
-                      child: Text(primaryLabel),
+                      const SizedBox(width: 7),
+                      Text(statusLabel!,
+                          style: t.label
+                              .copyWith(color: t.textMuted, fontSize: 11)),
+                    ],
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      tooltip: 'Close',
+                      constraints:
+                          const BoxConstraints.tightFor(width: 32, height: 32),
+                      padding: EdgeInsets.zero,
+                      icon: Icon(Icons.close_rounded, color: t.textMuted),
                     ),
-                  ),
-                  if (tertiaryLabel != null && onTertiaryTap != null)
-                    SizedBox(
-                      width: 120,
-                      child: OutlinedButton(
-                        onPressed: onTertiaryTap,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: t.text,
-                          side: BorderSide(color: t.border),
-                          minimumSize: const Size.fromHeight(48),
+                  ],
+                ),
+                Text(title,
+                    style: t.subheading.copyWith(
+                      color: t.text,
+                      fontSize: 20,
+                      decoration: TextDecoration.none,
+                    )),
+                const SizedBox(height: AppSpacing.sm),
+                Text(description,
+                    style: t.body.copyWith(decoration: TextDecoration.none)),
+                if (body != null) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  body!,
+                ],
+                if (showPrimaryAction) ...[
+                  const SizedBox(height: AppSpacing.xl),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: onPrimaryTap,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: t.button,
+                          foregroundColor: Colors.black,
+                          minimumSize: const Size.fromHeight(52),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(AppRadius.full),
                           ),
                         ),
-                        child: Text(tertiaryLabel!),
+                        icon: const Icon(Icons.send_rounded, size: 18),
+                        label: Text('$primaryLabel  →'),
                       ),
-                    ),
-                  SizedBox(
-                    width: 120,
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: t.text,
-                        side: BorderSide(color: t.border),
-                        minimumSize: const Size.fromHeight(48),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.full),
-                        ),
-                      ),
-                      child: Text(secondaryLabel),
-                    ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Center(
+                          child: Text('Click the address to copy',
+                              style: t.label.copyWith(fontSize: 11))),
+                    ],
                   ),
-                ],
-              ),
-            ],
+                ] else
+                  const SizedBox(height: AppSpacing.sm),
+              ],
+            ),
           ),
         ),
       ),

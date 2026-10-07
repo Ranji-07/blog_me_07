@@ -428,5 +428,39 @@
     },
     "visible": true,
     "status": "published"
+  },
+  "blog": {
+    "entries": [
+      {
+        "title": "Flutter notes",
+        "path": "flutter-notes/",
+        "status": "Planned",
+        "url": ""
+      },
+      {
+        "title": "Docker journey",
+        "path": "docker-journey/",
+        "status": "Planned",
+        "url": ""
+      },
+      {
+        "title": "AI experiments",
+        "path": "ai-experiments/",
+        "status": "Planned",
+        "url": ""
+      },
+      {
+        "title": "DevOps notes",
+        "path": "devops-notes/",
+        "status": "Planned",
+        "url": ""
+      },
+      {
+        "title": "Engineering notes",
+        "path": "engineering-notes/",
+        "status": "Planned",
+        "url": ""
+      }
+    ]
   }
 }

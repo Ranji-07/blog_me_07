@@ -1,18 +1,16 @@
 # Developer Portfolio
 
-This repo contains a local-first portfolio app with:
+Public static portfolio: <https://ranji-07.github.io/blog_me_07/>
 
-- `frontend/`: active Flutter Web rebuild
-- `frontendref/`: legacy frontend kept for reference during the redesign
-- `backend/`: FastAPI backend
+This repository contains two deployable parts:
 
-## Local Scope
+- `frontend/`: Flutter Web public portfolio, deployed as a static GitHub Pages
+  site from `frontend/config/portfolio.json`.
+- `backend/`: separate FastAPI, database, CMS, asset, analytics, and admin
+  service for local development or a future backend deployment.
 
-The project has been trimmed for web UI development and local API work.
-
-- Frontend: Flutter Web
-- Backend: FastAPI
-- Database: local SQLite file at `backend/portfolio_dev.db`
+The public portfolio does not call the backend. Its contact form opens a
+prepared email draft in the visitor's configured mail application.
 
 ## Run Locally
 
@@ -48,9 +46,14 @@ Default local URLs:
 - Backend: `http://127.0.0.1:8000`
 - API docs: `http://127.0.0.1:8000/docs`
 
-## Deployment Notes
+## Static hosting
 
-- The backend now includes `backend/render.yaml` and `backend/Procfile`.
-- Contact notifications use Gmail API after the local OAuth setup in `backend/README.md`; the backend sends a copy to the visitor.
-- Hosted frontend origins should be added to `CORS_ALLOW_ORIGINS`.
-- The Flutter frontend now supports `--dart-define=API_BASE_URL=...` so you can point it at local or hosted backend without editing source.
+GitHub Pages builds `frontend/` through `.github/workflows/deploy-static.yml`.
+The expected project URL is <https://ranji-07.github.io/blog_me_07/>. For
+deployment instructions and troubleshooting, read `frontend/README.md`.
+
+## Project status
+
+- Current product and outstanding decisions: `docs/PROJECT_STATUS.md`
+- Completed backend phase record: `bd_phase.md`
+- Backend setup and API reference: `backend/README.md`

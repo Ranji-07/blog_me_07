@@ -1,3 +1,9 @@
+# Backend delivery phases
+
+All nine implementation phases below are completed. The current public site is
+static; its deployment and remaining decisions are documented in
+`docs/PROJECT_STATUS.md`.
+
 Phase 1 — Backend Foundation & PostgreSQL
 **Status: Completed — 2026-09-17**
 

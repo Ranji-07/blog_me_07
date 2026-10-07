@@ -13,12 +13,19 @@ content edit requires a new web build and GitHub Pages deployment.
 | `projects.projects` | `title`, `category`, `short_description`, `description`, `technologies`, `github`, `live_demo` |
 | `journey.events` | `date`, `organization`, `title`, `description`, `technologies`, `highlights`, `current` |
 | `contact` | `email`, `phone`, `location`, `social.github`, `social.linkedin`, `footer` |
+| `blog.entries` | `title`, `path`, `status`, `url` |
 
 Use `hero_background_asset: "assets/hero_portrait.png"` for the current hero.
 To replace it, add your image to `assets/` and change this value. Keep the
 value relative to `frontend/`, for example `assets/my-portrait.jpg`.
 
-External project and social URLs must start with `https://`.
+External project and social URLs must start with `https://`. The static site is
+published at <https://ranji-07.github.io/blog_me_07/> after the Pages workflow
+has succeeded.
+
+Blog entries appear in the Work workspace. Leave `url` empty while an article
+is planned; the UI will show its planned status rather than linking to a page
+that does not exist.
 
 ## Contact form behaviour
 
