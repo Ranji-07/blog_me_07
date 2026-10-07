@@ -58,8 +58,8 @@ class _DesktopTimelineState extends State<_DesktopTimeline> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final laneWidth = constraints.maxWidth / widget.entries.length;
-        const lineCenter = 84.0;
-        const lineDepth = 16.0;
+        const lineCenter = 72.0;
+        const lineDepth = 13.0;
         const dotSize = 16.0;
         final detailWidth = math.min(280.0, math.max(220.0, laneWidth * 1.75));
         final active =
@@ -76,7 +76,7 @@ class _DesktopTimelineState extends State<_DesktopTimeline> {
           duration: const Duration(milliseconds: 240),
           curve: Curves.easeOutCubic,
           child: SizedBox(
-            height: active == null ? 174 : 372,
+            height: active == null ? 154 : 350,
             child: Stack(
               clipBehavior: Clip.none,
               children: [
@@ -102,7 +102,7 @@ class _DesktopTimelineState extends State<_DesktopTimeline> {
                     duration: const Duration(milliseconds: 220),
                     curve: Curves.easeOutCubic,
                     left: detailLeft,
-                    top: 154,
+                    top: 136,
                     width: detailWidth,
                     child: MouseRegion(
                       onEnter: (_) => _show(_activeIndex!),
@@ -211,7 +211,7 @@ class _DesktopMarker extends StatelessWidget {
         ),
         Positioned(
           left: center - 62,
-          top: labelAbove ? math.max(0, lineY - 66) : lineY + 20,
+          top: labelAbove ? math.max(0, lineY - 60) : lineY + 18,
           width: 124,
           child: IgnorePointer(
             child: Column(
@@ -384,8 +384,8 @@ class _MobileTimelineState extends State<_MobileTimeline> {
         final timelineWidth =
             math.max(constraints.maxWidth, widget.entries.length * 148.0);
         final laneWidth = timelineWidth / widget.entries.length;
-        const lineTop = 80.0;
-        const lineDepth = 10.0;
+        const lineTop = 70.0;
+        const lineDepth = 8.0;
         const detailWidth = 280.0;
         final active = hasDetail ? widget.entries[_activeIndex!] : null;
         final detailLeft = !hasDetail
@@ -398,7 +398,7 @@ class _MobileTimelineState extends State<_MobileTimeline> {
           duration: const Duration(milliseconds: 240),
           curve: Curves.easeOutCubic,
           child: SizedBox(
-            height: hasDetail ? 398 : 180,
+            height: hasDetail ? 374 : 162,
             child: MouseRegion(
               onEnter: (_) => _engageLine(),
               onHover: (_) => _engageLine(),
@@ -414,7 +414,7 @@ class _MobileTimelineState extends State<_MobileTimeline> {
                     scrollDirection: Axis.horizontal,
                     child: SizedBox(
                       width: timelineWidth,
-                      height: hasDetail ? 398 : 180,
+                      height: hasDetail ? 374 : 162,
                       child: Stack(
                         clipBehavior: Clip.none,
                         children: [
@@ -438,7 +438,7 @@ class _MobileTimelineState extends State<_MobileTimeline> {
                           if (active != null)
                             Positioned(
                               left: detailLeft,
-                              top: 180,
+                              top: 164,
                               width: detailWidth,
                               child: _AnimatedDetailCard(entry: active),
                             ),
@@ -528,7 +528,7 @@ class _MobileMarker extends StatelessWidget {
         ),
         Positioned(
           left: center - 62,
-          top: labelAbove ? math.max(0, lineY - 66) : lineY + 20,
+          top: labelAbove ? math.max(0, lineY - 60) : lineY + 18,
           width: 124,
           child: Column(
             children: [

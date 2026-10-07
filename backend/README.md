@@ -50,7 +50,13 @@ For production, run FastAPI behind a TLS reverse proxy, set `DATABASE_URL` to Po
 
 ## Content and admin data
 
-Edit `content/*.json` and validate/reseed deliberately until a new content management flow is planned. The runtime schemas are in `app/schema_files/`; `email_template/JSON_FIELDS.md` lists current fields and values. No public or admin endpoint currently uploads JSON/images, emails content approvals, or changes portfolio sections. Existing historical database tables are left in place so old databases remain readable.
+`content/*.json` provides default seed content for the backend. The runtime
+schemas are in `app/schema_files/`; `email_template/JSON_FIELDS.md` lists
+current fields and values. Protected CMS endpoints edit About, Skills,
+Projects, and Journey records, and protected asset endpoints upload/list/delete
+images and documents. JSON bulk upload, emailed content approvals, and email
+commands are not implemented. Existing historical database tables remain so
+old databases stay readable.
 
 ## Admin authentication
 
