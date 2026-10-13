@@ -5,8 +5,10 @@ class AppColors {
   AppColors._();
 
   static const Color backgroundDark = Color(0xFF090909);
-  static const Color surfaceDark = Color(0xFF10100F);
-  static const Color cardDark = Color(0xFF151412);
+  // Public dark surfaces intentionally share the page canvas. Borders and
+  // spacing provide structure without introducing different background blocks.
+  static const Color surfaceDark = backgroundDark;
+  static const Color cardDark = backgroundDark;
   static const Color borderDark = Color(0xFF302E2A);
   static const Color textDark = Color(0xFFF3F0E9);
   static const Color textMutedDark = Color(0xFFA9A49A);

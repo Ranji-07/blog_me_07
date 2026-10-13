@@ -1,7 +1,8 @@
-// ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter
+// ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter, unused_element, unused_element_parameter
 
 import 'dart:html' as html;
 import 'dart:js_util' as js_util;
+import 'dart:ui_web' as ui_web;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,7 +10,7 @@ import 'package:portfolio/core/app_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ResumePreviewDialog extends StatelessWidget {
-  static const String _resumeAssetPath = 'assets/assets/resume.pdf';
+  static const String _resumeAssetPath = 'assets/assets/V_P_Ranjith_resume.pdf';
   static final Uri _resumeAssetUri = Uri.parse(_resumeAssetPath);
   final VoidCallback? onActionComplete;
   final VoidCallback? onClose;
@@ -63,7 +64,7 @@ class ResumePreviewDialog extends StatelessWidget {
     await Clipboard.setData(
       const ClipboardData(
         text:
-            'Resume preview: open assets/assets/resume.pdf from the portfolio app.',
+            'Resume preview: open assets/assets/V_P_Ranjith_resume.pdf from the portfolio app.',
       ),
     );
     onActionComplete?.call();
@@ -79,7 +80,7 @@ class ResumePreviewDialog extends StatelessWidget {
   Future<void> _savePdf(BuildContext context) async {
     final saved = await _saveResumeWeb(
       url: _resumeAssetPath,
-      fileName: 'resume.pdf',
+      fileName: 'V_P_Ranjith_resume.pdf',
     );
 
     if (saved) {
@@ -204,7 +205,7 @@ class ResumePreviewDialog extends StatelessWidget {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(AppRadius.md),
                         child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(32),
+                          padding: const EdgeInsets.fromLTRB(32, 32, 32, 96),
                           child: const _ResumePage(),
                         ),
                       ),
@@ -225,30 +226,22 @@ class ResumePreviewDialog extends StatelessWidget {
                     left: sideInset,
                     right: sideInset,
                     bottom: bottomInset,
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final compact = constraints.maxWidth < 360;
-                        return Wrap(
-                          alignment: WrapAlignment.center,
-                          spacing: compact ? 8 : 10,
-                          runSpacing: compact ? 8 : 10,
-                          children: [
-                            _ResumeActionButton(
-                              label: 'Share',
-                              icon: Icons.share_outlined,
-                              compact: compact,
-                              onTap: () => _shareResume(context),
-                            ),
-                            _ResumeActionButton(
-                              label: 'Save',
-                              icon: Icons.save_alt_rounded,
-                              filled: true,
-                              compact: compact,
-                              onTap: () => _savePdf(context),
-                            ),
-                          ],
-                        );
-                      },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _ResumeActionButton(
+                          label: 'Share',
+                          icon: Icons.share_outlined,
+                          onTap: () => _shareResume(context),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        _ResumeActionButton(
+                          label: 'Download',
+                          icon: Icons.download_rounded,
+                          filled: true,
+                          onTap: () => _savePdf(context),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -258,6 +251,30 @@ class ResumePreviewDialog extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+const String _resumePreviewViewType = 'ranjith-resume-pdf-preview';
+bool _resumePreviewRegistered = false;
+
+class _ResumePdfPreview extends StatelessWidget {
+  const _ResumePdfPreview();
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_resumePreviewRegistered) {
+      ui_web.platformViewRegistry.registerViewFactory(
+        _resumePreviewViewType,
+        (viewId) => html.IFrameElement()
+          ..src = ResumePreviewDialog._resumeAssetPath
+          ..style.border = '0'
+          ..style.width = '100%'
+          ..style.height = '100%'
+          ..title = 'Ranjith V P resume preview',
+      );
+      _resumePreviewRegistered = true;
+    }
+    return const HtmlElementView(viewType: _resumePreviewViewType);
   }
 }
 
@@ -430,7 +447,7 @@ class _ResumePage extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: const [
         Text(
-          'Tarzan',
+          'Ranjith V P',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w800,
@@ -439,7 +456,7 @@ class _ResumePage extends StatelessWidget {
         ),
         SizedBox(height: 8),
         Text(
-          'Full Stack Developer • AI Engineer • India',
+          'Software Development Engineer • AI Engineer • India',
           style: TextStyle(
             fontSize: 13,
             color: bodyColor,
@@ -448,7 +465,7 @@ class _ResumePage extends StatelessWidget {
         ),
         SizedBox(height: 6),
         Text(
-          'Portfolio contact details available in the app contact section',
+          'Portfolio contact details are available in the contact section.',
           style: TextStyle(
             fontSize: 12,
             color: bodyColor,
@@ -459,28 +476,29 @@ class _ResumePage extends StatelessWidget {
         _ResumeSection(
           title: 'Profile',
           content:
-              'I build scalable mobile applications, backend APIs, cloud infrastructure, and AI-powered systems using Flutter, FastAPI, Docker, Kubernetes, and AWS.',
+              'Software Development Engineer with experience building AI-integrated systems, Python data pipelines, and cloud infrastructure. I work across Flutter, APIs, Docker, Kubernetes, and AWS.',
         ),
         SizedBox(height: 18),
         _ResumeSection(
           title: 'Experience',
           content:
-              'Full Stack, AI, cloud, and DevOps-focused project experience.\n2024 - Present\nApplication delivery, infrastructure setup, automation, and product execution across modern web and mobile stacks.',
+              'Software Development Engineer — Buddi.AI\nNov 2025 - Present\nBuild AI-integrated production systems, data workflows, and LLM processing features.\n\nSoftware Engineer — Boodskap\nSep 2024 - Oct 2025\nBuilt connected IoT products across device, cloud, and Flutter application layers.',
         ),
         SizedBox(height: 18),
         _ResumeSection(
           title: 'Education',
-          content: 'Bachelor of Technology in Computer Science\n2021 - 2025',
+          content:
+              'B.E. Information Technology — Annamalai University\nGraduated May 2024 • CGPA 7',
         ),
         SizedBox(height: 18),
         _ResumeSection(
           title: 'Skills',
           content:
-              'Flutter, Dart, FastAPI, UI Architecture, REST APIs, Responsive Design, State Management.',
+              'Python, Scala, Flutter, Dart, REST APIs, Docker, Kubernetes, Terraform, AWS, CI/CD, LLM Integration, and IoT.',
         ),
         SizedBox(height: 18),
         Text(
-          'This preview summarizes the resume experience available in the portfolio.',
+          'This preview summarizes the resume available for download.',
           style: TextStyle(
             fontSize: 11,
             color: accentColor,
@@ -489,7 +507,7 @@ class _ResumePage extends StatelessWidget {
         ),
         SizedBox(height: 12),
         Text(
-          'Share uses the browser share sheet when supported. Save downloads the PDF using the browser default download location.',
+          'Share opens the browser share sheet when supported. Download saves the PDF using the browser default download location.',
           style: TextStyle(
             fontSize: 11,
             color: bodyColor,
