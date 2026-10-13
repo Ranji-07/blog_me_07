@@ -12,7 +12,7 @@ void main() {
   runApp(
     MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Portfolio',
+      title: 'R/07 — Ranjith V P',
       theme: light.copyWith(
         textTheme: GoogleFonts.outfitTextTheme(light.textTheme),
       ),
@@ -27,8 +27,13 @@ void main() {
               : const AppShell(),
       onGenerateRoute: (settings) {
         final name = settings.name ?? '/';
-        if (name == '/admin/login') return MaterialPageRoute(builder: (_) => const AdminLoginPage());
-        if (name.startsWith('/admin/')) return MaterialPageRoute(builder: (_) => AdminPanel(section: name.split('/').last));
+        if (name == '/admin/login') {
+          return MaterialPageRoute(builder: (_) => const AdminLoginPage());
+        }
+        if (name.startsWith('/admin/')) {
+          return MaterialPageRoute(
+              builder: (_) => AdminPanel(section: name.split('/').last));
+        }
         return MaterialPageRoute(builder: (_) => const AppShell());
       },
     ),

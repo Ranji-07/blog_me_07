@@ -21,7 +21,7 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   static const String _brandLabel = String.fromEnvironment(
     'PORTFOLIO_NAME',
-    defaultValue: 'Tarzan',
+    defaultValue: 'Ranjith V P',
   );
   final _scrollController = ScrollController();
   final _sectionKeys = {

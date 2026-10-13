@@ -523,12 +523,21 @@ class _IdentityBlockState extends State<_IdentityBlock> {
                 width: avatarSize,
                 height: avatarSize,
                 child: widget.avatarUrl == null
-                    ? _AvatarFallback(initials: initials)
-                    : Image.network(
-                        widget.avatarUrl!,
+                    ? Image.asset(
+                        'assets/WhatsApp Image 2025-05-20 at 09.54.48_af8a40f8.jpg',
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) =>
                             _AvatarFallback(initials: initials),
+                      )
+                    : Image.network(
+                        widget.avatarUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Image.asset(
+                          'assets/WhatsApp Image 2025-05-20 at 09.54.48_af8a40f8.jpg',
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              _AvatarFallback(initials: initials),
+                        ),
                       ),
               ),
             ),

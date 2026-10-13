@@ -7,20 +7,25 @@
     "avatar_url": "",
     "portrait_url": "",
     "roles": [
-      "Full Stack Developer",
+      "Cloud Engineer",
+      "Platform Engineer",
       "AI Engineer",
-      "Flutter Developer",
+      "Forward Deployed Engineer",
       "DevOps Engineer",
       "MLOps Engineer",
-      "Cloud Engineer",
+      "Full Stack Developer",
+      "Flutter Developer",
       "IoT Developer"
     ],
     "availability": "open",
     "available_for_work": true,
-    "profile_image": "/images/profile.png",
-    "resume": "/files/resume.pdf",
+    "profile_image": "assets/WhatsApp Image 2025-05-20 at 09.54.48_af8a40f8.jpg",
+    "resume": "assets/V_P_Ranjith_resume.pdf",
     "about_me": [
-      "Software Development Engineer with 2+ years of experience building AI-integrated production systems, Python-based data pipelines, and cloud infrastructure on AWS. Hands-on experience with LLM integration, medical data analytics, and deploying containerized applications using Kubernetes, Terraform, and Jenkins CI/CD. Certified in Generative AI (MIT AU-KBC) with practical experience fine-tuning LLaMA models and building RAG pipelines using LangChain - focused on engineering reliable, scalable AI systems."
+      "Software Development Engineer with 2+ years of experience building AI-integrated production systems, Python-based data pipelines, and cloud infrastructure on AWS. Experienced in LLM integration, medical data analytics, and deploying containerized applications using Kubernetes, Terraform, and Jenkins CI/CD.",
+      "Certified in Generative AI (MIT AU-KBC), with practical experience fine-tuning LLaMA models, developing Retrieval-Augmented Generation (RAG) pipelines using LangChain, and integrating AI capabilities into real-world applications. Interested in building reliable, scalable, and production-ready AI systems.",
+      "My technical experience spans backend development, cloud infrastructure, automation, and AI engineering. I enjoy connecting application development with infrastructure and deployment workflows to build systems that are maintainable, observable, and efficient.",
+      "I am particularly interested in solving practical engineering problems, taking ownership of solutions from development to deployment, and working at the intersection of software engineering, cloud platforms, and applied AI. I continuously explore new technologies and engineering practices to improve system reliability, performance, and scalability."
     ],
     "skill_categories": {
       "Programming & Scripting": [

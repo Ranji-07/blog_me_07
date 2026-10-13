@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:portfolio/core/app_theme.dart';
 import 'package:portfolio/core/responsive.dart';
 import 'package:portfolio/models/project.dart';
+import 'package:portfolio/screens/widgets/work/work_in_progress_overlay.dart';
 import 'package:portfolio/services/secure_link_opener.dart';
 
 class BlogWorkspaceEntry {
@@ -55,13 +56,18 @@ class WorkWorkspaceSection extends StatelessWidget {
             ],
           );
         }
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(flex: 12, child: projectsPanel),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(flex: 9, child: blogPanel),
-          ],
+        // Both desktop workspaces read as one paired surface. IntrinsicHeight
+        // lets the shorter blog panel match the projects panel without adding
+        // fixed empty space or changing their mobile layout.
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(flex: 12, child: projectsPanel),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(flex: 9, child: blogPanel),
+            ],
+          ),
         );
       },
     );
@@ -188,9 +194,12 @@ class _TerminalFrame extends StatelessWidget {
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: child,
+          WorkInProgressOverlay(
+            visible: true,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: child,
+            ),
           ),
         ],
       ),

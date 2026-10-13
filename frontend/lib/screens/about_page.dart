@@ -85,10 +85,13 @@ class _AboutScreenState extends State<AboutScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('A Little About Me', style: t.heading),
+                    Text(
+                      'A Little About Me',
+                      style: t.heading.copyWith(color: t.button),
+                    ),
                     const SizedBox(height: AppSpacing.md),
                     AboutIntroCard(paragraphs: profile.aboutMe),
-                    const SizedBox(height: AppSpacing.xl),
+                    const SizedBox(height: AppSpacing.xxl),
                     SkillCategoryGrid(categories: profile.skillCategories),
                   ],
                 ),

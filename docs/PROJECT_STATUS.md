@@ -1,6 +1,35 @@
 # Portfolio project status
 
-Last reviewed: 2026-10-07
+Last reviewed: 2026-10-13
+
+## Latest portfolio refinement
+
+### Completed
+
+- Reworked the landing hero with a configurable monochrome portrait, dynamic
+  typewriter role title, updated site branding, favicon, and profile avatar.
+- Refined the About introduction with inline Read More / Read Less content,
+  accessible keyboard behavior, and responsive mobile presentation.
+- Rebuilt the desktop and tablet skills area as a floating technology cloud
+  beside an interactive terminal inventory. The mobile Apple Watch-style
+  technology explorer remains separate.
+- Updated the Work area to use its project and blog workspace presentation,
+  including its temporary in-progress overlay.
+- Updated the contact and resume overlays, including the static-site email
+  handoff and the paper-based resume interaction.
+- Added the current resume PDF and local portfolio assets.
+
+### Pending
+
+1. Confirm the GitHub Pages workflow completes and the published site matches
+   the local static build.
+2. Complete the Blender paper-crumple asset inspection and rendering plan in
+   `paper.md` before replacing the CSS resume motion with rendered frames.
+3. Tune the About collapsed line limit by breakpoint: desktop five lines,
+   tablet four lines, and mobile three lines. The inline Read More link should
+   remain at a word boundary for each layout.
+4. Replace placeholder project demonstrations and planned blog links as public
+   work becomes available.
 
 ## Public portfolio
 
