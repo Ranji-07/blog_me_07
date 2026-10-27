@@ -47,7 +47,9 @@ class _JourneyPageState extends State<JourneyPage> {
   void didUpdateWidget(covariant JourneyPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.cachedContent == null && widget.cachedContent != null) {
-      setState(() => _contentFuture = _load(widget.cachedContent));
+      setState(() {
+        _contentFuture = _load(widget.cachedContent);
+      });
     }
   }
 

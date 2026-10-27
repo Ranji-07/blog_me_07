@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:portfolio/common/loading/shimmer_box.dart';
 import 'package:portfolio/core/app_theme.dart';
@@ -12,12 +13,14 @@ class LandingScreen extends StatefulWidget {
   final VoidCallback onEnter;
   final VoidCallback onProjects;
   final ValueChanged<Map<String, dynamic>> onPortfolioContentLoaded;
+  final ValueListenable<double> scrollProgress;
 
   const LandingScreen({
     super.key,
     required this.onEnter,
     required this.onProjects,
     required this.onPortfolioContentLoaded,
+    required this.scrollProgress,
   });
 
   @override
@@ -25,12 +28,14 @@ class LandingScreen extends StatefulWidget {
 }
 
 class _LandingScreenState extends State<LandingScreen> {
+  static bool _hasPlayedIntroThisSession = false;
   _LandingContent? _content;
   String? _error;
   Timer? _typewriterTimer;
   int _roleIndex = 0;
   int _visibleCharacters = 0;
   bool _isDeleting = false;
+  bool _animateIntro = false;
 
   @override
   void initState() {
@@ -51,8 +56,11 @@ class _LandingScreenState extends State<LandingScreen> {
         return;
       }
       widget.onPortfolioContentLoaded(decoded);
+      _animateIntro = !MediaQuery.disableAnimationsOf(context) &&
+          !_hasPlayedIntroThisSession;
+      _hasPlayedIntroThisSession = true;
       setState(() => _content = _LandingContent.fromJson(decoded));
-      _startTypewriter();
+      _startTypewriter(withIntroDelay: _animateIntro);
     } catch (_) {
       if (mounted) {
         setState(() => _error = 'Unable to load portfolio details.');
@@ -60,7 +68,7 @@ class _LandingScreenState extends State<LandingScreen> {
     }
   }
 
-  void _startTypewriter() {
+  void _startTypewriter({required bool withIntroDelay}) {
     _typewriterTimer?.cancel();
     final roles = _content?.displayRoles ?? const <String>[];
     if (roles.isEmpty) {
@@ -69,7 +77,14 @@ class _LandingScreenState extends State<LandingScreen> {
     _roleIndex = 0;
     _visibleCharacters = 0;
     _isDeleting = false;
-    _scheduleTypewriterTick();
+    if (withIntroDelay) {
+      _typewriterTimer = Timer(
+        const Duration(milliseconds: 780),
+        _scheduleTypewriterTick,
+      );
+    } else {
+      _scheduleTypewriterTick();
+    }
   }
 
   void _scheduleTypewriterTick() {
@@ -136,6 +151,8 @@ class _LandingScreenState extends State<LandingScreen> {
                       content: _content!,
                       roleIndex: _roleIndex,
                       visibleCharacters: _visibleCharacters,
+                      animateIntro: _animateIntro,
+                      scrollProgress: widget.scrollProgress,
                       onExplore: _explorePortfolio,
                       onProjects: widget.onProjects,
                     ),
@@ -149,6 +166,8 @@ class _LandingLayout extends StatelessWidget {
   final _LandingContent content;
   final int roleIndex;
   final int visibleCharacters;
+  final bool animateIntro;
+  final ValueListenable<double> scrollProgress;
   final VoidCallback onExplore;
   final VoidCallback onProjects;
 
@@ -156,6 +175,8 @@ class _LandingLayout extends StatelessWidget {
     required this.content,
     required this.roleIndex,
     required this.visibleCharacters,
+    required this.animateIntro,
+    required this.scrollProgress,
     required this.onExplore,
     required this.onProjects,
   });
@@ -165,6 +186,8 @@ class _LandingLayout extends StatelessWidget {
     final t = AppTheme.of(context);
     final isMobile = Responsive.isMobile(context);
     final horizontal = isMobile ? 20.0 : 34.0;
+    final headerHorizontal =
+        isMobile && MediaQuery.sizeOf(context).width < 380 ? 12.0 : horizontal;
     final displayRoles = content.displayRoles;
     final currentRole = displayRoles.isEmpty ? '' : displayRoles[roleIndex];
     final visibleRole = currentRole.substring(
@@ -178,83 +201,135 @@ class _LandingLayout extends StatelessWidget {
     return Stack(
       key: const ValueKey('landing-content'),
       children: [
-        Positioned.fill(
-          child: _HeroBackground(
-            imageAsset: content.heroBackgroundAsset,
-            imageUrl: _absoluteImageUrl(content.heroBackgroundUrl),
+        ValueListenableBuilder<double>(
+          valueListenable: scrollProgress,
+          builder: (context, progress, _) => Positioned.fill(
+            child: Transform.translate(
+              offset: Offset(0, -28 * progress),
+              child: Opacity(
+                opacity: 1 - (progress * .30),
+                child: _HeroBackground(
+                  imageAsset: content.heroBackgroundAsset,
+                  imageUrl: _absoluteImageUrl(content.heroBackgroundUrl),
+                  animateIntro: animateIntro,
+                ),
+              ),
+            ),
           ),
         ),
         Positioned(
-          top: isMobile ? 16 : 24,
-          left: horizontal,
-          child: _IdentityBlock(
-            name: content.name,
-            avatarUrl: _absoluteImageUrl(content.avatarUrl),
-            fontFamily: content.nameFontFamily ?? 'Outfit',
-            fontSize: (content.nameFontSize ?? 20).clamp(16, 28).toDouble(),
-            fontWeight:
-                (content.nameFontWeight ?? 600).clamp(100, 900).toDouble(),
+          top: isMobile ? 12 : 24,
+          left: headerHorizontal,
+          child: _LandingEntrance(
+            animate: animateIntro,
+            start: .24,
+            end: .43,
+            offsetY: 12,
+            child: _IdentityBlock(
+              name: content.name,
+              avatarUrl: _absoluteImageUrl(content.avatarUrl),
+              fontFamily: content.nameFontFamily ?? 'Outfit',
+              fontSize: ((content.nameFontSize ?? 20) + (isMobile ? 2 : 3))
+                  .clamp(18, 30)
+                  .toDouble(),
+              fontWeight:
+                  (content.nameFontWeight ?? 600).clamp(100, 900).toDouble(),
+            ),
           ),
         ),
         Positioned(
-          top: isMobile ? 16 : 24,
-          right: horizontal,
-          child: _StatusResume(availability: content.availability),
+          top: isMobile ? 18 : 24,
+          right: headerHorizontal,
+          child: _LandingEntrance(
+            animate: animateIntro,
+            start: .24,
+            end: .43,
+            offsetY: 12,
+            child: _StatusResume(availability: content.availability),
+          ),
         ),
-        Align(
-          alignment:
-              Alignment(isMobile ? -0.78 : -0.7, isMobile ? -0.08 : -0.12),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: horizontal),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: isMobile ? 400 : 630),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "Hello, I'm a",
-                    style: t.subheading.copyWith(
-                      color: t.textMuted,
-                      fontSize: isMobile ? 19 : 24,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  SizedBox(
-                    height: roleFontSize * 2.15,
-                    child: RichText(
-                      maxLines: 2,
-                      overflow: TextOverflow.clip,
-                      text: TextSpan(
-                        style: t.display.copyWith(
-                          fontSize: roleFontSize,
-                          fontWeight: FontWeight.w700,
-                          color: t.text,
-                          height: 1.04,
+        ValueListenableBuilder<double>(
+          valueListenable: scrollProgress,
+          builder: (context, progress, _) => Align(
+            alignment:
+                Alignment(isMobile ? -0.78 : -0.7, isMobile ? -0.08 : -0.12),
+            child: Transform.translate(
+              offset: Offset(0, -16 * progress),
+              child: Opacity(
+                opacity: 1 - (progress * .46),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontal),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: isMobile ? 400 : 630),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _LandingEntrance(
+                          animate: animateIntro,
+                          start: .33,
+                          end: .60,
+                          offsetY: 12,
+                          child: Text(
+                            "Hello, I'm a",
+                            style: t.subheading.copyWith(
+                              color: t.textMuted,
+                              fontSize: isMobile ? 19 : 24,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
-                        children: [
-                          TextSpan(text: visibleRole),
-                          WidgetSpan(
-                            alignment: PlaceholderAlignment.middle,
-                            child: _TypewriterCursor(fontSize: roleFontSize),
+                        const SizedBox(height: AppSpacing.sm),
+                        _LandingEntrance(
+                          animate: animateIntro,
+                          start: .52,
+                          end: .72,
+                          offsetY: 10,
+                          child: SizedBox(
+                            height: roleFontSize * 2.15,
+                            child: RichText(
+                              maxLines: 2,
+                              overflow: TextOverflow.clip,
+                              text: TextSpan(
+                                style: t.display.copyWith(
+                                  fontSize: roleFontSize,
+                                  fontWeight: FontWeight.w700,
+                                  color: t.text,
+                                  height: 1.04,
+                                ),
+                                children: [
+                                  TextSpan(text: visibleRole),
+                                  WidgetSpan(
+                                    alignment: PlaceholderAlignment.middle,
+                                    child: _TypewriterCursor(
+                                      fontSize: roleFontSize,
+                                      animate: !MediaQuery.disableAnimationsOf(
+                                        context,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (content.valueStatement.trim().isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.md),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 520),
+                            child: Text(
+                              content.valueStatement,
+                              textAlign: TextAlign.start,
+                              style: t.body.copyWith(
+                                fontSize: isMobile ? 15 : 17,
+                              ),
+                            ),
                           ),
                         ],
-                      ),
+                      ],
                     ),
                   ),
-                  if (content.valueStatement.trim().isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 520),
-                      child: Text(
-                        content.valueStatement,
-                        textAlign: TextAlign.start,
-                        style: t.body.copyWith(fontSize: isMobile ? 15 : 17),
-                      ),
-                    ),
-                  ],
-                ],
+                ),
               ),
             ),
           ),
@@ -263,73 +338,78 @@ class _LandingLayout extends StatelessWidget {
           left: isMobile ? horizontal : 34,
           right: isMobile ? horizontal : null,
           bottom: isMobile ? 20 : 28,
-          child: ContactLinksSection(
-            email: content.email,
-            githubUrl: content.githubUrl,
-            linkedinUrl: content.linkedinUrl,
-            spacing: 20,
+          child: _LandingEntrance(
+            animate: animateIntro,
+            start: .78,
+            end: 1,
+            offsetY: 10,
+            child: ContactLinksSection(
+              email: content.email,
+              githubUrl: content.githubUrl,
+              linkedinUrl: content.linkedinUrl,
+              spacing: 20,
+            ),
           ),
         ),
         Positioned(
           right: horizontal,
           left: isMobile ? horizontal : null,
           bottom: isMobile ? 92 : 28,
-          child: isMobile
-              ? Row(
-                  children: [
-                    Expanded(
-                      child: _LandingButton(
+          child: _LandingEntrance(
+            animate: animateIntro,
+            start: .66,
+            end: .86,
+            offsetY: 12,
+            child: isMobile
+                ? Row(
+                    children: [
+                      Expanded(
+                        child: _LandingButton(
+                          label: 'Explore Portfolio',
+                          outlined: true,
+                          compact: true,
+                          onPressed: onExplore,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _LandingButton(
+                          label: 'View Projects',
+                          icon: Icons.arrow_forward_rounded,
+                          outlined: true,
+                          compact: true,
+                          onPressed: onProjects,
+                        ),
+                      ),
+                    ],
+                  )
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _LandingButton(
                         label: 'Explore Portfolio',
                         outlined: true,
-                        compact: true,
                         onPressed: onExplore,
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _LandingButton(
+                      const SizedBox(width: 16),
+                      _LandingButton(
                         label: 'View Projects',
                         icon: Icons.arrow_forward_rounded,
                         outlined: true,
-                        compact: true,
                         onPressed: onProjects,
                       ),
-                    ),
-                  ],
-                )
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _LandingButton(
-                      label: 'Explore Portfolio',
-                      outlined: true,
-                      onPressed: onExplore,
-                    ),
-                    const SizedBox(width: 16),
-                    _LandingButton(
-                      label: 'View Projects',
-                      icon: Icons.arrow_forward_rounded,
-                      outlined: true,
-                      onPressed: onProjects,
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+          ),
         ),
       ],
     );
   }
 
   String? _absoluteImageUrl(String value) {
-    if (value.trim().isEmpty) {
-      return null;
-    }
+    if (value.trim().isEmpty) return null;
     final uri = Uri.tryParse(value);
-    if (uri != null && uri.hasScheme) {
-      return uri.toString();
-    }
-    // Public static builds only support complete remote image URLs. Local hero
-    // artwork is configured separately as an asset in config/portfolio.json.
-    return null;
+    return uri != null && uri.hasScheme ? uri.toString() : null;
   }
 }
 
@@ -346,8 +426,13 @@ class HeroImageConfig {
 class _HeroBackground extends StatelessWidget {
   final String imageAsset;
   final String? imageUrl;
+  final bool animateIntro;
 
-  const _HeroBackground({required this.imageAsset, required this.imageUrl});
+  const _HeroBackground({
+    required this.imageAsset,
+    required this.imageUrl,
+    required this.animateIntro,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -370,10 +455,16 @@ class _HeroBackground extends StatelessWidget {
           );
     return IgnorePointer(
       child: TweenAnimationBuilder<double>(
-        duration: const Duration(milliseconds: 500),
-        tween: Tween(begin: 0, end: 1),
-        builder: (context, opacity, child) =>
-            Opacity(opacity: opacity, child: child),
+        duration:
+            animateIntro ? const Duration(milliseconds: 650) : Duration.zero,
+        tween: Tween(begin: animateIntro ? 0.0 : 1.0, end: 1),
+        builder: (context, progress, child) => Opacity(
+          opacity: progress,
+          child: Transform.scale(
+            scale: 1.03 - (.03 * Curves.easeOutCubic.transform(progress)),
+            child: child,
+          ),
+        ),
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -420,10 +511,76 @@ class _HeroBackground extends StatelessWidget {
   }
 }
 
+class _LandingEntrance extends StatefulWidget {
+  final bool animate;
+  final double start;
+  final double end;
+  final double offsetY;
+  final Widget child;
+
+  const _LandingEntrance({
+    required this.animate,
+    required this.start,
+    required this.end,
+    required this.offsetY,
+    required this.child,
+  });
+
+  @override
+  State<_LandingEntrance> createState() => _LandingEntranceState();
+}
+
+class _LandingEntranceState extends State<_LandingEntrance>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+      value: widget.animate ? 0 : 1,
+    );
+    if (widget.animate) _controller.forward();
+  }
+
+  @override
+  void didUpdateWidget(covariant _LandingEntrance oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.animate && !oldWidget.animate) _controller.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final curve = CurvedAnimation(
+      parent: _controller,
+      curve: Interval(widget.start, widget.end, curve: Curves.easeOutCubic),
+    );
+    return FadeTransition(
+      opacity: curve,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: Offset(0, widget.offsetY / 100),
+          end: Offset.zero,
+        ).animate(curve),
+        child: widget.child,
+      ),
+    );
+  }
+}
+
 class _TypewriterCursor extends StatefulWidget {
   final double fontSize;
+  final bool animate;
 
-  const _TypewriterCursor({required this.fontSize});
+  const _TypewriterCursor({required this.fontSize, required this.animate});
 
   @override
   State<_TypewriterCursor> createState() => _TypewriterCursorState();
@@ -439,7 +596,19 @@ class _TypewriterCursorState extends State<_TypewriterCursor>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 650),
-    )..repeat(reverse: true);
+    );
+    if (widget.animate) _controller.repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(covariant _TypewriterCursor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.animate && !oldWidget.animate) {
+      _controller.repeat(reverse: true);
+    } else if (!widget.animate && oldWidget.animate) {
+      _controller.stop();
+      _controller.value = 1;
+    }
   }
 
   @override
@@ -450,6 +619,16 @@ class _TypewriterCursorState extends State<_TypewriterCursor>
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.animate) {
+      return Text(
+        '|',
+        style: AppTheme.of(context).display.copyWith(
+              color: AppTheme.of(context).button,
+              fontSize: widget.fontSize * 0.88,
+              height: 1.04,
+            ),
+      );
+    }
     return FadeTransition(
       opacity: Tween<double>(begin: 0.2, end: 1).animate(_controller),
       child: Text(
@@ -484,13 +663,11 @@ class _IdentityBlock extends StatefulWidget {
 }
 
 class _IdentityBlockState extends State<_IdentityBlock> {
-  bool _hovered = false;
-
   @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
     final isMobile = Responsive.isMobile(context);
-    final avatarSize = isMobile ? 36.0 : 44.0;
+    final avatarSize = isMobile ? 32.0 : 42.0;
     final initials = widget.name
         .split(RegExp(r'\s+'))
         .where((part) => part.isNotEmpty)
@@ -498,65 +675,54 @@ class _IdentityBlockState extends State<_IdentityBlock> {
         .map((part) => part[0])
         .join()
         .toUpperCase();
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: t.button, width: 1.5),
-              boxShadow: _hovered
-                  ? [
-                      BoxShadow(
-                          color: t.button.withValues(alpha: 0.5),
-                          blurRadius: 10)
-                    ]
-                  : const [],
-            ),
-            child: ClipOval(
-              child: SizedBox(
-                width: avatarSize,
-                height: avatarSize,
-                child: widget.avatarUrl == null
-                    ? Image.asset(
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.all(1.5),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: t.button.withValues(alpha: .82)),
+          ),
+          child: ClipOval(
+            child: SizedBox(
+              width: avatarSize,
+              height: avatarSize,
+              child: widget.avatarUrl == null
+                  ? Image.asset(
+                      'assets/WhatsApp Image 2025-05-20 at 09.54.48_af8a40f8.jpg',
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                          _AvatarFallback(initials: initials),
+                    )
+                  : Image.network(
+                      widget.avatarUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Image.asset(
                         'assets/WhatsApp Image 2025-05-20 at 09.54.48_af8a40f8.jpg',
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) =>
                             _AvatarFallback(initials: initials),
-                      )
-                    : Image.network(
-                        widget.avatarUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Image.asset(
-                          'assets/WhatsApp Image 2025-05-20 at 09.54.48_af8a40f8.jpg',
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              _AvatarFallback(initials: initials),
-                        ),
                       ),
-              ),
+                    ),
             ),
           ),
-          const SizedBox(width: 12),
-          Text(
-            widget.name,
-            style: t.subheading.copyWith(
-              fontFamily: widget.fontFamily,
-              fontSize: widget.fontSize,
-              fontWeight: FontWeight.lerp(
-                FontWeight.w100,
-                FontWeight.w900,
-                (widget.fontWeight - 100) / 800,
-              ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          widget.name,
+          style: t.subheading.copyWith(
+            fontFamily: widget.fontFamily,
+            fontSize: widget.fontSize,
+            fontWeight: FontWeight.lerp(
+              FontWeight.w100,
+              FontWeight.w900,
+              (widget.fontWeight - 100) / 800,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -594,19 +760,27 @@ class _StatusResumeState extends State<_StatusResume>
     with SingleTickerProviderStateMixin {
   late final AnimationController _pulse;
   Timer? _resumeTimer;
+  Timer? _pulseTimer;
   bool _resumeDone = false;
 
   @override
   void initState() {
     super.initState();
     _pulse = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1300))
-      ..repeat(reverse: true);
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+    _pulseTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted && !MediaQuery.disableAnimationsOf(context)) {
+        _pulse.forward(from: 0);
+      }
+    });
   }
 
   @override
   void dispose() {
     _pulse.dispose();
+    _pulseTimer?.cancel();
     _resumeTimer?.cancel();
     super.dispose();
   }
@@ -629,32 +803,59 @@ class _StatusResumeState extends State<_StatusResume>
       'unavailable' => (const Color(0xFFEF4444), 'Not Available'),
       _ => (const Color(0xFF22C55E), 'Open to Work'),
     };
-    final dotSize = Responsive.isMobile(context) ? 8.0 : 10.0;
+    final mobile = Responsive.isMobile(context);
+    final narrowMobile = mobile && MediaQuery.sizeOf(context).width < 380;
+    final dotSize = mobile ? 8.0 : 10.0;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Semantics(
           label: label,
-          child: ScaleTransition(
-            scale: Tween<double>(begin: 0.88, end: 1.12).animate(_pulse),
-            child: Container(
-              width: dotSize,
-              height: dotSize,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          child: FadeTransition(
+            opacity: TweenSequence<double>([
+              TweenSequenceItem(tween: Tween(begin: 1.0, end: .55), weight: 45),
+              TweenSequenceItem(tween: Tween(begin: .55, end: 1.0), weight: 55),
+            ]).animate(_pulse),
+            child: ScaleTransition(
+              scale: TweenSequence<double>([
+                TweenSequenceItem(
+                    tween: Tween(begin: 1.0, end: 1.14), weight: 45),
+                TweenSequenceItem(
+                    tween: Tween(begin: 1.14, end: 1.0), weight: 55),
+              ]).animate(_pulse),
+              child: Container(
+                width: dotSize,
+                height: dotSize,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              ),
             ),
           ),
         ),
         const SizedBox(width: 8),
-        Text(label, style: t.label.copyWith(color: t.text)),
-        const SizedBox(width: 20),
+        Text(
+          label,
+          style: t.label.copyWith(
+            color: t.text,
+            fontSize: narrowMobile ? 13 : (mobile ? 14 : 15),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        SizedBox(width: mobile ? 12 : 16),
         Tooltip(
-          message: 'Download Resume',
-          child: IconButton(
-            onPressed: _showResume,
-            constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-            icon: Icon(
-              _resumeDone ? Icons.check_rounded : Icons.article_outlined,
-              color: _resumeDone ? color : t.text,
+          message: 'View Resume',
+          child: InkWell(
+            onTap: _showResume,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            child: SizedBox(
+              width: mobile ? 20 : 22,
+              height: mobile ? 24 : 26,
+              child: _resumeDone
+                  ? Icon(Icons.check_rounded, size: 19, color: color)
+                  : Icon(
+                      Icons.article_outlined,
+                      size: mobile ? 21 : 23,
+                      color: t.text,
+                    ),
             ),
           ),
         ),
@@ -689,7 +890,7 @@ class _LandingButtonState extends State<_LandingButton> {
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
     final buttonHeight = widget.compact ? 44.0 : 48.0;
-    final buttonWidth = widget.compact ? 0.0 : 180.0;
+    final buttonWidth = widget.compact ? 0.0 : 176.0;
     void onPressed() {
       Future.sync(widget.onPressed);
     }
@@ -702,19 +903,23 @@ class _LandingButtonState extends State<_LandingButton> {
                 : AnimatedSlide(
                     duration: const Duration(milliseconds: 180),
                     offset: _hovered ? const Offset(0.16, 0) : Offset.zero,
-                    child: Icon(widget.icon, size: 18),
+                    child: Icon(widget.icon, size: 19),
                   ),
-            label: Text(widget.label),
+            label: Text(
+              widget.label,
+              style: t.label.copyWith(
+                fontSize: widget.compact ? 16 : 17,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             style: OutlinedButton.styleFrom(
-              foregroundColor: _hovered ? t.button : t.text,
+              foregroundColor: t.text,
               side: BorderSide(color: _hovered ? t.button : t.border),
               minimumSize: Size(buttonWidth, buttonHeight),
               padding: EdgeInsets.symmetric(
-                horizontal: widget.compact ? 10 : AppSpacing.lg,
+                horizontal: widget.compact ? 8 : 14,
               ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
+              shape: const StadiumBorder(),
             ),
           )
         : FilledButton(
@@ -733,7 +938,7 @@ class _LandingButtonState extends State<_LandingButton> {
         duration: const Duration(milliseconds: 150),
         transform: Matrix4.translationValues(0, _hovered ? -2 : 0, 0),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderRadius: BorderRadius.circular(AppRadius.full),
           boxShadow: _hovered
               ? [
                   BoxShadow(

@@ -1,8 +1,7 @@
-// ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter, unused_element, unused_element_parameter
+// ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter
 
 import 'dart:html' as html;
 import 'dart:js_util' as js_util;
-import 'dart:ui_web' as ui_web;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -254,30 +253,6 @@ class ResumePreviewDialog extends StatelessWidget {
   }
 }
 
-const String _resumePreviewViewType = 'ranjith-resume-pdf-preview';
-bool _resumePreviewRegistered = false;
-
-class _ResumePdfPreview extends StatelessWidget {
-  const _ResumePdfPreview();
-
-  @override
-  Widget build(BuildContext context) {
-    if (!_resumePreviewRegistered) {
-      ui_web.platformViewRegistry.registerViewFactory(
-        _resumePreviewViewType,
-        (viewId) => html.IFrameElement()
-          ..src = ResumePreviewDialog._resumeAssetPath
-          ..style.border = '0'
-          ..style.width = '100%'
-          ..style.height = '100%'
-          ..title = 'Ranjith V P resume preview',
-      );
-      _resumePreviewRegistered = true;
-    }
-    return const HtmlElementView(viewType: _resumePreviewViewType);
-  }
-}
-
 enum _PaperExit { close, download }
 
 class _PaperTransition extends StatelessWidget {
@@ -385,14 +360,12 @@ class _ResumeActionButton extends StatelessWidget {
   final IconData icon;
   final bool filled;
   final VoidCallback onTap;
-  final bool compact;
 
   const _ResumeActionButton({
     required this.label,
     required this.icon,
     required this.onTap,
     this.filled = false,
-    this.compact = false,
   });
 
   @override
@@ -403,8 +376,8 @@ class _ResumeActionButton extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: EdgeInsets.symmetric(
-          horizontal: compact ? 10 : 14,
-          vertical: compact ? 8 : 10,
+          horizontal: 14,
+          vertical: 10,
         ),
         decoration: BoxDecoration(
           color: t.button,
@@ -415,14 +388,14 @@ class _ResumeActionButton extends StatelessWidget {
           children: [
             Icon(
               icon,
-              size: compact ? 14 : 16,
+              size: 16,
               color: Colors.black,
             ),
-            SizedBox(width: compact ? 6 : AppSpacing.sm),
+            const SizedBox(width: AppSpacing.sm),
             Text(
               label,
               style: t.label.copyWith(
-                fontSize: compact ? 12 : 13,
+                fontSize: 13,
                 color: Colors.black,
                 fontWeight: FontWeight.w700,
               ),
