@@ -26,6 +26,12 @@ class _AboutIntroCardState extends State<AboutIntroCard> {
     final summary = widget.paragraphs.isEmpty ? '' : widget.paragraphs.first;
     final hasMore = widget.paragraphs.length > 1;
     final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final collapsedLines = Responsive.value<int>(
+      context,
+      mobile: 5,
+      tablet: 7,
+      desktop: 8,
+    );
 
     return AnimatedSize(
       duration:
@@ -56,7 +62,7 @@ class _AboutIntroCardState extends State<AboutIntroCard> {
                   builder: (context, constraints) => _CollapsedSummary(
                     summary: summary,
                     maxWidth: constraints.maxWidth,
-                    maxLines: 4,
+                    maxLines: collapsedLines,
                     bodyStyle: bodyStyle,
                     linkStyle: linkStyle,
                     onPressed: () => setState(() => _expanded = true),

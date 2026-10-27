@@ -11,6 +11,8 @@ class ContactLinksSection extends StatelessWidget {
   final String githubUrl;
   final String linkedinUrl;
   final double spacing;
+  final bool showLabels;
+  final WrapAlignment alignment;
 
   const ContactLinksSection({
     super.key,
@@ -18,6 +20,8 @@ class ContactLinksSection extends StatelessWidget {
     required this.githubUrl,
     required this.linkedinUrl,
     required this.spacing,
+    this.showLabels = false,
+    this.alignment = WrapAlignment.center,
   });
 
   Future<void> _copyValue(
@@ -281,13 +285,14 @@ class ContactLinksSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Wrap(
-      alignment: WrapAlignment.center,
+      alignment: alignment,
       spacing: spacing,
       runSpacing: 12,
       children: [
         _ContactIconButton(
           semanticLabel: 'Email',
           tooltip: email.isEmpty ? 'Email' : email,
+          actionLabel: showLabels ? 'Email' : null,
           icon: Icons.mail_outline_rounded,
           showBackground: false,
           enabled: email.trim().isNotEmpty,
@@ -302,6 +307,7 @@ class ContactLinksSection extends StatelessWidget {
         _ContactIconButton(
           semanticLabel: 'GitHub',
           tooltip: _externalTooltip('GitHub', githubUrl),
+          actionLabel: showLabels ? 'GitHub' : null,
           faIcon: FontAwesomeIcons.github,
           showBackground: false,
           enabled: githubUrl.trim().isNotEmpty,
@@ -316,6 +322,7 @@ class ContactLinksSection extends StatelessWidget {
         _ContactIconButton(
           semanticLabel: 'LinkedIn',
           tooltip: _externalTooltip('LinkedIn', linkedinUrl),
+          actionLabel: showLabels ? 'LinkedIn' : null,
           faIcon: FontAwesomeIcons.linkedinIn,
           showBackground: false,
           enabled: linkedinUrl.trim().isNotEmpty,
@@ -461,6 +468,7 @@ class _ContactIconButton extends StatefulWidget {
   final Future<void> Function()? onLongPress;
   final bool showBackground;
   final bool enabled;
+  final String? actionLabel;
 
   const _ContactIconButton({
     required this.semanticLabel,
@@ -472,6 +480,7 @@ class _ContactIconButton extends StatefulWidget {
     this.faIcon,
     this.showBackground = true,
     this.enabled = true,
+    this.actionLabel,
   });
 
   @override
@@ -481,8 +490,8 @@ class _ContactIconButton extends StatefulWidget {
 class _ContactIconButtonState extends State<_ContactIconButton> {
   bool _hovered = false;
   bool _focused = false;
-  bool _pressed = false;
   bool _busy = false;
+  bool _pressed = false;
 
   Future<void> _runAction(Future<void> Function() action) async {
     if (_busy || !widget.enabled) {
@@ -506,8 +515,11 @@ class _ContactIconButtonState extends State<_ContactIconButton> {
   @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
-    final baseScale = _pressed ? 0.95 : (_hovered ? 1.10 : 1.0);
-    final effectiveScale = widget.enabled ? baseScale : 1.0;
+    final mobile = Responsive.isMobile(context);
+    // A real touch device does not emit pointer-hover events, so it remains
+    // stationary there. Keeping this enabled also makes the interaction work
+    // when a mobile layout is viewed with a mouse (for example DevTools).
+    final liftOnHover = _hovered;
     final iconColor = !widget.enabled
         ? t.text.withValues(alpha: 0.35)
         : (_hovered && !widget.showBackground ? t.button : t.text);
@@ -541,21 +553,9 @@ class _ContactIconButtonState extends State<_ContactIconButton> {
           },
           child: MouseRegion(
             onEnter: (_) => setState(() => _hovered = true),
-            onExit: (_) => setState(() {
-              _hovered = false;
-              _pressed = false;
-            }),
+            onExit: (_) => setState(() => _hovered = false),
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTapDown: widget.enabled
-                  ? (_) => setState(() => _pressed = true)
-                  : null,
-              onTapCancel: widget.enabled
-                  ? () => setState(() => _pressed = false)
-                  : null,
-              onTapUp: widget.enabled
-                  ? (_) => setState(() => _pressed = false)
-                  : null,
               onTap:
                   widget.enabled ? () => _runAction(widget.onPrimaryTap) : null,
               onSecondaryTap: widget.enabled
@@ -564,19 +564,27 @@ class _ContactIconButtonState extends State<_ContactIconButton> {
               onLongPress: widget.enabled && widget.onLongPress != null
                   ? () => _runAction(widget.onLongPress!)
                   : null,
-              child: AnimatedScale(
-                scale: effectiveScale,
-                duration: const Duration(milliseconds: 160),
-                curve: Curves.easeOut,
-                child: AnimatedSlide(
-                  duration: const Duration(milliseconds: 160),
-                  curve: Curves.easeOut,
-                  offset: _hovered ? const Offset(0, -0.08) : Offset.zero,
+              onTapDown: mobile && widget.enabled
+                  ? (_) => setState(() => _pressed = true)
+                  : null,
+              onTapUp: mobile && widget.enabled
+                  ? (_) => setState(() => _pressed = false)
+                  : null,
+              onTapCancel: mobile && widget.enabled
+                  ? () => setState(() => _pressed = false)
+                  : null,
+              child: AnimatedSlide(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutCubic,
+                offset: liftOnHover ? const Offset(0, -.065) : Offset.zero,
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 120),
+                  opacity: _pressed ? .72 : 1,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 160),
                     curve: Curves.easeOut,
-                    width: 56,
-                    height: 56,
+                    width: widget.actionLabel == null ? 56 : 132,
+                    height: widget.actionLabel == null ? 56 : 48,
                     decoration: BoxDecoration(
                       color: widget.showBackground
                           ? (_hovered
@@ -591,15 +599,7 @@ class _ContactIconButtonState extends State<_ContactIconButton> {
                                   color: _hovered ? t.button : t.border,
                                 )
                               : null),
-                      boxShadow: _hovered && widget.enabled
-                          ? [
-                              BoxShadow(
-                                color: t.button.withValues(alpha: 0.18),
-                                blurRadius: 12,
-                                offset: const Offset(0, 6),
-                              ),
-                            ]
-                          : null,
+                      boxShadow: null,
                     ),
                     child: Center(
                       child: _busy
@@ -611,17 +611,33 @@ class _ContactIconButtonState extends State<_ContactIconButton> {
                                 color: iconColor,
                               ),
                             )
-                          : widget.faIcon != null
-                              ? FaIcon(
-                                  widget.faIcon,
-                                  color: iconColor,
-                                  size: 22,
+                          : widget.actionLabel != null
+                              ? Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (widget.faIcon != null)
+                                      FaIcon(widget.faIcon,
+                                          color: iconColor, size: 18)
+                                    else
+                                      Icon(widget.icon,
+                                          color: iconColor, size: 18),
+                                    const SizedBox(width: AppSpacing.sm),
+                                    Text(widget.actionLabel!,
+                                        style:
+                                            t.label.copyWith(color: iconColor)),
+                                  ],
                                 )
-                              : Icon(
-                                  widget.icon,
-                                  color: iconColor,
-                                  size: 22,
-                                ),
+                              : widget.faIcon != null
+                                  ? FaIcon(
+                                      widget.faIcon,
+                                      color: iconColor,
+                                      size: 22,
+                                    )
+                                  : Icon(
+                                      widget.icon,
+                                      color: iconColor,
+                                      size: 22,
+                                    ),
                     ),
                   ),
                 ),
@@ -662,12 +678,11 @@ class ContactFooterLine extends StatelessWidget {
       if (note.trim().isNotEmpty) note.trim(),
     ];
 
-    return FittedBox(
-      fit: BoxFit.scaleDown,
+    return Center(
       child: Text(
         parts.join(' • '),
-        maxLines: 1,
         textAlign: TextAlign.center,
+        softWrap: true,
         style: (isMobile ? t.body : t.label).copyWith(
           color: t.text,
           fontSize: isMobile ? 12 : 13,

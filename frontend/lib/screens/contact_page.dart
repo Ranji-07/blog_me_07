@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:portfolio/common/social/social_links.dart';
 import 'package:portfolio/core/app_theme.dart';
 import 'package:portfolio/core/responsive.dart';
-import 'package:portfolio/screens/widgets/contact_form.dart';
 import 'package:portfolio/services/portfolio_api.dart';
 
 class ContactScreen extends StatefulWidget {
@@ -46,6 +45,13 @@ class _ContactScreenState extends State<ContactScreen> {
     final t = AppTheme.of(context);
     final isMobile = Responsive.isMobile(context);
     final padding = isMobile ? AppSpacing.md : AppSpacing.xxl;
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final titleSize = Responsive.value<double>(
+      context,
+      mobile: 38,
+      tablet: 46,
+      desktop: 52,
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -70,55 +76,130 @@ class _ContactScreenState extends State<ContactScreen> {
           }
 
           final content = snapshot.data!;
-          return Padding(
-            padding: EdgeInsets.fromLTRB(
-              padding,
-              isMobile ? 96 : 128,
-              padding,
-              isMobile ? AppSpacing.xl : AppSpacing.xxl,
-            ),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 720),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      "Let's Build Something",
-                      style: t.display.copyWith(color: t.button),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 560),
-                      child: Text(
-                        'Reach out about a project, collaboration, opportunity, or simply to connect.',
-                        style: t.body.copyWith(fontSize: isMobile ? 15 : 16),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    ContactForm(recipientEmail: content.email),
-                    const SizedBox(height: 40),
-                    ContactLinksSection(
-                      email: content.email,
-                      githubUrl: content.githubUrl,
-                      linkedinUrl: content.linkedinUrl,
-                      spacing: isMobile ? 22 : 28,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    ContactFooterLine(
-                      ownerName: content.ownerName,
-                      buildYear: content.buildYear,
-                      builtWith: content.builtWith,
-                      appVersion: content.appVersion,
-                      note: content.footerNote,
-                    ),
-                  ],
+          return SafeArea(
+            top: false,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                padding,
+                isMobile ? 96 : 128,
+                padding,
+                (isMobile ? AppSpacing.xl : AppSpacing.xxl) + bottomInset,
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1160),
+                  child: isMobile
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _ContactIntro(
+                              titleSize: titleSize,
+                              isMobile: true,
+                            ),
+                            const SizedBox(height: AppSpacing.xl),
+                            const SizedBox(height: 240),
+                            const SizedBox(height: AppSpacing.xl),
+                            _ContactActions(content: content),
+                          ],
+                        )
+                      : Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Expanded(
+                              flex: 12,
+                              child: SizedBox(height: 420),
+                            ),
+                            const SizedBox(width: AppSpacing.xxl),
+                            Expanded(
+                              flex: 10,
+                              child: SizedBox(
+                                height: 420,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _ContactIntro(
+                                      titleSize: titleSize,
+                                      isMobile: false,
+                                    ),
+                                    const Spacer(),
+                                    _ContactActions(content: content),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                 ),
               ),
             ),
           );
         },
       ),
+    );
+  }
+}
+
+class _ContactIntro extends StatelessWidget {
+  final double titleSize;
+  final bool isMobile;
+
+  const _ContactIntro({
+    required this.titleSize,
+    required this.isMobile,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTheme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Let's Build Something",
+          style: t.display.copyWith(color: t.button, fontSize: titleSize),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Text(
+          'Have an idea, opportunity, or project to discuss?',
+          style: t.body.copyWith(fontSize: isMobile ? 15 : 16),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          'I’m open to full-time roles, collaborations, and practical AI work.',
+          style: t.body.copyWith(fontSize: isMobile ? 15 : 16),
+        ),
+      ],
+    );
+  }
+}
+
+class _ContactActions extends StatelessWidget {
+  final _ContactPageContent content;
+
+  const _ContactActions({required this.content});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ContactLinksSection(
+          email: content.email,
+          githubUrl: content.githubUrl,
+          linkedinUrl: content.linkedinUrl,
+          spacing: AppSpacing.sm,
+          showLabels: true,
+          alignment: WrapAlignment.start,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        ContactFooterLine(
+          ownerName: content.ownerName,
+          buildYear: content.buildYear,
+          builtWith: content.builtWith,
+          appVersion: '',
+          note: '',
+        ),
+      ],
     );
   }
 }

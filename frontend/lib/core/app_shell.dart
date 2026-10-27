@@ -24,6 +24,7 @@ class _AppShellState extends State<AppShell> {
     defaultValue: 'Ranjith V P',
   );
   final _scrollController = ScrollController();
+  final _landingScrollProgress = ValueNotifier<double>(0);
   final _sectionKeys = {
     PortfolioSection.landing: GlobalKey(),
     PortfolioSection.about: GlobalKey(),
@@ -47,6 +48,7 @@ class _AppShellState extends State<AppShell> {
     _scrollController
       ..removeListener(_updateActiveSection)
       ..dispose();
+    _landingScrollProgress.dispose();
     _resumeSuccessTimer?.cancel();
     super.dispose();
   }
@@ -58,6 +60,10 @@ class _AppShellState extends State<AppShell> {
 
   void _updateActiveSection() {
     if (!mounted) return;
+    final viewportHeight = MediaQuery.sizeOf(context).height;
+    _landingScrollProgress.value = viewportHeight == 0
+        ? 0
+        : (_scrollController.offset / viewportHeight).clamp(0, 1).toDouble();
     final viewportTarget = MediaQuery.of(context).padding.top + 100;
     PortfolioSection nearest = _current;
     var closestDistance = double.infinity;
@@ -126,11 +132,22 @@ class _AppShellState extends State<AppShell> {
                       onEnter: () => _scrollTo(PortfolioSection.about),
                       onProjects: () => _scrollTo(PortfolioSection.projects),
                       onPortfolioContentLoaded: _cachePortfolioContent,
+                      scrollProgress: _landingScrollProgress,
                     ),
                   ),
-                  KeyedSubtree(
-                    key: _sectionKeys[PortfolioSection.about],
-                    child: AboutScreen(cachedContent: _portfolioContent),
+                  ValueListenableBuilder<double>(
+                    valueListenable: _landingScrollProgress,
+                    child: KeyedSubtree(
+                      key: _sectionKeys[PortfolioSection.about],
+                      child: AboutScreen(cachedContent: _portfolioContent),
+                    ),
+                    builder: (context, progress, child) => Opacity(
+                      opacity: .76 + (.24 * progress),
+                      child: Transform.translate(
+                        offset: Offset(0, 18 * (1 - progress)),
+                        child: child,
+                      ),
+                    ),
                   ),
                   KeyedSubtree(
                     key: _sectionKeys[PortfolioSection.projects],
@@ -264,9 +281,9 @@ class _FloatingMobileNav extends StatelessWidget {
               color: t.button,
               onTap: () => onSelect(PortfolioSection.contact)),
           _NavIcon(
-              icon: showResumeDone
-                  ? Icons.download_done_outlined
-                  : Icons.article_outlined,
+              customIcon: showResumeDone
+                  ? const Icon(Icons.download_done_outlined)
+                  : const Icon(Icons.article_outlined),
               active: showResumeDone,
               color: t.button,
               onTap: onResumeTap),
@@ -321,15 +338,18 @@ class _TopNavTextState extends State<_TopNavText> {
 }
 
 class _NavIcon extends StatelessWidget {
-  final IconData icon;
+  final IconData? icon;
+  final Widget? customIcon;
   final bool active;
   final Color color;
   final VoidCallback onTap;
   const _NavIcon(
-      {required this.icon,
+      {this.icon,
+      this.customIcon,
       required this.active,
       required this.color,
-      required this.onTap});
+      required this.onTap})
+      : assert(icon != null || customIcon != null);
 
   @override
   Widget build(BuildContext context) {
@@ -338,7 +358,7 @@ class _NavIcon extends StatelessWidget {
       onPressed: onTap,
       constraints: const BoxConstraints.tightFor(width: 48, height: 48),
       color: active ? color : t.text,
-      icon: Icon(icon),
+      icon: customIcon ?? Icon(icon),
     );
   }
 }
