@@ -79,90 +79,173 @@ class _ContactScreenState extends State<ContactScreen> {
           final content = snapshot.data!;
           return SafeArea(
             top: false,
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                padding,
-                isMobile ? 96 : 128,
-                padding,
-                (isMobile ? AppSpacing.xl : AppSpacing.xxl) + bottomInset,
-              ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1160),
-                  child: isMobile
-                      ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _ContactIntro(
-                              titleSize: titleSize,
-                              isMobile: true,
-                            ),
-                            const SizedBox(height: AppSpacing.xl),
-                            const SizedBox(height: 240),
-                            const SizedBox(height: AppSpacing.xl),
-                            _ContactActions(content: content),
-                          ],
-                        )
-                      : LayoutBuilder(builder: (context, constraints) {
-                          // The right column keeps its designed 420px stance
-                          // while it is wide enough for the contact links to
-                          // pair up two per row. Narrower desktop widths
-                          // (small tablets in landscape) stack the links
-                          // three rows tall, so the column sizes naturally
-                          // there instead of clipping.
-                          final rightWidth =
-                              (constraints.maxWidth - AppSpacing.xxl) * 10 / 22;
-                          final roomy = rightWidth >= 400;
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              const Expanded(
-                                flex: 12,
-                                child: SizedBox(height: 420),
-                              ),
-                              const SizedBox(width: AppSpacing.xxl),
-                              Expanded(
-                                flex: 10,
-                                child: roomy
-                                    ? SizedBox(
-                                        height: 420,
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            _ContactIntro(
-                                              titleSize: titleSize,
-                                              isMobile: false,
-                                            ),
-                                            const Spacer(),
-                                            _ContactActions(content: content),
-                                          ],
-                                        ),
-                                      )
-                                    : Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          _ContactIntro(
+            left: false,
+            right: false,
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      padding,
+                      isMobile ? 96 : 128,
+                      padding,
+                      isMobile ? AppSpacing.xl : AppSpacing.xxl,
+                    ),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1160),
+                        child: isMobile
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _ContactIntro(
+                                    titleSize: titleSize,
+                                    isMobile: true,
+                                  ),
+                                  const SizedBox(height: AppSpacing.xl),
+                                  _ContactActions(content: content),
+                                ],
+                              )
+                            : LayoutBuilder(builder: (context, constraints) {
+                                if (constraints.maxWidth < 880) {
+                                  return Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        _ContactIntro(
                                             titleSize: titleSize,
-                                            isMobile: false,
-                                          ),
-                                          const SizedBox(height: 48),
-                                          _ContactActions(content: content),
-                                        ],
-                                      ),
-                              ),
-                            ],
-                          );
-                        }),
-                ),
-              ),
-            ),
+                                            isMobile: false),
+                                        const SizedBox(height: AppSpacing.xl),
+                                        _ContactActions(content: content),
+                                      ]);
+                                }
+                                // The right column keeps its designed 420px stance
+                                // while it is wide enough for the contact links to
+                                // pair up two per row. Narrower desktop widths
+                                // (small tablets in landscape) stack the links
+                                // three rows tall, so the column sizes naturally
+                                // there instead of clipping.
+                                final rightWidth =
+                                    (constraints.maxWidth - AppSpacing.xxl) *
+                                        10 /
+                                        22;
+                                final roomy = rightWidth >= 400;
+                                return Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    const Expanded(
+                                      flex: 12,
+                                      child: _ContactKeyboard(),
+                                    ),
+                                    const SizedBox(width: AppSpacing.xxl),
+                                    Expanded(
+                                      flex: 10,
+                                      child: roomy
+                                          ? SizedBox(
+                                              height: 420,
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  _ContactIntro(
+                                                    titleSize: titleSize,
+                                                    isMobile: false,
+                                                  ),
+                                                  const Spacer(),
+                                                  _ContactActions(
+                                                      content: content),
+                                                ],
+                                              ),
+                                            )
+                                          : Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                _ContactIntro(
+                                                  titleSize: titleSize,
+                                                  isMobile: false,
+                                                ),
+                                                const SizedBox(height: 48),
+                                                _ContactActions(
+                                                    content: content),
+                                              ],
+                                            ),
+                                    ),
+                                  ],
+                                );
+                              }),
+                      ),
+                    ),
+                  ),
+                  const _ContactLandscape(),
+                  Padding(
+                      padding: EdgeInsets.fromLTRB(
+                          padding,
+                          AppSpacing.md,
+                          padding,
+                          (isMobile ? AppSpacing.xl : AppSpacing.xxl) +
+                              bottomInset),
+                      child: ContactFooterLine(
+                        ownerName: content.ownerName,
+                        buildYear: content.buildYear,
+                        builtWith: content.builtWith,
+                        appVersion: content.appVersion,
+                        note: content.footerNote,
+                      )),
+                ]),
           );
         },
       ),
     );
   }
+}
+
+class _ContactKeyboard extends StatelessWidget {
+  const _ContactKeyboard();
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+          child: IgnorePointer(
+        child: Center(
+          child: SizedBox.square(
+              dimension: 420,
+              child: ShaderMask(
+                blendMode: BlendMode.dstIn,
+                shaderCallback: (bounds) => const RadialGradient(
+                  radius: .72,
+                  colors: [Colors.white, Colors.white, Colors.transparent],
+                  stops: [0, .65, 1],
+                ).createShader(bounds),
+                child: Image.asset('assets/about_keyboard_orange.png',
+                    fit: BoxFit.contain, excludeFromSemantics: true),
+              )),
+        ),
+      ));
+}
+
+/// Full-width artwork is outside the contact copy's padded content column.
+class _ContactLandscape extends StatelessWidget {
+  const _ContactLandscape();
+
+  @override
+  Widget build(BuildContext context) =>
+      LayoutBuilder(builder: (context, constraints) {
+        final compact = constraints.maxWidth < 600;
+        return ExcludeSemantics(
+            child: IgnorePointer(
+                child: RepaintBoundary(
+          child: AspectRatio(
+            aspectRatio: compact ? 2 : 3,
+            child: Image.asset(
+                compact
+                    ? 'assets/contact_tree_traveller_mobile.png'
+                    : 'assets/contact_tree_traveller_desktop.png',
+                width: double.infinity,
+                fit: BoxFit.contain,
+                excludeFromSemantics: true),
+          ),
+        )));
+      });
 }
 
 class _ContactIntro extends StatelessWidget {
@@ -219,14 +302,6 @@ class _ContactActions extends StatelessWidget {
           spacing: AppSpacing.sm,
           showLabels: true,
           alignment: WrapAlignment.start,
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        ContactFooterLine(
-          ownerName: content.ownerName,
-          buildYear: content.buildYear,
-          builtWith: content.builtWith,
-          appVersion: content.appVersion,
-          note: content.footerNote,
         ),
       ],
     );

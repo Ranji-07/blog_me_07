@@ -233,8 +233,7 @@ class WorkSectionSkeleton extends StatelessWidget {
   }
 }
 
-/// Mirrors the Contact section, including its reserved desktop half and the
-/// mobile gap that keeps actions near the fold.
+/// Reserve the same contact columns and full-width illustration while loading.
 class ContactSectionSkeleton extends StatelessWidget {
   const ContactSectionSkeleton({super.key});
 
@@ -271,55 +270,81 @@ class ContactSectionSkeleton extends StatelessWidget {
                     animation: shimmer),
             ],
           ),
-          const SizedBox(height: AppSpacing.lg),
-          ShimmerBox(width: 280, height: 13, animation: shimmer),
         ],
       );
-      Widget body = isMobile
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                intro,
-                const SizedBox(height: AppSpacing.xl),
-                const SizedBox(height: 240),
-                const SizedBox(height: AppSpacing.xl),
-                actions,
-              ],
-            )
-          : Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Expanded(flex: 12, child: SizedBox(height: 420)),
-                const SizedBox(width: AppSpacing.xxl),
-                Expanded(
-                  flex: 10,
-                  child: SizedBox(
-                    height: 420,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        intro,
-                        const Spacer(),
-                        actions,
-                      ],
-                    ),
-                  ),
+      Widget body = LayoutBuilder(builder: (context, constraints) {
+        if (isMobile || constraints.maxWidth < 880) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              intro,
+              const SizedBox(height: AppSpacing.xl),
+              actions,
+            ],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+                flex: 12,
+                child: Center(
+                    child: ShimmerBox(
+                        width: 420, height: 420, animation: shimmer))),
+            const SizedBox(width: AppSpacing.xxl),
+            Expanded(
+              flex: 10,
+              child: SizedBox(
+                height: 420,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    intro,
+                    const Spacer(),
+                    actions,
+                  ],
                 ),
-              ],
-            );
-      // Matches the real page geometry so the skeleton is not full-bleed.
+              ),
+            ),
+          ],
+        );
+      });
       return SafeArea(
         top: false,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(padding, isMobile ? 96 : 128, padding,
-              isMobile ? AppSpacing.xl : AppSpacing.xxl),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1160),
-              child: body,
+        left: false,
+        right: false,
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(padding, isMobile ? 96 : 128, padding,
+                isMobile ? AppSpacing.xl : AppSpacing.xxl),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1160),
+                child: body,
+              ),
             ),
           ),
-        ),
+          LayoutBuilder(
+              builder: (context, constraints) => AspectRatio(
+                    aspectRatio: constraints.maxWidth < 600 ? 2 : 3,
+                    child: ShimmerBox(
+                        width: double.infinity,
+                        height: double.infinity,
+                        radius: 0,
+                        animation: shimmer),
+                  )),
+          Padding(
+              padding: EdgeInsets.fromLTRB(
+                  padding,
+                  AppSpacing.md,
+                  padding,
+                  (isMobile ? AppSpacing.xl : AppSpacing.xxl) +
+                      MediaQuery.viewInsetsOf(context).bottom),
+              child: Center(
+                  child:
+                      ShimmerBox(width: 280, height: 13, animation: shimmer))),
+        ]),
       );
     });
   }
