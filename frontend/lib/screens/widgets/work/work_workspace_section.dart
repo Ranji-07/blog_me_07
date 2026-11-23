@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:portfolio/common/widgets/escape_dismiss.dart';
 import 'package:portfolio/core/app_theme.dart';
 import 'package:portfolio/core/responsive.dart';
 import 'package:portfolio/models/project.dart';
@@ -310,15 +311,17 @@ class _BlogRow extends StatelessWidget {
         } else {
           showDialog<void>(
             context: context,
-            builder: (context) => AlertDialog(
-              title: Text(entry.title),
-              content: const Text(
-                  'This note is planned and will be published here later.'),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Close'))
-              ],
+            builder: (context) => EscapeDismiss(
+              child: AlertDialog(
+                title: Text(entry.title),
+                content: const Text(
+                    'This note is planned and will be published here later.'),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Close'))
+                ],
+              ),
             ),
           );
         }
@@ -362,60 +365,62 @@ Future<void> _showProjectDetails(BuildContext context, Project project) {
       : project.description;
   return showDialog<void>(
     context: context,
-    builder: (dialogContext) => AlertDialog(
-      // Shares the deck's surface system so the desktop dialog matches the
-      // mobile detail sheet.
-      backgroundColor: ProjectDeckStyle.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        side: const BorderSide(color: ProjectDeckStyle.hairline),
-      ),
-      title: Text(project.title, style: ProjectDeckStyle.heading(size: 20)),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(project.category.toUpperCase(),
-                  style: ProjectDeckStyle.mono(
-                          size: 11, color: ProjectDeckStyle.accent)
-                      .copyWith(letterSpacing: 1.5)),
-              const SizedBox(height: AppSpacing.sm),
-              Text(description, style: ProjectDeckStyle.body()),
-              if (project.technologies.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.md),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final technology in project.technologies)
-                      ProjectStackChip(technology: technology),
-                  ],
-                ),
+    builder: (dialogContext) => EscapeDismiss(
+      child: AlertDialog(
+        // Shares the deck's surface system so the desktop dialog matches the
+        // mobile detail sheet.
+        backgroundColor: ProjectDeckStyle.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          side: const BorderSide(color: ProjectDeckStyle.hairline),
+        ),
+        title: Text(project.title, style: ProjectDeckStyle.heading(size: 20)),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(project.category.toUpperCase(),
+                    style: ProjectDeckStyle.mono(
+                            size: 11, color: ProjectDeckStyle.accent)
+                        .copyWith(letterSpacing: 1.5)),
+                const SizedBox(height: AppSpacing.sm),
+                Text(description, style: ProjectDeckStyle.body()),
+                if (project.technologies.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final technology in project.technologies)
+                        ProjectStackChip(technology: technology),
+                    ],
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
+        actions: [
+          if (project.githubUrl.startsWith('https://'))
+            TextButton.icon(
+              onPressed: () => openSecureExternalLink(project.githubUrl),
+              icon: const Icon(Icons.code_rounded, size: 16),
+              label: const Text('Source'),
+            ),
+          if (project.demoUrl.startsWith('https://'))
+            TextButton.icon(
+              onPressed: () => openSecureExternalLink(project.demoUrl),
+              icon: const Icon(Icons.open_in_new_rounded, size: 16),
+              label: const Text('Live demo'),
+            ),
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Close')),
+        ],
       ),
-      actions: [
-        if (project.githubUrl.startsWith('https://'))
-          TextButton.icon(
-            onPressed: () => openSecureExternalLink(project.githubUrl),
-            icon: const Icon(Icons.code_rounded, size: 16),
-            label: const Text('Source'),
-          ),
-        if (project.demoUrl.startsWith('https://'))
-          TextButton.icon(
-            onPressed: () => openSecureExternalLink(project.demoUrl),
-            icon: const Icon(Icons.open_in_new_rounded, size: 16),
-            label: const Text('Live demo'),
-          ),
-        TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Close')),
-      ],
     ),
   );
 }

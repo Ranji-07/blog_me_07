@@ -79,64 +79,254 @@ class _ContactScreenState extends State<ContactScreen> {
           final content = snapshot.data!;
           return SafeArea(
             top: false,
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                padding,
-                isMobile ? 96 : 128,
-                padding,
-                (isMobile ? AppSpacing.xl : AppSpacing.xxl) + bottomInset,
-              ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1160),
-                  child: isMobile
-                      ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _ContactIntro(
-                              titleSize: titleSize,
-                              isMobile: true,
-                            ),
-                            const SizedBox(height: AppSpacing.xl),
-                            const SizedBox(height: 240),
-                            const SizedBox(height: AppSpacing.xl),
-                            _ContactActions(content: content),
-                          ],
-                        )
-                      : Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            const Expanded(
-                              flex: 12,
-                              child: SizedBox(height: 420),
-                            ),
-                            const SizedBox(width: AppSpacing.xxl),
-                            Expanded(
-                              flex: 10,
-                              child: SizedBox(
-                                height: 420,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+            left: false,
+            right: false,
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      padding,
+                      isMobile ? 96 : 128,
+                      padding,
+                      isMobile ? 0 : AppSpacing.xxl,
+                    ),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1160),
+                        child: isMobile
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  _ContactIntro(
+                                    titleSize: titleSize,
+                                    isMobile: true,
+                                  ),
+                                  // Breathing room, then the robot sits
+                                  // between the paragraphs and the icons.
+                                  const SizedBox(height: AppSpacing.lg),
+                                  Center(
+                                    child: Image.asset('assets/1698535.png',
+                                        height: 132,
+                                        excludeFromSemantics: true),
+                                  ),
+                                  const SizedBox(height: AppSpacing.md),
+                                  ContactLinksSection(
+                                    email: content.email,
+                                    githubUrl: content.githubUrl,
+                                    linkedinUrl: content.linkedinUrl,
+                                    spacing: 20,
+                                  ),
+                                ],
+                              )
+                            : LayoutBuilder(builder: (context, constraints) {
+                                if (constraints.maxWidth < 880) {
+                                  return Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        _ContactIntro(
+                                            titleSize: titleSize,
+                                            isMobile: false),
+                                        const SizedBox(height: AppSpacing.xl),
+                                        _ContactActions(content: content),
+                                      ]);
+                                }
+                                // The right column keeps its designed 420px stance
+                                // while it is wide enough for the contact links to
+                                // pair up two per row. Narrower desktop widths
+                                // (small tablets in landscape) stack the links
+                                // three rows tall, so the column sizes naturally
+                                // there instead of clipping.
+                                final rightWidth =
+                                    (constraints.maxWidth - AppSpacing.xxl) *
+                                        10 /
+                                        22;
+                                final roomy = rightWidth >= 400;
+                                return Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    _ContactIntro(
-                                      titleSize: titleSize,
-                                      isMobile: false,
+                                    const Expanded(
+                                      flex: 12,
+                                      child: _ContactKeyboard(),
                                     ),
-                                    const Spacer(),
-                                    _ContactActions(content: content),
+                                    const SizedBox(width: AppSpacing.xxl),
+                                    Expanded(
+                                      flex: 10,
+                                      child: roomy
+                                          ? SizedBox(
+                                              height: 420,
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  _ContactIntro(
+                                                    titleSize: titleSize,
+                                                    isMobile: false,
+                                                  ),
+                                                  const Spacer(),
+                                                  _ContactActions(
+                                                      content: content),
+                                                ],
+                                              ),
+                                            )
+                                          : Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                _ContactIntro(
+                                                  titleSize: titleSize,
+                                                  isMobile: false,
+                                                ),
+                                                const SizedBox(height: 48),
+                                                _ContactActions(
+                                                    content: content),
+                                              ],
+                                            ),
+                                    ),
                                   ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
-              ),
-            ),
+                                );
+                              }),
+                      ),
+                    ),
+                  ),
+                  _ContactLandscape(details: isMobile ? content : null),
+                  if (!isMobile)
+                    Padding(
+                        padding: EdgeInsets.fromLTRB(padding, AppSpacing.md,
+                            padding, AppSpacing.xxl + bottomInset),
+                        child: ContactFooterLine(
+                          ownerName: content.ownerName,
+                          buildYear: content.buildYear,
+                          builtWith: content.builtWith,
+                          appVersion: content.appVersion,
+                          note: content.footerNote,
+                        )),
+                ]),
           );
         },
       ),
     );
+  }
+}
+
+class _ContactKeyboard extends StatelessWidget {
+  const _ContactKeyboard();
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+          child: IgnorePointer(
+        child: Center(
+          child: SizedBox.square(
+              dimension: 420,
+              child: ShaderMask(
+                blendMode: BlendMode.dstIn,
+                shaderCallback: (bounds) => const RadialGradient(
+                  radius: .72,
+                  colors: [Colors.white, Colors.white, Colors.transparent],
+                  stops: [0, .65, 1],
+                ).createShader(bounds),
+                child: Image.asset('assets/about_keyboard_orange.png',
+                    fit: BoxFit.contain, excludeFromSemantics: true),
+              )),
+        ),
+      ));
+}
+
+/// Full-width artwork is outside the contact copy's padded content column.
+/// On mobile the copyright and build details sit in the artwork's open sky,
+/// between the tree and the traveller above the ground line, so no separate
+/// footer block follows the illustration.
+class _ContactLandscape extends StatelessWidget {
+  final _ContactPageContent? details;
+
+  const _ContactLandscape({this.details});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTheme.of(context);
+    return LayoutBuilder(builder: (context, constraints) {
+      final compact = constraints.maxWidth < 600;
+      final height = constraints.maxWidth / (compact ? 2 : 3);
+      final detailLines = <Widget>[
+        if (details != null) ...[
+          if (details!.buildYear != null ||
+              details!.ownerName.trim().isNotEmpty)
+            Text(
+              '© ${details!.buildYear?.toString() ?? ''} ${details!.ownerName.trim()}'
+                  .trim(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: t.label
+                  .copyWith(fontSize: 10, color: t.textMuted, height: 1.5),
+            ),
+          if (details!.builtWith.trim().isNotEmpty ||
+              details!.appVersion.trim().isNotEmpty)
+            Text(
+              [
+                if (details!.builtWith.trim().isNotEmpty)
+                  'Built with ${details!.builtWith.trim()}',
+                if (details!.appVersion.trim().isNotEmpty)
+                  'Version ${details!.appVersion.trim()}',
+              ].join(' • '),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: t.label
+                  .copyWith(fontSize: 10, color: t.textMuted, height: 1.5),
+            ),
+          if (details!.footerNote.trim().isNotEmpty)
+            Text(
+              details!.footerNote.trim(),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: t.label
+                  .copyWith(fontSize: 10, color: t.textMuted, height: 1.5),
+            ),
+        ],
+      ];
+      return RepaintBoundary(
+        child: AspectRatio(
+          aspectRatio: compact ? 2 : 3,
+          child: Stack(children: [
+            Positioned.fill(
+              child: ExcludeSemantics(
+                child: IgnorePointer(
+                  child: Image.asset(
+                      compact
+                          ? 'assets/contact_tree_traveller_mobile.png'
+                          : 'assets/contact_tree_traveller_desktop.png',
+                      width: double.infinity,
+                      fit: BoxFit.contain,
+                      excludeFromSemantics: true),
+                ),
+              ),
+            ),
+            if (compact && detailLines.isNotEmpty && height >= 120)
+              // The mobile artwork's open sky spans roughly 42-84% across,
+              // above the ground line at about 65% of its height. Viewports
+              // too narrow to hold the lines skip the overlay entirely
+              // rather than overflowing it.
+              Positioned.fill(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    constraints.maxWidth * .42,
+                    height * .12,
+                    constraints.maxWidth * .16,
+                    height * .36,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: detailLines,
+                  ),
+                ),
+              ),
+          ]),
+        ),
+      );
+    });
   }
 }
 
@@ -165,12 +355,14 @@ class _ContactIntro extends StatelessWidget {
         const SizedBox(height: AppSpacing.md),
         Text(
           'Have an idea, opportunity, or project to discuss?',
-          style: t.body.copyWith(fontSize: isMobile ? 15 : 16),
+          style: t.body.copyWith(
+              fontSize: isMobile ? 13 : 16, height: isMobile ? 1.6 : 1.4),
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
           'I’m open to full-time roles, collaborations, and practical AI work.',
-          style: t.body.copyWith(fontSize: isMobile ? 15 : 16),
+          style: t.body.copyWith(
+              fontSize: isMobile ? 13 : 16, height: isMobile ? 1.6 : 1.4),
         ),
       ],
     );
@@ -194,14 +386,6 @@ class _ContactActions extends StatelessWidget {
           spacing: AppSpacing.sm,
           showLabels: true,
           alignment: WrapAlignment.start,
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        ContactFooterLine(
-          ownerName: content.ownerName,
-          buildYear: content.buildYear,
-          builtWith: content.builtWith,
-          appVersion: content.appVersion,
-          note: content.footerNote,
         ),
       ],
     );

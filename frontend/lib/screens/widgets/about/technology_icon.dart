@@ -61,27 +61,26 @@ class TechnologyIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
     final color = selected ? aboutAccent(t) : t.textMuted;
-    // Preserve the light/dark details inside multicolour SVGs. srcIn would
-    // flatten service icons and circular badges into solid squares/discs.
-    final channels = selected
-        ? [aboutAccent(t).r, aboutAccent(t).g, aboutAccent(t).b]
-        : [1.0, 1.0, 1.0];
-    final scale = selected ? .75 : .53;
-    final floor = selected ? .25 : .39;
-    final matrix = <double>[
-      for (final channel in channels) ...[
-        .2126 * scale * channel,
-        .7152 * scale * channel,
-        .0722 * scale * channel,
-        0,
-        255 * floor * channel,
-      ],
-      0,
-      0,
-      0,
-      1,
-      0,
-    ];
+    // The selected icon keeps its original brand colours; unselected icons
+    // rest in a muted gray so the honeycomb stays calm around the focus.
+    // The luminance matrix preserves the light/dark details inside
+    // multicolour SVGs, which srcIn would flatten into a single fill.
+    final matrix = selected
+        ? null
+        : <double>[
+            for (final _ in const [0, 1, 2]) ...[
+              .2126 * .35,
+              .7152 * .35,
+              .0722 * .35,
+              0,
+              255 * .30,
+            ],
+            0,
+            0,
+            0,
+            1,
+            0,
+          ];
     return ExcludeSemantics(
         child: SizedBox(
             width: size,
@@ -93,7 +92,8 @@ class TechnologyIcon extends StatelessWidget {
                     colorMapper: removeServiceBackground
                         ? const _ServiceMarkColors()
                         : null,
-                    colorFilter: ColorFilter.matrix(matrix))));
+                    colorFilter:
+                        matrix == null ? null : ColorFilter.matrix(matrix))));
   }
 }
 

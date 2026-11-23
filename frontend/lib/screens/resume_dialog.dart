@@ -5,6 +5,7 @@ import 'dart:js_util' as js_util;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:portfolio/common/widgets/escape_dismiss.dart';
 import 'package:portfolio/core/app_theme.dart';
 import 'package:portfolio/models/journey_content.dart';
 import 'package:portfolio/services/about_motion_preference.dart';
@@ -52,9 +53,8 @@ class ResumePreviewDialog extends StatelessWidget {
         barrierDismissible: true,
         barrierLabel: 'Resume preview',
         barrierColor: Colors.black.withValues(alpha: 0.72),
-        transitionDuration: reduced
-            ? Duration.zero
-            : const Duration(milliseconds: 1100),
+        transitionDuration:
+            reduced ? Duration.zero : const Duration(milliseconds: 1100),
         pageBuilder: (dialogContext, _, __) => ResumePreviewDialog(
           content: content,
           onActionComplete: onActionComplete,
@@ -205,68 +205,82 @@ class ResumePreviewDialog extends StatelessWidget {
 
     return PopScope(
       onPopInvokedWithResult: (_, __) => onClose?.call(),
-      child: Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(16),
-        child: SizedBox(
-          width: dialogWidth,
-          height: size.height * 0.9,
-          child: Center(
+      // Escape mirrors the Close button, including the paper exit motion.
+      // InitialFocus pulls primary focus into this subtree so the
+      // CallbackShortcuts handler sees key events from the first press.
+      child: CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.escape): () {
+            onClose?.call();
+            Navigator.of(context).pop();
+          },
+        },
+        child: InitialFocus(
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.all(16),
             child: SizedBox(
-              width: pageWidth,
-              height: effectivePageHeight,
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(32, 32, 32, 96),
-                          child: _ResumePage(content: content),
+              width: dialogWidth,
+              height: size.height * 0.9,
+              child: Center(
+                child: SizedBox(
+                  width: pageWidth,
+                  height: effectivePageHeight,
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                            child: SingleChildScrollView(
+                              padding:
+                                  const EdgeInsets.fromLTRB(32, 32, 32, 96),
+                              child: _ResumePage(content: content),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                  Positioned(
-                    top: topInset,
-                    right: sideInset,
-                    child: _FloatingIconButton(
-                      icon: Icons.close_rounded,
-                      tooltip: 'Close resume preview',
-                      onTap: () {
-                        onClose?.call();
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                  ),
-                  Positioned(
-                    left: sideInset,
-                    right: sideInset,
-                    bottom: bottomInset,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _ResumeActionButton(
-                          label: 'Share',
-                          icon: Icons.share_outlined,
-                          onTap: () => _shareResume(context),
+                      Positioned(
+                        top: topInset,
+                        right: sideInset,
+                        child: _FloatingIconButton(
+                          icon: Icons.close_rounded,
+                          tooltip: 'Close resume preview',
+                          onTap: () {
+                            onClose?.call();
+                            Navigator.of(context).pop();
+                          },
                         ),
-                        const SizedBox(width: AppSpacing.sm),
-                        _ResumeActionButton(
-                          label: 'Download',
-                          icon: Icons.download_rounded,
-                          filled: true,
-                          onTap: () => _savePdf(context),
+                      ),
+                      Positioned(
+                        left: sideInset,
+                        right: sideInset,
+                        bottom: bottomInset,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _ResumeActionButton(
+                              label: 'Share',
+                              icon: Icons.share_outlined,
+                              onTap: () => _shareResume(context),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            _ResumeActionButton(
+                              label: 'Download',
+                              icon: Icons.download_rounded,
+                              filled: true,
+                              onTap: () => _savePdf(context),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
@@ -511,10 +525,8 @@ class ResumeContent {
 
   factory ResumeContent.fromPortfolio(Map<String, dynamic> portfolio) {
     final about = (portfolio['about'] as Map<String, dynamic>?) ?? const {};
-    final contact =
-        (portfolio['contact'] as Map<String, dynamic>?) ?? const {};
-    final journey =
-        (portfolio['journey'] as Map<String, dynamic>?) ?? const {};
+    final contact = (portfolio['contact'] as Map<String, dynamic>?) ?? const {};
+    final journey = (portfolio['journey'] as Map<String, dynamic>?) ?? const {};
     final events = JourneyContent.fromJson(journey).events;
 
     final roles =

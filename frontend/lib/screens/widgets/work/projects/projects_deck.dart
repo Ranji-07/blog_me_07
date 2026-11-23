@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:portfolio/common/widgets/escape_dismiss.dart';
 import 'package:portfolio/models/project.dart';
 import 'package:portfolio/services/about_motion_preference.dart';
 import 'package:portfolio/services/about_scroll_lock.dart';
@@ -25,12 +26,10 @@ class _ProjectsDeckState extends State<ProjectsDeck>
     with TickerProviderStateMixin {
   // Survives tab changes and responsive remounts during the app session.
   static final Set<int> _pulsedIds = {};
-  // The swipe hint only needs to teach the gesture once per session.
-  static bool _hintDismissed = false;
   final Set<String> _precached = {};
   final GlobalKey _stageKey = GlobalKey();
   late final PageController _pages;
-  late final AnimationController _hint;
+  late final AnimationController _pulse;
   late final AnimationController _tap;
   late final ValueNotifier<bool> _motion;
   ScrollPosition? _parentPosition;
@@ -52,7 +51,7 @@ class _ProjectsDeckState extends State<ProjectsDeck>
     super.initState();
     _index = math.min(2, math.max(0, widget.projects.length - 1));
     _pages = PageController(viewportFraction: .62, initialPage: _index);
-    _hint = AnimationController(
+    _pulse = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 600));
     _tap = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 900));
@@ -62,7 +61,7 @@ class _ProjectsDeckState extends State<ProjectsDeck>
 
   void _motionChanged() {
     if (!mounted) return;
-    if (_reduced) _hint.reset();
+    if (_reduced) _pulse.reset();
     setState(() {});
   }
 
@@ -118,7 +117,7 @@ class _ProjectsDeckState extends State<ProjectsDeck>
       final id = widget.projects[_index].id;
       if (!_pulsedIds.add(id)) return;
       setState(() => _glowId = id);
-      _hint.forward(from: 0);
+      _pulse.forward(from: 0);
     });
   }
 
@@ -126,7 +125,7 @@ class _ProjectsDeckState extends State<ProjectsDeck>
     _settleTimer?.cancel();
     if (_sheetOpen) return;
     _openTimer?.cancel();
-    _hint.reset();
+    _pulse.reset();
     _tap.reset();
     if (mounted) {
       setState(() {
@@ -149,7 +148,7 @@ class _ProjectsDeckState extends State<ProjectsDeck>
       return;
     }
     _settleTimer?.cancel();
-    _hint.reset();
+    _pulse.reset();
     setState(() {
       _opening = true;
       _glowId = widget.projects[index].id;
@@ -189,15 +188,16 @@ class _ProjectsDeckState extends State<ProjectsDeck>
                   reverseDuration: Duration(milliseconds: 250)),
           builder: (sheetContext) {
             _sheetRoute = ModalRoute.of(sheetContext);
-            return ProjectDetailSheet(
-                project: project,
-                reducedMotion: reduced,
-                onOpened: () {
-                  if (!mounted) return;
-                  _tap.reset();
-                  _hintDismissed = true;
-                  setState(() => _glowId = null);
-                });
+            return EscapeDismiss(
+              child: ProjectDetailSheet(
+                  project: project,
+                  reducedMotion: reduced,
+                  onOpened: () {
+                    if (!mounted) return;
+                    _tap.reset();
+                    setState(() => _glowId = null);
+                  }),
+            );
           });
       await _sheetRoute?.completed;
     } finally {
@@ -221,7 +221,7 @@ class _ProjectsDeckState extends State<ProjectsDeck>
     _parentPosition?.isScrollingNotifier.removeListener(_parentScrollChanged);
     _motion.removeListener(_motionChanged);
     _motion.dispose();
-    _hint.dispose();
+    _pulse.dispose();
     _tap.dispose();
     _pages.dispose();
     final route = _sheetRoute;
@@ -239,12 +239,6 @@ class _ProjectsDeckState extends State<ProjectsDeck>
     return ColoredBox(
       color: ProjectDeckStyle.background,
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Padding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
-            child: Semantics(
-                header: true,
-                child: Text('Projects',
-                    style: ProjectDeckStyle.heading(size: 28)))),
         SizedBox(
             key: _stageKey,
             height: 414,
@@ -252,7 +246,7 @@ class _ProjectsDeckState extends State<ProjectsDeck>
               final width = constraints.maxWidth;
               final extent = width * .62;
               return AnimatedBuilder(
-                  animation: Listenable.merge([_pages, _hint, _tap]),
+                  animation: Listenable.merge([_pages, _pulse, _tap]),
                   builder: (context, _) {
                     final page = _page;
                     final order =
@@ -357,14 +351,6 @@ class _ProjectsDeckState extends State<ProjectsDeck>
                     );
                   });
             })),
-        Text('${_index + 1} / ${widget.projects.length}',
-            textAlign: TextAlign.center,
-            style: ProjectDeckStyle.mono(color: ProjectDeckStyle.text)),
-        if (!_hintDismissed) ...[
-          const SizedBox(height: 8),
-          Text('Swipe, then tap the centre card',
-              textAlign: TextAlign.center, style: ProjectDeckStyle.mono()),
-        ],
         const SizedBox(height: 24),
       ]),
     );
@@ -381,7 +367,7 @@ class _ProjectsDeckState extends State<ProjectsDeck>
                 ? Curves.easeOut.transform(_tap.value / .38)
                 : 1 - .65 * Curves.easeOut.transform((_tap.value - .38) / .62));
       } else {
-        glow = math.sin(_hint.value * math.pi) * .5;
+        glow = math.sin(_pulse.value * math.pi) * .5;
       }
     }
     final outlined = project.id == _glowId && (_opening || glow > .01);

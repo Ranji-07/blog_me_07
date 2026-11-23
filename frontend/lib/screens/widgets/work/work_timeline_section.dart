@@ -22,11 +22,11 @@ class WorkTimelineSection extends StatelessWidget {
             journey.title,
             style: t.heading.copyWith(
               color: t.button,
-              fontSize: mobile ? 29 : 34,
+              fontSize: mobile ? 24 : 34,
             ),
           ),
         ),
-        if (journey.subtitle.isNotEmpty) ...[
+        if (!mobile && journey.subtitle.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xs),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 680),

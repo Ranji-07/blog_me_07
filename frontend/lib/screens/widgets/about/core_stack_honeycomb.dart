@@ -14,36 +14,43 @@ class CoreStackHoneycomb extends StatefulWidget {
 class _CoreStackHoneycombState extends State<CoreStackHoneycomb> {
   Offset _pan = Offset.zero;
   bool _dragging = false;
-  static const _axial = [
-    Offset(0, 0),
-    Offset(1, 0),
-    Offset(0, 1),
-    Offset(-1, 1),
-    Offset(-1, 0),
-    Offset(0, -1),
-    Offset(1, -1),
-    Offset(0, -2),
-    Offset(2, -2),
-    Offset(2, 0),
-    Offset(0, 2),
-    Offset(-2, 2),
-    Offset(-2, 0),
-    Offset(1, -2)
-  ];
 
-  Offset _point(int index) {
-    final a = _axial[index];
-    return Offset(a.dx * 56 + a.dy * 28, a.dy * 49);
+  /// Axial (q, r) coordinates for a full hexagon of cells: the centre, then
+  /// one ring at a time, so every technology with a logo keeps a slot no
+  /// matter how many the profile lists.
+  static List<Offset> _cellsFor(int count) {
+    final cells = <Offset>[Offset.zero];
+    for (var ring = 1; cells.length < count; ring++) {
+      for (var q = -ring; q <= ring; q++) {
+        for (var r = -ring; r <= ring; r++) {
+          final distance = (q.abs() + r.abs() + (q + r).abs()) ~/ 2;
+          if (distance == ring && cells.length < count) {
+            cells.add(Offset(q.toDouble(), r.toDouble()));
+          }
+        }
+      }
+    }
+    return cells;
   }
 
   @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
-    final count = math.min(widget.technologies.length, _axial.length);
+    final cells = _cellsFor(widget.technologies.length);
+    final count = cells.length;
     if (count == 0) return const SizedBox.shrink();
+    // Wide fields (a third ring) tighten the pitch so every icon stays
+    // inside the frame; one or two rings keep the roomier spacing.
+    final pitch = count > 19 ? 44.0 : 56.0;
+    final pitchY = count > 19 ? 38.5 : 49.0;
+    Offset point(int index) {
+      final cell = cells[index];
+      return Offset(cell.dx * pitch + cell.dy * pitch / 2, cell.dy * pitchY);
+    }
+
     var selected = 0;
     for (var i = 1; i < count; i++) {
-      if ((_point(i) + _pan).distance < (_point(selected) + _pan).distance) {
+      if ((point(i) + _pan).distance < (point(selected) + _pan).distance) {
         selected = i;
       }
     }
@@ -57,7 +64,7 @@ class _CoreStackHoneycombState extends State<CoreStackHoneycomb> {
         final center = Offset(constraints.maxWidth / 2, 154);
         Widget bubble(int i) {
           final technology = widget.technologies[i];
-          final relative = _point(i) + _pan;
+          final relative = point(i) + _pan;
           // Leave breathing room below the focused icon for its name chip.
           final labelSpace =
               relative.dy > 0 ? math.min(18.0, relative.dy * .37) : 0.0;
@@ -84,7 +91,7 @@ class _CoreStackHoneycombState extends State<CoreStackHoneycomb> {
                           selected == i ? t.buttonSoft : Colors.transparent),
                   onPressed: () => setState(() {
                     _dragging = false;
-                    _pan = -_point(i);
+                    _pan = -point(i);
                   }),
                   child: Stack(
                       clipBehavior: Clip.none,
@@ -93,7 +100,8 @@ class _CoreStackHoneycombState extends State<CoreStackHoneycomb> {
                         TechnologyIcon(
                             technology: technology,
                             size: selected == i ? 36 : 30,
-                            selected: selected == i),
+                            selected: selected == i,
+                            removeServiceBackground: true),
                         if (selected == i)
                           Positioned(
                               top: 47,

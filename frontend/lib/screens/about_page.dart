@@ -8,8 +8,9 @@ import 'package:portfolio/services/about_motion_preference.dart';
 import 'widgets/about/about_panel_controller.dart';
 import 'widgets/about/about_floating_panel.dart';
 import 'widgets/about/core_stack_honeycomb.dart';
+import 'widgets/about/skills_card_stack.dart';
+import 'widgets/about/skills_summary_line.dart';
 import 'widgets/about/skills_terminal.dart';
-import 'widgets/about/technology_feeder.dart';
 import 'widgets/about/technology_icon.dart';
 import 'widgets/work/projects/project_deck_style.dart';
 
@@ -72,8 +73,16 @@ class _AboutScreenState extends State<AboutScreen> {
       if (!mounted) return;
       final scroll = biographyScroll ?? _terminalScroll;
       final content = kind == AboutPanelKind.terminal
-          ? SkillsInventory(
-              categories: profile.skillCategories, controller: scroll)
+          ? (MediaQuery.sizeOf(context).width < 600
+              // Mobile expands into the layered card stack; desktop keeps the
+              // terminal inventory.
+              ? SkillsCardStack(
+                  categories: profile.skillCategories,
+                  controller: scroll,
+                  onSweepComplete: _panel.reachedEnd,
+                )
+              : SkillsInventory(
+                  categories: profile.skillCategories, controller: scroll))
           : Scrollbar(
               controller: scroll,
               thumbVisibility: true,
@@ -283,42 +292,38 @@ class _AboutScreenState extends State<AboutScreen> {
                       }
                       final technologies =
                           aboutTechnologies(profile.skillCategories);
-                      final core = aboutCoreNames
-                          .map((name) => technologies
-                              .where((t) => t.canonicalName == name))
-                          .expand((t) => t)
-                          .toList();
+                      // Every technology with an available logo joins the
+                      // honeycomb; core stack names lead, the rest follow in
+                      // profile order.
+                      final logoTechnologies = technologies
+                          .where((tech) => tech.logoAsset != null)
+                          .toList()
+                        ..sort((a, b) {
+                          final ai = aboutCoreNames.indexOf(a.canonicalName);
+                          final bi = aboutCoreNames.indexOf(b.canonicalName);
+                          if (ai >= 0 || bi >= 0) {
+                            return (ai < 0 ? aboutCoreNames.length : ai)
+                                .compareTo(bi < 0 ? aboutCoreNames.length : bi);
+                          }
+                          return 0;
+                        });
                       return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _story(profile, mobile,
-                                lineLimit: mobile ? 3 : 4),
+                            _story(profile, mobile, lineLimit: mobile ? 3 : 4),
                             SizedBox(height: mobile ? 16 : 28),
                             if (!mobile)
                               _terminal(profile)
                             else ...[
-                              CoreStackHoneycomb(technologies: core),
-                              Text('Also familiar with', style: aboutMono(t)),
-                              const SizedBox(height: 8),
-                              TechnologyFeeder(
-                                  technologies: technologies
-                                      .where((tech) =>
-                                          tech.logoAsset != null &&
-                                          !aboutCoreNames
-                                              .contains(tech.canonicalName))
-                                      .toList(),
-                                  paused: _panel.active != null),
-                              TextButton.icon(
-                                  style: TextButton.styleFrom(
-                                      foregroundColor: aboutAccent(t)),
-                                  focusNode: _allSkillsFocus,
-                                  onPressed: () => _open(
-                                      AboutPanelKind.terminal,
-                                      profile,
-                                      _allSkillsFocus),
-                                  icon: const Icon(Icons.terminal_rounded,
-                                      size: 18),
-                                  label: const Text('View all skills')),
+                              CoreStackHoneycomb(
+                                  technologies: logoTechnologies),
+                              const SizedBox(height: 18),
+                              SkillsSummaryLine(
+                                technologies: technologies,
+                                focusNode: _allSkillsFocus,
+                                onOpen: () => _open(AboutPanelKind.terminal,
+                                    profile, _allSkillsFocus),
+                              ),
                             ],
                           ]);
                     }),
