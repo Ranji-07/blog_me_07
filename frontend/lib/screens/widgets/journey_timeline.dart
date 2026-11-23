@@ -139,7 +139,8 @@ class _JourneyTimelineState extends State<JourneyTimeline> {
               },
               child: Scrollbar(
                 controller: _scroll,
-                thumbVisibility: width > constraints.maxWidth,
+                // Mobile keeps the curved strip clean: swipe alone navigates.
+                thumbVisibility: !mobile && width > constraints.maxWidth,
                 child: SingleChildScrollView(
                   controller: _scroll,
                   scrollDirection: Axis.horizontal,

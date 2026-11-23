@@ -180,8 +180,12 @@ class _AppShellState extends State<AppShell> {
                   ),
                   ConstrainedBox(
                     key: _sectionKeys[PortfolioSection.contact],
-                    constraints:
-                        BoxConstraints(minHeight: constraints.maxHeight),
+                    // Desktop keeps a viewport-tall contact section; on mobile
+                    // the landscape must stay flush with the page bottom, so
+                    // the section sizes to its content instead.
+                    constraints: isMobile
+                        ? const BoxConstraints()
+                        : BoxConstraints(minHeight: constraints.maxHeight),
                     child: ContactScreen(cachedContent: _portfolioContent),
                   ),
                 ],
@@ -238,7 +242,10 @@ class _BrandMark extends StatelessWidget {
             foregroundColor: t.text,
           ),
           child: Text(label,
-              style: t.subheading.copyWith(fontWeight: FontWeight.w700)),
+              style: t.subheading.copyWith(
+                fontSize: Responsive.isMobile(context) ? 16 : null,
+                fontWeight: FontWeight.w700,
+              )),
         ),
       ),
     );

@@ -87,15 +87,17 @@ class AboutSectionSkeleton extends StatelessWidget {
                   if (mobile) ...[
                     _HoneycombSkeleton(shimmer: shimmer),
                     const SizedBox(height: 20),
-                    _FeederRowSkeleton(shimmer: shimmer),
-                    const SizedBox(height: 14),
-                    _FeederRowSkeleton(shimmer: shimmer),
-                    const SizedBox(height: 12),
-                    ShimmerBox(
-                        width: 150,
-                        height: 36,
-                        radius: AppRadius.full,
-                        animation: shimmer),
+                    // Mirrors the skills summary line: one text strip with
+                    // the plain arrow at its end.
+                    Row(children: [
+                      Expanded(
+                          child: ShimmerBox(
+                              width: double.infinity,
+                              height: 15,
+                              animation: shimmer)),
+                      const SizedBox(width: 12),
+                      ShimmerBox(width: 20, height: 15, animation: shimmer),
+                    ]),
                   ] else
                     _TerminalFrameSkeleton(
                         shimmer: shimmer, height: terminalHeight),
@@ -121,9 +123,14 @@ class WorkSectionSkeleton extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ShimmerBox(width: mobile ? 230 : 260, height: 34, animation: shimmer),
-          const SizedBox(height: AppSpacing.sm),
-          ShimmerBox(width: 320, height: 15, animation: shimmer),
+          ShimmerBox(
+              width: mobile ? 230 : 260,
+              height: mobile ? 28 : 34,
+              animation: shimmer),
+          if (!mobile) ...[
+            const SizedBox(height: AppSpacing.sm),
+            ShimmerBox(width: 320, height: 15, animation: shimmer),
+          ],
           const SizedBox(height: AppSpacing.lg),
           SizedBox(
             height: mobile ? 162 : 154,
@@ -164,10 +171,8 @@ class WorkSectionSkeleton extends StatelessWidget {
               ]);
             }),
           ),
-          const SizedBox(height: AppSpacing.xl),
+          SizedBox(height: mobile ? AppSpacing.md : AppSpacing.xl),
           if (mobile) ...[
-            ShimmerBox(width: 120, height: 28, animation: shimmer),
-            const SizedBox(height: 24),
             SizedBox(
               height: 414,
               child: LayoutBuilder(builder: (context, constraints) {
@@ -191,12 +196,7 @@ class WorkSectionSkeleton extends StatelessWidget {
                 ]);
               }),
             ),
-            const SizedBox(height: 16),
-            Center(
-                child: ShimmerBox(width: 44, height: 12, animation: shimmer)),
-            const SizedBox(height: 8),
-            Center(
-                child: ShimmerBox(width: 160, height: 11, animation: shimmer)),
+            const SizedBox(height: 24),
           ] else
             LayoutBuilder(builder: (context, constraints) {
               // Terminal frames flex horizontally only when side-by-side;
@@ -250,9 +250,11 @@ class ContactSectionSkeleton extends StatelessWidget {
               height: isMobile ? 38 : 52,
               animation: shimmer),
           const SizedBox(height: AppSpacing.md),
-          ShimmerBox(width: 320, height: 15, animation: shimmer),
+          ShimmerBox(
+              width: 320, height: isMobile ? 13 : 15, animation: shimmer),
           const SizedBox(height: AppSpacing.xs),
-          ShimmerBox(width: 300, height: 15, animation: shimmer),
+          ShimmerBox(
+              width: 300, height: isMobile ? 13 : 15, animation: shimmer),
         ],
       );
       Widget actions = Column(
@@ -278,8 +280,34 @@ class ContactSectionSkeleton extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               intro,
-              const SizedBox(height: AppSpacing.xl),
-              actions,
+              if (isMobile) ...[
+                // Mirrors the robot between the paragraphs and the icons.
+                const SizedBox(height: AppSpacing.lg),
+                Center(
+                    child: ShimmerBox(
+                        width: 132,
+                        height: 132,
+                        radius: AppRadius.md,
+                        animation: shimmer)),
+                const SizedBox(height: AppSpacing.md),
+                Center(
+                  child: Wrap(
+                    spacing: 20,
+                    runSpacing: AppSpacing.sm,
+                    children: [
+                      for (var i = 0; i < 3; i++)
+                        ShimmerBox(
+                            width: 48,
+                            height: 48,
+                            radius: AppRadius.full,
+                            animation: shimmer),
+                    ],
+                  ),
+                ),
+              ] else ...[
+                const SizedBox(height: AppSpacing.xl),
+                actions,
+              ],
             ],
           );
         }
@@ -317,7 +345,7 @@ class ContactSectionSkeleton extends StatelessWidget {
             Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Padding(
             padding: EdgeInsets.fromLTRB(padding, isMobile ? 96 : 128, padding,
-                isMobile ? AppSpacing.xl : AppSpacing.xxl),
+                isMobile ? 0 : AppSpacing.xxl),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 1160),
@@ -334,16 +362,13 @@ class ContactSectionSkeleton extends StatelessWidget {
                         radius: 0,
                         animation: shimmer),
                   )),
-          Padding(
-              padding: EdgeInsets.fromLTRB(
-                  padding,
-                  AppSpacing.md,
-                  padding,
-                  (isMobile ? AppSpacing.xl : AppSpacing.xxl) +
-                      MediaQuery.viewInsetsOf(context).bottom),
-              child: Center(
-                  child:
-                      ShimmerBox(width: 280, height: 13, animation: shimmer))),
+          if (!isMobile)
+            Padding(
+                padding: EdgeInsets.fromLTRB(padding, AppSpacing.md, padding,
+                    AppSpacing.xxl + MediaQuery.viewInsetsOf(context).bottom),
+                child: Center(
+                    child: ShimmerBox(
+                        width: 280, height: 13, animation: shimmer))),
         ]),
       );
     });
@@ -429,44 +454,6 @@ class _HoneycombSkeleton extends StatelessWidget {
             ),
         ]);
       }),
-    );
-  }
-}
-
-class _FeederRowSkeleton extends StatelessWidget {
-  final Animation<double> shimmer;
-  const _FeederRowSkeleton({required this.shimmer});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 54,
-      // Mirrors the real feeder: an unbounded chip row clipped at the frame
-      // edge, so narrow viewports never trip a RenderFlex overflow.
-      child: ClipRect(
-        child: OverflowBox(
-          maxWidth: double.infinity,
-          alignment: Alignment.centerLeft,
-          child: Row(
-            children: [
-              for (var i = 0; i < 4; i++) ...[
-                if (i > 0) const SizedBox(width: 16),
-                SizedBox(
-                  width: 104,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ShimmerBox(width: 24, height: 24, animation: shimmer),
-                      const SizedBox(height: 5),
-                      ShimmerBox(width: 70, height: 11, animation: shimmer),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

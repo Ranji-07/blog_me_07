@@ -95,7 +95,7 @@ class _JourneyPageState extends State<JourneyPage> {
       // Clears the floating brand and navigation before the timeline begins.
       padding: EdgeInsets.fromLTRB(
         mobile ? AppSpacing.md : AppSpacing.xl,
-        112,
+        mobile ? 96 : 112,
         mobile ? AppSpacing.md : AppSpacing.xl,
         AppSpacing.xxl,
       ),
@@ -117,7 +117,9 @@ class _JourneyPageState extends State<JourneyPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               WorkTimelineSection(journey: content.journey),
-              const SizedBox(height: AppSpacing.xl),
+              // Mobile drops the Projects heading and counter, so the deck
+              // sits closer to the timeline.
+              SizedBox(height: mobile ? AppSpacing.md : AppSpacing.xl),
               WorkWorkspaceSection(
                 projects: content.projects,
                 blogEntries: content.blogEntries,

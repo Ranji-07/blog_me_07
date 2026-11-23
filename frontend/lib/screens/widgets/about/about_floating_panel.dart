@@ -176,6 +176,9 @@ class _AboutFloatingPanelState extends State<AboutFloatingPanel> {
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
     final mobile = MediaQuery.sizeOf(context).width < 600;
+    // The mobile expanded skills view shows only its card stack over the
+    // blurred About page: no panel chrome, no visible controls.
+    final bare = widget.terminal && mobile;
     return Semantics(
       role: SemanticsRole.dialog,
       scopesRoute: true,
@@ -201,18 +204,19 @@ class _AboutFloatingPanelState extends State<AboutFloatingPanel> {
             onPointerMove: (_) => panel.interact(),
             onPointerSignal: _pointerSignal,
             child: Material(
-              color: widget.terminal ? t.card : Colors.transparent,
-              elevation: widget.terminal ? 20 : 0,
-              shape: widget.terminal
+              color: widget.terminal && !bare ? t.card : Colors.transparent,
+              elevation: widget.terminal && !bare ? 20 : 0,
+              shape: widget.terminal && !bare
                   ? RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                       side: BorderSide(color: t.border))
                   : null,
-              clipBehavior: Clip.antiAlias,
+              clipBehavior:
+                  widget.terminal && !bare ? Clip.antiAlias : Clip.none,
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (mobile)
+                    if (mobile && !bare)
                       GestureDetector(
                         behavior: HitTestBehavior.opaque,
                         onVerticalDragStart: (_) {
@@ -237,50 +241,53 @@ class _AboutFloatingPanelState extends State<AboutFloatingPanel> {
                                             borderRadius:
                                                 BorderRadius.circular(4)))))),
                       ),
-                    Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 8, 8, 8),
-                        // Biography chrome sits over the dark scrim in both
-                        // theme modes, so it uses the fixed dark tokens.
-                        child: Row(children: [
-                          Expanded(
-                              child: Text(
-                                  widget.terminal
-                                      ? '~/portfolio/skills'
-                                      : 'About me',
-                                  style: widget.terminal
-                                      ? aboutMono(t, size: 14, color: t.text)
-                                      : t.subheading.copyWith(
-                                          color: ProjectDeckStyle.text))),
-                          if (!widget.terminal)
-                            ListenableBuilder(
-                                listenable: panel,
-                                builder: (_, __) => Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Checkbox(
-                                              semanticLabel: 'Keep open',
-                                              value: panel.keepOpen,
-                                              activeColor: AppColors.button,
-                                              side: const BorderSide(
-                                                  color:
-                                                      ProjectDeckStyle.muted),
-                                              onChanged: (value) => panel
-                                                  .setKeepOpen(value ?? false)),
-                                          Text('Keep open',
-                                              style: aboutMono(t,
-                                                  color:
-                                                      ProjectDeckStyle.text)),
-                                        ])),
-                          IconButton(
-                              autofocus: true,
-                              tooltip: 'Close About panel',
-                              onPressed: panel.close,
-                              icon: Icon(Icons.close_rounded,
-                                  color: widget.terminal
-                                      ? t.text
-                                      : ProjectDeckStyle.text)),
-                        ])),
-                    if (widget.terminal) Divider(height: 1, color: t.border),
+                    if (!bare)
+                      Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 8, 8, 8),
+                          // Biography chrome sits over the dark scrim in both
+                          // theme modes, so it uses the fixed dark tokens.
+                          child: Row(children: [
+                            Expanded(
+                                child: Text(
+                                    widget.terminal
+                                        ? '~/portfolio/skills'
+                                        : 'About me',
+                                    style: widget.terminal
+                                        ? aboutMono(t, size: 14, color: t.text)
+                                        : t.subheading.copyWith(
+                                            color: ProjectDeckStyle.text))),
+                            if (!widget.terminal)
+                              ListenableBuilder(
+                                  listenable: panel,
+                                  builder: (_, __) => Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Checkbox(
+                                                semanticLabel: 'Keep open',
+                                                value: panel.keepOpen,
+                                                activeColor: AppColors.button,
+                                                side: const BorderSide(
+                                                    color:
+                                                        ProjectDeckStyle.muted),
+                                                onChanged: (value) =>
+                                                    panel.setKeepOpen(
+                                                        value ?? false)),
+                                            Text('Keep open',
+                                                style: aboutMono(t,
+                                                    color:
+                                                        ProjectDeckStyle.text)),
+                                          ])),
+                            IconButton(
+                                autofocus: true,
+                                tooltip: 'Close About panel',
+                                onPressed: panel.close,
+                                icon: Icon(Icons.close_rounded,
+                                    color: widget.terminal
+                                        ? t.text
+                                        : ProjectDeckStyle.text)),
+                          ])),
+                    if (widget.terminal && !bare)
+                      Divider(height: 1, color: t.border),
                     Expanded(
                         child: NotificationListener<ScrollNotification>(
                       onNotification: (notification) {
@@ -292,6 +299,7 @@ class _AboutFloatingPanelState extends State<AboutFloatingPanel> {
                             _pull += notification.overscroll;
                             if (_pull.abs() > 72) panel.close(remainder: _pull);
                           } else if (mobile &&
+                              !widget.terminal &&
                               notification.metrics.pixels <= 0 &&
                               notification.overscroll < 0) {
                             _pull -= notification.overscroll;
@@ -303,8 +311,9 @@ class _AboutFloatingPanelState extends State<AboutFloatingPanel> {
                       },
                       child: widget.content,
                     )),
-                    if (widget.terminal) Divider(height: 1, color: t.border),
-                    if (widget.terminal)
+                    if (widget.terminal && !bare)
+                      Divider(height: 1, color: t.border),
+                    if (widget.terminal && !bare)
                       ListenableBuilder(
                           listenable: panel,
                           builder: (_, __) => Padding(
@@ -331,22 +340,23 @@ class _AboutFloatingPanelState extends State<AboutFloatingPanel> {
                                       child: const Text('Close')),
                                 ]),
                               )),
-                    ValueListenableBuilder<double?>(
-                        valueListenable: panel.progress,
-                        builder: (_, value, __) => Semantics(
-                              label: value == null
-                                  ? 'Auto-close inactive'
-                                  : 'Closes after five seconds of inactivity; interact or choose Keep open to cancel',
-                              child: SizedBox(
-                                  height: 3,
-                                  child: value == null
-                                      ? const SizedBox.expand()
-                                      : ExcludeSemantics(
-                                          child: LinearProgressIndicator(
-                                              value: value,
-                                              color: aboutAccent(t),
-                                              backgroundColor: t.border))),
-                            )),
+                    if (!bare)
+                      ValueListenableBuilder<double?>(
+                          valueListenable: panel.progress,
+                          builder: (_, value, __) => Semantics(
+                                label: value == null
+                                    ? 'Auto-close inactive'
+                                    : 'Closes after five seconds of inactivity; interact or choose Keep open to cancel',
+                                child: SizedBox(
+                                    height: 3,
+                                    child: value == null
+                                        ? const SizedBox.expand()
+                                        : ExcludeSemantics(
+                                            child: LinearProgressIndicator(
+                                                value: value,
+                                                color: aboutAccent(t),
+                                                backgroundColor: t.border))),
+                              )),
                   ]),
             ),
           ),

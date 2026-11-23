@@ -17,8 +17,8 @@
   "footer": {
     "build_year": 2026,
     "built_with": "Flutter",
-    "app_version": "1.0.0",
-    "note": "Responsive portfolio experience for web and mobile"
+    "app_version": "1.0.2",
+    "note": "Responsive portfolio"
   },
   "visible": true,
   "status": "published"

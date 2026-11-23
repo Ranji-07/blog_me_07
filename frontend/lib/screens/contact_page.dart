@@ -89,21 +89,34 @@ class _ContactScreenState extends State<ContactScreen> {
                       padding,
                       isMobile ? 96 : 128,
                       padding,
-                      isMobile ? AppSpacing.xl : AppSpacing.xxl,
+                      isMobile ? 0 : AppSpacing.xxl,
                     ),
                     child: Center(
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 1160),
                         child: isMobile
                             ? Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   _ContactIntro(
                                     titleSize: titleSize,
                                     isMobile: true,
                                   ),
-                                  const SizedBox(height: AppSpacing.xl),
-                                  _ContactActions(content: content),
+                                  // Breathing room, then the robot sits
+                                  // between the paragraphs and the icons.
+                                  const SizedBox(height: AppSpacing.lg),
+                                  Center(
+                                    child: Image.asset('assets/1698535.png',
+                                        height: 132,
+                                        excludeFromSemantics: true),
+                                  ),
+                                  const SizedBox(height: AppSpacing.md),
+                                  ContactLinksSection(
+                                    email: content.email,
+                                    githubUrl: content.githubUrl,
+                                    linkedinUrl: content.linkedinUrl,
+                                    spacing: 20,
+                                  ),
                                 ],
                               )
                             : LayoutBuilder(builder: (context, constraints) {
@@ -177,21 +190,18 @@ class _ContactScreenState extends State<ContactScreen> {
                       ),
                     ),
                   ),
-                  const _ContactLandscape(),
-                  Padding(
-                      padding: EdgeInsets.fromLTRB(
-                          padding,
-                          AppSpacing.md,
-                          padding,
-                          (isMobile ? AppSpacing.xl : AppSpacing.xxl) +
-                              bottomInset),
-                      child: ContactFooterLine(
-                        ownerName: content.ownerName,
-                        buildYear: content.buildYear,
-                        builtWith: content.builtWith,
-                        appVersion: content.appVersion,
-                        note: content.footerNote,
-                      )),
+                  _ContactLandscape(details: isMobile ? content : null),
+                  if (!isMobile)
+                    Padding(
+                        padding: EdgeInsets.fromLTRB(padding, AppSpacing.md,
+                            padding, AppSpacing.xxl + bottomInset),
+                        child: ContactFooterLine(
+                          ownerName: content.ownerName,
+                          buildYear: content.buildYear,
+                          builtWith: content.builtWith,
+                          appVersion: content.appVersion,
+                          note: content.footerNote,
+                        )),
                 ]),
           );
         },
@@ -224,28 +234,100 @@ class _ContactKeyboard extends StatelessWidget {
 }
 
 /// Full-width artwork is outside the contact copy's padded content column.
+/// On mobile the copyright and build details sit in the artwork's open sky,
+/// between the tree and the traveller above the ground line, so no separate
+/// footer block follows the illustration.
 class _ContactLandscape extends StatelessWidget {
-  const _ContactLandscape();
+  final _ContactPageContent? details;
+
+  const _ContactLandscape({this.details});
 
   @override
-  Widget build(BuildContext context) =>
-      LayoutBuilder(builder: (context, constraints) {
-        final compact = constraints.maxWidth < 600;
-        return ExcludeSemantics(
-            child: IgnorePointer(
-                child: RepaintBoundary(
-          child: AspectRatio(
-            aspectRatio: compact ? 2 : 3,
-            child: Image.asset(
-                compact
-                    ? 'assets/contact_tree_traveller_mobile.png'
-                    : 'assets/contact_tree_traveller_desktop.png',
-                width: double.infinity,
-                fit: BoxFit.contain,
-                excludeFromSemantics: true),
-          ),
-        )));
-      });
+  Widget build(BuildContext context) {
+    final t = AppTheme.of(context);
+    return LayoutBuilder(builder: (context, constraints) {
+      final compact = constraints.maxWidth < 600;
+      final height = constraints.maxWidth / (compact ? 2 : 3);
+      final detailLines = <Widget>[
+        if (details != null) ...[
+          if (details!.buildYear != null ||
+              details!.ownerName.trim().isNotEmpty)
+            Text(
+              '© ${details!.buildYear?.toString() ?? ''} ${details!.ownerName.trim()}'
+                  .trim(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: t.label
+                  .copyWith(fontSize: 10, color: t.textMuted, height: 1.5),
+            ),
+          if (details!.builtWith.trim().isNotEmpty ||
+              details!.appVersion.trim().isNotEmpty)
+            Text(
+              [
+                if (details!.builtWith.trim().isNotEmpty)
+                  'Built with ${details!.builtWith.trim()}',
+                if (details!.appVersion.trim().isNotEmpty)
+                  'Version ${details!.appVersion.trim()}',
+              ].join(' • '),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: t.label
+                  .copyWith(fontSize: 10, color: t.textMuted, height: 1.5),
+            ),
+          if (details!.footerNote.trim().isNotEmpty)
+            Text(
+              details!.footerNote.trim(),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: t.label
+                  .copyWith(fontSize: 10, color: t.textMuted, height: 1.5),
+            ),
+        ],
+      ];
+      return RepaintBoundary(
+        child: AspectRatio(
+          aspectRatio: compact ? 2 : 3,
+          child: Stack(children: [
+            Positioned.fill(
+              child: ExcludeSemantics(
+                child: IgnorePointer(
+                  child: Image.asset(
+                      compact
+                          ? 'assets/contact_tree_traveller_mobile.png'
+                          : 'assets/contact_tree_traveller_desktop.png',
+                      width: double.infinity,
+                      fit: BoxFit.contain,
+                      excludeFromSemantics: true),
+                ),
+              ),
+            ),
+            if (compact && detailLines.isNotEmpty && height >= 120)
+              // The mobile artwork's open sky spans roughly 42-84% across,
+              // above the ground line at about 65% of its height. Viewports
+              // too narrow to hold the lines skip the overlay entirely
+              // rather than overflowing it.
+              Positioned.fill(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    constraints.maxWidth * .42,
+                    height * .12,
+                    constraints.maxWidth * .16,
+                    height * .36,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: detailLines,
+                  ),
+                ),
+              ),
+          ]),
+        ),
+      );
+    });
+  }
 }
 
 class _ContactIntro extends StatelessWidget {
@@ -273,12 +355,14 @@ class _ContactIntro extends StatelessWidget {
         const SizedBox(height: AppSpacing.md),
         Text(
           'Have an idea, opportunity, or project to discuss?',
-          style: t.body.copyWith(fontSize: isMobile ? 15 : 16),
+          style: t.body.copyWith(
+              fontSize: isMobile ? 13 : 16, height: isMobile ? 1.6 : 1.4),
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
           'I’m open to full-time roles, collaborations, and practical AI work.',
-          style: t.body.copyWith(fontSize: isMobile ? 15 : 16),
+          style: t.body.copyWith(
+              fontSize: isMobile ? 13 : 16, height: isMobile ? 1.6 : 1.4),
         ),
       ],
     );

@@ -41,8 +41,7 @@ class _LandingScreenState extends State<LandingScreen> {
   bool _isDeleting = false;
   bool _animateIntro = false;
 
-  bool get _reduced =>
-      _motion.value || MediaQuery.disableAnimationsOf(context);
+  bool get _reduced => _motion.value || MediaQuery.disableAnimationsOf(context);
 
   @override
   void initState() {
@@ -321,7 +320,10 @@ class _LandingLayout extends StatelessWidget {
                           end: .72,
                           offsetY: 10,
                           child: SizedBox(
-                            height: roleFontSize * 2.15,
+                            // Fixed two-line box: the role may type and wrap
+                            // freely inside it, but the introduction line
+                            // above can never shift.
+                            height: roleFontSize * 2.3,
                             child: RichText(
                               maxLines: 2,
                               overflow: TextOverflow.clip,
@@ -370,7 +372,9 @@ class _LandingLayout extends StatelessWidget {
         Positioned(
           left: isMobile ? horizontal : 34,
           right: isMobile ? horizontal : null,
-          bottom: isMobile ? 20 : 28,
+          // Social icons sit close to the bottom edge, clear of the device's
+          // gesture/navigation area; the buttons follow 10px above them.
+          bottom: isMobile ? 12 + MediaQuery.paddingOf(context).bottom : 28,
           child: _LandingEntrance(
             animate: animateIntro,
             start: .78,
@@ -387,7 +391,9 @@ class _LandingLayout extends StatelessWidget {
         Positioned(
           right: horizontal,
           left: isMobile ? horizontal : null,
-          bottom: isMobile ? 92 : 28,
+          bottom: isMobile
+              ? 12 + MediaQuery.paddingOf(context).bottom + 56 + 10
+              : 28,
           child: _LandingEntrance(
             animate: animateIntro,
             start: .66,
@@ -810,7 +816,9 @@ class _StatusResumeState extends State<_StatusResume>
       vsync: this,
       duration: const Duration(milliseconds: 1400),
     );
-    _pulseTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    // One gentle pulse every 2 seconds; the guard below keeps the dot
+    // completely static when reduced motion is preferred.
+    _pulseTimer = Timer.periodic(const Duration(seconds: 2), (_) {
       if (mounted &&
           !_motion.value &&
           !MediaQuery.disableAnimationsOf(context)) {
@@ -879,8 +887,10 @@ class _StatusResumeState extends State<_StatusResume>
           label,
           style: t.label.copyWith(
             color: t.text,
-            fontSize: narrowMobile ? 13 : (mobile ? 14 : 15),
+            fontSize: narrowMobile ? 12 : (mobile ? 13 : 15),
             fontWeight: FontWeight.w500,
+            letterSpacing: 0,
+            height: 1.3,
           ),
         ),
         SizedBox(width: mobile ? 12 : 16),
@@ -1019,79 +1029,79 @@ class _LandingSkeleton extends StatelessWidget {
             animation: shimmer,
           );
       return Stack(
-      key: const ValueKey('landing-skeleton'),
-      children: [
-        Positioned(
-          top: isMobile ? 18 : 26,
-          left: horizontal,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              box(44, 44, circle: true),
-              const SizedBox(width: 12),
-              box(160, 22),
-            ],
+        key: const ValueKey('landing-skeleton'),
+        children: [
+          Positioned(
+            top: isMobile ? 18 : 26,
+            left: horizontal,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                box(44, 44, circle: true),
+                const SizedBox(width: 12),
+                box(160, 22),
+              ],
+            ),
           ),
-        ),
-        Positioned(
-          top: isMobile ? 72 : 26,
-          left: isMobile ? horizontal : null,
-          right: isMobile ? null : horizontal,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              box(10, 10, circle: true),
-              const SizedBox(width: 8),
-              box(100, 18),
-              const SizedBox(width: 20),
-              box(24, 24, radius: AppRadius.sm),
-            ],
+          Positioned(
+            top: isMobile ? 72 : 26,
+            left: isMobile ? horizontal : null,
+            right: isMobile ? null : horizontal,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                box(10, 10, circle: true),
+                const SizedBox(width: 8),
+                box(100, 18),
+                const SizedBox(width: 20),
+                box(24, 24, radius: AppRadius.sm),
+              ],
+            ),
           ),
-        ),
-        Positioned(
-          top: isMobile ? 220 : 250,
-          left: horizontal,
-          right: horizontal,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              box(280, 36),
-              const SizedBox(height: 18),
-              box(300, 16),
-              const SizedBox(height: 8),
-              box(240, 16),
-            ],
+          Positioned(
+            top: isMobile ? 220 : 250,
+            left: horizontal,
+            right: horizontal,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                box(280, 36),
+                const SizedBox(height: 18),
+                box(300, 16),
+                const SizedBox(height: 8),
+                box(240, 16),
+              ],
+            ),
           ),
-        ),
-        Positioned(
-          left: isMobile ? horizontal : 34,
-          right: isMobile ? horizontal : null,
-          bottom: isMobile ? 20 : 28,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              box(32, 32, circle: true),
-              const SizedBox(width: 20),
-              box(32, 32, circle: true),
-              const SizedBox(width: 20),
-              box(32, 32, circle: true),
-            ],
+          Positioned(
+            left: isMobile ? horizontal : 34,
+            right: isMobile ? horizontal : null,
+            bottom: isMobile ? 20 : 28,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                box(32, 32, circle: true),
+                const SizedBox(width: 20),
+                box(32, 32, circle: true),
+                const SizedBox(width: 20),
+                box(32, 32, circle: true),
+              ],
+            ),
           ),
-        ),
-        Positioned(
-          right: horizontal,
-          left: isMobile ? horizontal : null,
-          bottom: isMobile ? 92 : 28,
-          child: Wrap(
-            spacing: 16,
-            runSpacing: 12,
-            children: [
-              box(180, 52, radius: AppRadius.full),
-              box(180, 52, radius: AppRadius.full),
-            ],
+          Positioned(
+            right: horizontal,
+            left: isMobile ? horizontal : null,
+            bottom: isMobile ? 92 : 28,
+            child: Wrap(
+              spacing: 16,
+              runSpacing: 12,
+              children: [
+                box(180, 52, radius: AppRadius.full),
+                box(180, 52, radius: AppRadius.full),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
       );
     });
   }
