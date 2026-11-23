@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:portfolio/core/app_theme.dart';
 import 'package:portfolio/core/app_shell.dart';
 import 'package:portfolio/screens/admin_panel.dart';
@@ -7,19 +6,15 @@ import 'package:portfolio/screens/admin_panel.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   final initialPath = Uri.base.path;
-  final light = AppTheme.light();
-  final dark = AppTheme.dark();
   runApp(
     MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'R/07 — Ranjith V P',
-      theme: light.copyWith(
-        textTheme: GoogleFonts.outfitTextTheme(light.textTheme),
-      ),
-      darkTheme: dark.copyWith(
-        textTheme: GoogleFonts.outfitTextTheme(dark.textTheme),
-      ),
-      themeMode: ThemeMode.system,
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      // The public site is a dark-first design; the Work deck, its detail
+      // sheet, and the hero gradients are all built for the dark canvas.
+      themeMode: ThemeMode.dark,
       home: initialPath == '/admin/login'
           ? const AdminLoginPage()
           : initialPath.startsWith('/admin/')

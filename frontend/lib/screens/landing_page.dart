@@ -2,9 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:portfolio/common/loading/section_skeletons.dart';
 import 'package:portfolio/common/loading/shimmer_box.dart';
 import 'package:portfolio/core/app_theme.dart';
 import 'package:portfolio/core/responsive.dart';
+import 'package:portfolio/services/about_motion_preference.dart';
 import 'package:portfolio/services/portfolio_api.dart';
 import 'package:portfolio/common/social/social_links.dart';
 import 'package:portfolio/screens/resume_dialog.dart';
@@ -29,6 +32,7 @@ class LandingScreen extends StatefulWidget {
 
 class _LandingScreenState extends State<LandingScreen> {
   static bool _hasPlayedIntroThisSession = false;
+  final _motion = createAboutMotionPreference();
   _LandingContent? _content;
   String? _error;
   Timer? _typewriterTimer;
@@ -37,16 +41,37 @@ class _LandingScreenState extends State<LandingScreen> {
   bool _isDeleting = false;
   bool _animateIntro = false;
 
+  bool get _reduced =>
+      _motion.value || MediaQuery.disableAnimationsOf(context);
+
   @override
   void initState() {
     super.initState();
+    _motion.addListener(_motionChanged);
     _loadContent();
   }
 
   @override
   void dispose() {
     _typewriterTimer?.cancel();
+    _motion.removeListener(_motionChanged);
+    _motion.dispose();
     super.dispose();
+  }
+
+  void _motionChanged() {
+    if (!mounted) return;
+    if (_motion.value) _freezeTypewriter();
+    setState(() {});
+  }
+
+  /// Reduced motion must land on a complete role, never mid-word.
+  void _freezeTypewriter() {
+    _typewriterTimer?.cancel();
+    final roles = _content?.displayRoles ?? const <String>[];
+    if (roles.isEmpty) return;
+    _roleIndex = _roleIndex.clamp(0, roles.length - 1);
+    _visibleCharacters = roles[_roleIndex].length;
   }
 
   Future<void> _loadContent() async {
@@ -56,11 +81,18 @@ class _LandingScreenState extends State<LandingScreen> {
         return;
       }
       widget.onPortfolioContentLoaded(decoded);
-      _animateIntro = !MediaQuery.disableAnimationsOf(context) &&
-          !_hasPlayedIntroThisSession;
+      final reduced = _reduced;
+      _animateIntro = !reduced && !_hasPlayedIntroThisSession;
       _hasPlayedIntroThisSession = true;
-      setState(() => _content = _LandingContent.fromJson(decoded));
-      _startTypewriter(withIntroDelay: _animateIntro);
+      final content = _LandingContent.fromJson(decoded);
+      if (reduced) {
+        // Present the first role complete, without typing or cycling.
+        _roleIndex = 0;
+        final roles = content.displayRoles;
+        _visibleCharacters = roles.isEmpty ? 0 : roles.first.length;
+      }
+      setState(() => _content = content);
+      if (!reduced) _startTypewriter(withIntroDelay: _animateIntro);
     } catch (_) {
       if (mounted) {
         setState(() => _error = 'Unable to load portfolio details.');
@@ -152,6 +184,7 @@ class _LandingScreenState extends State<LandingScreen> {
                       roleIndex: _roleIndex,
                       visibleCharacters: _visibleCharacters,
                       animateIntro: _animateIntro,
+                      reducedMotion: _reduced,
                       scrollProgress: widget.scrollProgress,
                       onExplore: _explorePortfolio,
                       onProjects: widget.onProjects,
@@ -167,6 +200,7 @@ class _LandingLayout extends StatelessWidget {
   final int roleIndex;
   final int visibleCharacters;
   final bool animateIntro;
+  final bool reducedMotion;
   final ValueListenable<double> scrollProgress;
   final VoidCallback onExplore;
   final VoidCallback onProjects;
@@ -176,6 +210,7 @@ class _LandingLayout extends StatelessWidget {
     required this.roleIndex,
     required this.visibleCharacters,
     required this.animateIntro,
+    required this.reducedMotion,
     required this.scrollProgress,
     required this.onExplore,
     required this.onProjects,
@@ -303,9 +338,7 @@ class _LandingLayout extends StatelessWidget {
                                     alignment: PlaceholderAlignment.middle,
                                     child: _TypewriterCursor(
                                       fontSize: roleFontSize,
-                                      animate: !MediaQuery.disableAnimationsOf(
-                                        context,
-                                      ),
+                                      animate: !reducedMotion,
                                     ),
                                   ),
                                 ],
@@ -444,6 +477,12 @@ class _HeroBackground extends StatelessWidget {
                 ? HeroImageConfig.defaultBackgroundAsset
                 : imageAsset,
             fit: BoxFit.cover,
+            // A missing configured asset falls back to the default hero,
+            // mirroring the network image failure path.
+            errorBuilder: (_, __, ___) => Image.asset(
+              HeroImageConfig.defaultBackgroundAsset,
+              fit: BoxFit.cover,
+            ),
           )
         : Image.network(
             imageUrl!,
@@ -759,6 +798,7 @@ class _StatusResume extends StatefulWidget {
 class _StatusResumeState extends State<_StatusResume>
     with SingleTickerProviderStateMixin {
   late final AnimationController _pulse;
+  final _motion = createAboutMotionPreference();
   Timer? _resumeTimer;
   Timer? _pulseTimer;
   bool _resumeDone = false;
@@ -771,7 +811,9 @@ class _StatusResumeState extends State<_StatusResume>
       duration: const Duration(milliseconds: 1400),
     );
     _pulseTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (mounted && !MediaQuery.disableAnimationsOf(context)) {
+      if (mounted &&
+          !_motion.value &&
+          !MediaQuery.disableAnimationsOf(context)) {
         _pulse.forward(from: 0);
       }
     });
@@ -782,6 +824,7 @@ class _StatusResumeState extends State<_StatusResume>
     _pulse.dispose();
     _pulseTimer?.cancel();
     _resumeTimer?.cancel();
+    _motion.dispose();
     super.dispose();
   }
 
@@ -799,9 +842,9 @@ class _StatusResumeState extends State<_StatusResume>
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
     final (color, label) = switch (widget.availability) {
-      'freelance' => (const Color(0xFFF97316), 'Available for Freelance'),
-      'unavailable' => (const Color(0xFFEF4444), 'Not Available'),
-      _ => (const Color(0xFF22C55E), 'Open to Work'),
+      'freelance' => (t.button, 'Available for Freelance'),
+      'unavailable' => (AppColors.danger, 'Not Available'),
+      _ => (AppColors.success, 'Open to Work'),
     };
     final mobile = Responsive.isMobile(context);
     final narrowMobile = mobile && MediaQuery.sizeOf(context).width < 380;
@@ -907,7 +950,10 @@ class _LandingButtonState extends State<_LandingButton> {
                   ),
             label: Text(
               widget.label,
+              // Buttons keep the sans body face; mono is reserved for labels
+              // so the compact CTAs still fit at 360px widths.
               style: t.label.copyWith(
+                fontFamily: GoogleFonts.inter().fontFamily,
                 fontSize: widget.compact ? 16 : 17,
                 fontWeight: FontWeight.w600,
               ),
@@ -962,18 +1008,28 @@ class _LandingSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMobile = Responsive.isMobile(context);
     final horizontal = isMobile ? 20.0 : 34.0;
-    return Stack(
+    return SectionSkeleton(builder: (context, shimmer) {
+      ShimmerBox box(double width, double height,
+              {bool circle = false, double radius = AppRadius.sm}) =>
+          ShimmerBox(
+            width: width,
+            height: height,
+            circle: circle,
+            radius: radius,
+            animation: shimmer,
+          );
+      return Stack(
       key: const ValueKey('landing-skeleton'),
       children: [
         Positioned(
           top: isMobile ? 18 : 26,
           left: horizontal,
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ShimmerBox(width: 44, height: 44, circle: true),
-              SizedBox(width: 12),
-              ShimmerBox(width: 160, height: 22),
+              box(44, 44, circle: true),
+              const SizedBox(width: 12),
+              box(160, 22),
             ],
           ),
         ),
@@ -981,14 +1037,14 @@ class _LandingSkeleton extends StatelessWidget {
           top: isMobile ? 72 : 26,
           left: isMobile ? horizontal : null,
           right: isMobile ? null : horizontal,
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ShimmerBox(width: 10, height: 10, circle: true),
-              SizedBox(width: 8),
-              ShimmerBox(width: 100, height: 18),
-              SizedBox(width: 20),
-              ShimmerBox(width: 24, height: 24, radius: AppRadius.sm),
+              box(10, 10, circle: true),
+              const SizedBox(width: 8),
+              box(100, 18),
+              const SizedBox(width: 20),
+              box(24, 24, radius: AppRadius.sm),
             ],
           ),
         ),
@@ -996,14 +1052,14 @@ class _LandingSkeleton extends StatelessWidget {
           top: isMobile ? 220 : 250,
           left: horizontal,
           right: horizontal,
-          child: const Column(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ShimmerBox(width: 280, height: 36),
-              SizedBox(height: 18),
-              ShimmerBox(width: 300, height: 16),
-              SizedBox(height: 8),
-              ShimmerBox(width: 240, height: 16),
+              box(280, 36),
+              const SizedBox(height: 18),
+              box(300, 16),
+              const SizedBox(height: 8),
+              box(240, 16),
             ],
           ),
         ),
@@ -1011,14 +1067,14 @@ class _LandingSkeleton extends StatelessWidget {
           left: isMobile ? horizontal : 34,
           right: isMobile ? horizontal : null,
           bottom: isMobile ? 20 : 28,
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ShimmerBox(width: 32, height: 32, circle: true),
-              SizedBox(width: 20),
-              ShimmerBox(width: 32, height: 32, circle: true),
-              SizedBox(width: 20),
-              ShimmerBox(width: 32, height: 32, circle: true),
+              box(32, 32, circle: true),
+              const SizedBox(width: 20),
+              box(32, 32, circle: true),
+              const SizedBox(width: 20),
+              box(32, 32, circle: true),
             ],
           ),
         ),
@@ -1026,17 +1082,18 @@ class _LandingSkeleton extends StatelessWidget {
           right: horizontal,
           left: isMobile ? horizontal : null,
           bottom: isMobile ? 92 : 28,
-          child: const Wrap(
+          child: Wrap(
             spacing: 16,
             runSpacing: 12,
             children: [
-              ShimmerBox(width: 180, height: 52, radius: AppRadius.full),
-              ShimmerBox(width: 180, height: 52, radius: AppRadius.full),
+              box(180, 52, radius: AppRadius.full),
+              box(180, 52, radius: AppRadius.full),
             ],
           ),
         ),
       ],
-    );
+      );
+    });
   }
 }
 

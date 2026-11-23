@@ -16,11 +16,14 @@ class WorkTimelineSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          journey.title,
-          style: t.heading.copyWith(
-            color: t.button,
-            fontSize: mobile ? 29 : 34,
+        Semantics(
+          header: true,
+          child: Text(
+            journey.title,
+            style: t.heading.copyWith(
+              color: t.button,
+              fontSize: mobile ? 29 : 34,
+            ),
           ),
         ),
         if (journey.subtitle.isNotEmpty) ...[

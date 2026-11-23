@@ -3,6 +3,9 @@ import 'package:portfolio/core/app_theme.dart';
 import 'package:portfolio/core/responsive.dart';
 import 'package:portfolio/models/project.dart';
 import 'package:portfolio/screens/widgets/work/work_in_progress_overlay.dart';
+import 'projects/project_deck_style.dart';
+import 'projects/project_detail_sheet.dart';
+import 'projects/projects_deck.dart';
 import 'package:portfolio/services/secure_link_opener.dart';
 
 class BlogWorkspaceEntry {
@@ -30,17 +33,21 @@ class BlogWorkspaceEntry {
 class WorkWorkspaceSection extends StatelessWidget {
   final List<Project> projects;
   final List<BlogWorkspaceEntry> blogEntries;
+  final ValueChanged<bool>? onProjectSheetVisibilityChanged;
 
   const WorkWorkspaceSection({
     super.key,
     required this.projects,
     required this.blogEntries,
+    this.onProjectSheetVisibilityChanged,
   });
 
   @override
   Widget build(BuildContext context) {
     if (Responsive.isMobile(context)) {
-      return _MobileWorkspace(projects: projects, blogEntries: blogEntries);
+      return ProjectsDeck(
+          projects: projects,
+          onSheetVisibilityChanged: onProjectSheetVisibilityChanged);
     }
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -74,42 +81,6 @@ class WorkWorkspaceSection extends StatelessWidget {
   }
 }
 
-class _MobileWorkspace extends StatefulWidget {
-  final List<Project> projects;
-  final List<BlogWorkspaceEntry> blogEntries;
-
-  const _MobileWorkspace({required this.projects, required this.blogEntries});
-
-  @override
-  State<_MobileWorkspace> createState() => _MobileWorkspaceState();
-}
-
-class _MobileWorkspaceState extends State<_MobileWorkspace> {
-  bool _showProjects = true;
-
-  @override
-  Widget build(BuildContext context) {
-    return _TerminalFrame(
-      title: _showProjects ? '~/projects' : '~/blog',
-      tabs: [
-        _TerminalTab(
-          label: 'Projects',
-          selected: _showProjects,
-          onTap: () => setState(() => _showProjects = true),
-        ),
-        _TerminalTab(
-          label: 'Blog',
-          selected: !_showProjects,
-          onTap: () => setState(() => _showProjects = false),
-        ),
-      ],
-      child: _showProjects
-          ? _ProjectDirectory(projects: widget.projects)
-          : _BlogDirectory(entries: widget.blogEntries),
-    );
-  }
-}
-
 class _ProjectsTerminal extends StatelessWidget {
   final List<Project> projects;
   const _ProjectsTerminal({required this.projects});
@@ -134,27 +105,14 @@ class _BlogTerminal extends StatelessWidget {
       );
 }
 
-class _TerminalTab {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  const _TerminalTab({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-}
-
 class _TerminalFrame extends StatelessWidget {
   final String title;
   final String? trailing;
-  final List<_TerminalTab>? tabs;
   final Widget child;
   const _TerminalFrame({
     required this.title,
     required this.child,
     this.trailing,
-    this.tabs,
   });
 
   @override
@@ -179,18 +137,11 @@ class _TerminalFrame extends StatelessWidget {
               children: [
                 _TerminalDots(),
                 const SizedBox(width: AppSpacing.sm),
-                if (tabs != null)
-                  ...tabs!.map((tab) => Padding(
-                        padding: const EdgeInsets.only(right: AppSpacing.xs),
-                        child: _TabButton(tab: tab),
-                      ))
-                else
-                  Expanded(
-                      child: Text(title,
-                          style: t.subheading.copyWith(fontSize: 16))),
-                if (tabs != null) const Spacer(),
+                Expanded(
+                    child: Text(title,
+                        style: t.subheading.copyWith(fontSize: 16))),
                 if (trailing != null)
-                  Text(trailing!, style: t.label.copyWith(fontSize: 10)),
+                  Text(trailing!, style: t.label.copyWith(fontSize: 11)),
               ],
             ),
           ),
@@ -227,27 +178,6 @@ class _TerminalDots extends StatelessWidget {
         height: 9,
         decoration: BoxDecoration(color: color, shape: BoxShape.circle),
       );
-}
-
-class _TabButton extends StatelessWidget {
-  final _TerminalTab tab;
-  const _TabButton({required this.tab});
-
-  @override
-  Widget build(BuildContext context) {
-    final t = AppTheme.of(context);
-    return TextButton(
-      onPressed: tab.onTap,
-      style: TextButton.styleFrom(
-        foregroundColor: tab.selected ? t.text : t.textMuted,
-        backgroundColor: tab.selected ? t.buttonSoft : Colors.transparent,
-        minimumSize: const Size(0, 32),
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        shape: const StadiumBorder(),
-      ),
-      child: Text(tab.label, style: t.label.copyWith(fontSize: 11)),
-    );
-  }
 }
 
 class _ProjectDirectory extends StatelessWidget {
@@ -357,7 +287,7 @@ class _ProjectRow extends StatelessWidget {
             ),
             Text(
               hasLink ? 'source ↗' : 'details →',
-              style: t.label.copyWith(fontSize: 10, color: t.textMuted),
+              style: t.label.copyWith(fontSize: 11, color: t.textMuted),
             ),
           ],
         ),
@@ -403,7 +333,7 @@ class _BlogRow extends StatelessWidget {
                 child: Text('├── ${entry.path}',
                     style: t.label.copyWith(color: t.text))),
             Text(entry.status,
-                style: t.label.copyWith(fontSize: 10, color: t.textMuted)),
+                style: t.label.copyWith(fontSize: 11, color: t.textMuted)),
           ],
         ),
       ),
@@ -417,7 +347,7 @@ class _TerminalNote extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
         text,
-        style: AppTheme.of(context).label.copyWith(fontSize: 9),
+        style: AppTheme.of(context).label.copyWith(fontSize: 10),
       );
 }
 
@@ -427,14 +357,20 @@ String _fileName(String value) => value
     .replaceAll(RegExp(r'^-+|-+$'), '');
 
 Future<void> _showProjectDetails(BuildContext context, Project project) {
-  final t = AppTheme.of(context);
   final description = project.description.isEmpty
       ? project.shortDescription
       : project.description;
   return showDialog<void>(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      title: Text(project.title, style: t.subheading),
+      // Shares the deck's surface system so the desktop dialog matches the
+      // mobile detail sheet.
+      backgroundColor: ProjectDeckStyle.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        side: const BorderSide(color: ProjectDeckStyle.hairline),
+      ),
+      title: Text(project.title, style: ProjectDeckStyle.heading(size: 20)),
       content: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
         child: SingleChildScrollView(
@@ -443,17 +379,20 @@ Future<void> _showProjectDetails(BuildContext context, Project project) {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(project.category.toUpperCase(),
-                  style: t.label.copyWith(color: t.button)),
+                  style: ProjectDeckStyle.mono(
+                          size: 11, color: ProjectDeckStyle.accent)
+                      .copyWith(letterSpacing: 1.5)),
               const SizedBox(height: AppSpacing.sm),
-              Text(description, style: t.body),
+              Text(description, style: ProjectDeckStyle.body()),
               if (project.technologies.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.md),
                 Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: project.technologies
-                      .map((technology) => Chip(label: Text(technology)))
-                      .toList(),
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final technology in project.technologies)
+                      ProjectStackChip(technology: technology),
+                  ],
                 ),
               ],
             ],

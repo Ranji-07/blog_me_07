@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:portfolio/core/app_theme.dart';
 import 'package:portfolio/core/responsive.dart';
+import 'package:portfolio/services/about_motion_preference.dart';
 import 'package:portfolio/services/secure_link_opener.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -237,12 +238,15 @@ class ContactLinksSection extends StatelessWidget {
   }
 
   Future<void> _showEmailDialog(BuildContext context) {
+    final reduced = prefersReducedMotion(context);
     return showGeneralDialog<void>(
       context: context,
       barrierLabel: 'Email',
       barrierDismissible: true,
       barrierColor: Colors.black.withValues(alpha: 0.72),
-      transitionDuration: const Duration(milliseconds: 220),
+      transitionDuration: reduced
+          ? Duration.zero
+          : const Duration(milliseconds: 220),
       pageBuilder: (_, __, ___) => const SizedBox.shrink(),
       transitionBuilder: (dialogContext, animation, _, __) {
         final curved = CurvedAnimation(
@@ -750,7 +754,7 @@ class _ContactActionDialog extends StatelessWidget {
                         width: 8,
                         height: 8,
                         decoration: const BoxDecoration(
-                          color: Color(0xFF22C55E),
+                          color: AppColors.success,
                           shape: BoxShape.circle,
                         ),
                       ),

@@ -6,35 +6,57 @@ import 'dart:js_util' as js_util;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:portfolio/core/app_theme.dart';
+import 'package:portfolio/models/journey_content.dart';
+import 'package:portfolio/services/about_motion_preference.dart';
+import 'package:portfolio/services/portfolio_api.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ResumePreviewDialog extends StatelessWidget {
   static const String _resumeAssetPath = 'assets/assets/V_P_Ranjith_resume.pdf';
   static final Uri _resumeAssetUri = Uri.parse(_resumeAssetPath);
+  final ResumeContent content;
   final VoidCallback? onActionComplete;
   final VoidCallback? onClose;
   final VoidCallback? onDownload;
 
   const ResumePreviewDialog({
     super.key,
+    required this.content,
     this.onActionComplete,
     this.onClose,
     this.onDownload,
   });
+
+  static Future<ResumeContent> _loadResumeContent() async {
+    try {
+      return ResumeContent.fromPortfolio(await PortfolioApi.fetchAll());
+    } catch (_) {
+      return ResumeContent.fallback();
+    }
+  }
 
   static Future<void> show(
     BuildContext context, {
     VoidCallback? onActionComplete,
   }) async {
     final exitMotion = ValueNotifier<_PaperExit>(_PaperExit.close);
+    final reduced = prefersReducedMotion(context);
+    final content = await _loadResumeContent();
+    if (!context.mounted) {
+      exitMotion.dispose();
+      return;
+    }
     try {
       await showGeneralDialog<void>(
         context: context,
         barrierDismissible: true,
         barrierLabel: 'Resume preview',
         barrierColor: Colors.black.withValues(alpha: 0.72),
-        transitionDuration: const Duration(milliseconds: 1100),
+        transitionDuration: reduced
+            ? Duration.zero
+            : const Duration(milliseconds: 1100),
         pageBuilder: (dialogContext, _, __) => ResumePreviewDialog(
+          content: content,
           onActionComplete: onActionComplete,
           onClose: () => exitMotion.value = _PaperExit.close,
           onDownload: () => exitMotion.value = _PaperExit.download,
@@ -205,7 +227,7 @@ class ResumePreviewDialog extends StatelessWidget {
                         borderRadius: BorderRadius.circular(AppRadius.md),
                         child: SingleChildScrollView(
                           padding: const EdgeInsets.fromLTRB(32, 32, 32, 96),
-                          child: const _ResumePage(),
+                          child: _ResumePage(content: content),
                         ),
                       ),
                     ),
@@ -215,6 +237,7 @@ class ResumePreviewDialog extends StatelessWidget {
                     right: sideInset,
                     child: _FloatingIconButton(
                       icon: Icons.close_rounded,
+                      tooltip: 'Close resume preview',
                       onTap: () {
                         onClose?.call();
                         Navigator.of(context).pop();
@@ -322,40 +345,70 @@ class _PaperTransition extends StatelessWidget {
       );
 }
 
-class _FloatingIconButton extends StatelessWidget {
+class _FloatingIconButton extends StatefulWidget {
   final IconData icon;
+  final String tooltip;
   final VoidCallback onTap;
 
   const _FloatingIconButton({
     required this.icon,
+    required this.tooltip,
     required this.onTap,
   });
+
+  @override
+  State<_FloatingIconButton> createState() => _FloatingIconButtonState();
+}
+
+class _FloatingIconButtonState extends State<_FloatingIconButton> {
+  bool _focused = false;
 
   @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: t.surface,
-          shape: BoxShape.circle,
-          border: Border.all(color: t.border),
-        ),
-        child: Icon(
-          icon,
-          color: t.text,
-          size: 20,
+    return Semantics(
+      button: true,
+      label: widget.tooltip,
+      child: Tooltip(
+        message: widget.tooltip,
+        excludeFromSemantics: true,
+        child: FocusableActionDetector(
+          mouseCursor: SystemMouseCursors.click,
+          onShowFocusHighlight: (value) => setState(() => _focused = value),
+          shortcuts: const <ShortcutActivator, Intent>{
+            SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+            SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
+          },
+          actions: <Type, Action<Intent>>{
+            ActivateIntent: CallbackAction<ActivateIntent>(
+              onInvoke: (_) {
+                widget.onTap();
+                return null;
+              },
+            ),
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: t.surface,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: _focused ? t.button : t.border,
+                width: _focused ? 1.6 : 1,
+              ),
+            ),
+            child: Icon(widget.icon, color: t.text, size: 20),
+          ),
         ),
       ),
     );
   }
 }
 
-class _ResumeActionButton extends StatelessWidget {
+class _ResumeActionButton extends StatefulWidget {
   final String label;
   final IconData icon;
   final bool filled;
@@ -369,46 +422,176 @@ class _ResumeActionButton extends StatelessWidget {
   });
 
   @override
+  State<_ResumeActionButton> createState() => _ResumeActionButtonState();
+}
+
+class _ResumeActionButtonState extends State<_ResumeActionButton> {
+  bool _focused = false;
+
+  @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 10,
-        ),
-        decoration: BoxDecoration(
-          color: t.button,
-          borderRadius: BorderRadius.circular(AppRadius.full),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: Colors.black,
+    return Semantics(
+      button: true,
+      label: widget.label,
+      child: FocusableActionDetector(
+        mouseCursor: SystemMouseCursors.click,
+        onShowFocusHighlight: (value) => setState(() => _focused = value),
+        shortcuts: const <ShortcutActivator, Intent>{
+          SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+          SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
+        },
+        actions: <Type, Action<Intent>>{
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              widget.onTap();
+              return null;
+            },
+          ),
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 10,
+          ),
+          decoration: BoxDecoration(
+            color: t.button,
+            borderRadius: BorderRadius.circular(AppRadius.full),
+            // Transparent until focused, so the pill keeps its silhouette.
+            border: Border.all(
+              color: _focused ? Colors.white : Colors.transparent,
+              width: 1.6,
             ),
-            const SizedBox(width: AppSpacing.sm),
-            Text(
-              label,
-              style: t.label.copyWith(
-                fontSize: 13,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                widget.icon,
+                size: 16,
                 color: Colors.black,
-                fontWeight: FontWeight.w700,
               ),
-            ),
-          ],
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                widget.label,
+                style: t.label.copyWith(
+                  fontSize: 13,
+                  color: Colors.black,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
+/// Preview content derived from the same portfolio config the public site
+/// reads, so the resume summary can never drift from the CMS.
+class ResumeContent {
+  final String name;
+  final String headline;
+  final String profile;
+  final List<String> experience;
+  final List<String> education;
+  final String skills;
+
+  const ResumeContent({
+    required this.name,
+    required this.headline,
+    required this.profile,
+    required this.experience,
+    required this.education,
+    required this.skills,
+  });
+
+  factory ResumeContent.fromPortfolio(Map<String, dynamic> portfolio) {
+    final about = (portfolio['about'] as Map<String, dynamic>?) ?? const {};
+    final contact =
+        (portfolio['contact'] as Map<String, dynamic>?) ?? const {};
+    final journey =
+        (portfolio['journey'] as Map<String, dynamic>?) ?? const {};
+    final events = JourneyContent.fromJson(journey).events;
+
+    final roles =
+        (about['roles'] as List<dynamic>? ?? const []).whereType<String>();
+    var currentTitle = '';
+    for (final event in events) {
+      if (event.isCurrent && event.title.isNotEmpty) currentTitle = event.title;
+    }
+    final location = (contact['location'] as String?) ?? '';
+    final headlineParts = <String>[
+      if (currentTitle.isNotEmpty) currentTitle,
+      if (roles.isNotEmpty && roles.first != currentTitle) roles.first,
+      if (location.isNotEmpty) location,
+    ];
+
+    final aboutMe =
+        (about['about_me'] as List<dynamic>? ?? const []).whereType<String>();
+    final profile = aboutMe.isEmpty ? '' : aboutMe.first;
+
+    final experience = <String>[];
+    final education = <String>[];
+    for (final event in events) {
+      final entry = [
+        if (event.title.isNotEmpty)
+          event.organization.isEmpty
+              ? event.title
+              : '${event.title} — ${event.organization}',
+        if (event.date.isNotEmpty) event.date,
+        if (event.description.isNotEmpty) event.description,
+      ].join('\n');
+      if (entry.isEmpty) continue;
+      switch (event.kind.toLowerCase()) {
+        case 'work':
+          experience.add(entry);
+        case 'education':
+          education.add(entry);
+      }
+    }
+
+    final categories =
+        (about['skill_categories'] as Map<String, dynamic>?) ?? const {};
+    final seen = <String>{};
+    final skills = <String>[];
+    for (final value in categories.values) {
+      for (final skill
+          in (value as List<dynamic>? ?? const []).whereType<String>()) {
+        final trimmed = skill.trim();
+        if (trimmed.isNotEmpty && seen.add(trimmed.toLowerCase())) {
+          skills.add(trimmed);
+        }
+      }
+    }
+
+    return ResumeContent(
+      name: (about['name'] as String?) ?? '',
+      headline: headlineParts.join(' • '),
+      profile: profile,
+      experience: experience,
+      education: education,
+      skills: skills.join(', '),
+    );
+  }
+
+  factory ResumeContent.fallback() => ResumeContent(
+        name: String.fromEnvironment('PORTFOLIO_NAME',
+            defaultValue: 'Ranjith V P'),
+        headline: '',
+        profile: '',
+        experience: const [],
+        education: const [],
+        skills: '',
+      );
+}
+
 class _ResumePage extends StatelessWidget {
-  const _ResumePage();
+  final ResumeContent content;
+  const _ResumePage({required this.content});
 
   @override
   Widget build(BuildContext context) {
@@ -418,26 +601,28 @@ class _ResumePage extends StatelessWidget {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
+      children: [
         Text(
-          'Ranjith V P',
-          style: TextStyle(
+          content.name,
+          style: const TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w800,
             color: headingColor,
           ),
         ),
-        SizedBox(height: 8),
-        Text(
-          'Software Development Engineer • AI Engineer • India',
-          style: TextStyle(
-            fontSize: 13,
-            color: bodyColor,
-            height: 1.5,
+        if (content.headline.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            content.headline,
+            style: const TextStyle(
+              fontSize: 13,
+              color: bodyColor,
+              height: 1.5,
+            ),
           ),
-        ),
-        SizedBox(height: 6),
-        Text(
+        ],
+        const SizedBox(height: 6),
+        const Text(
           'Portfolio contact details are available in the contact section.',
           style: TextStyle(
             fontSize: 12,
@@ -445,32 +630,26 @@ class _ResumePage extends StatelessWidget {
             height: 1.5,
           ),
         ),
-        SizedBox(height: 24),
-        _ResumeSection(
-          title: 'Profile',
-          content:
-              'Software Development Engineer with experience building AI-integrated systems, Python data pipelines, and cloud infrastructure. I work across Flutter, APIs, Docker, Kubernetes, and AWS.',
-        ),
-        SizedBox(height: 18),
-        _ResumeSection(
-          title: 'Experience',
-          content:
-              'Software Development Engineer — Buddi.AI\nNov 2025 - Present\nBuild AI-integrated production systems, data workflows, and LLM processing features.\n\nSoftware Engineer — Boodskap\nSep 2024 - Oct 2025\nBuilt connected IoT products across device, cloud, and Flutter application layers.',
-        ),
-        SizedBox(height: 18),
-        _ResumeSection(
-          title: 'Education',
-          content:
-              'B.E. Information Technology — Annamalai University\nGraduated May 2024 • CGPA 7',
-        ),
-        SizedBox(height: 18),
-        _ResumeSection(
-          title: 'Skills',
-          content:
-              'Python, Scala, Flutter, Dart, REST APIs, Docker, Kubernetes, Terraform, AWS, CI/CD, LLM Integration, and IoT.',
-        ),
-        SizedBox(height: 18),
-        Text(
+        if (content.profile.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          _ResumeSection(title: 'Profile', content: content.profile),
+        ],
+        if (content.experience.isNotEmpty) ...[
+          const SizedBox(height: 18),
+          _ResumeSection(
+              title: 'Experience', content: content.experience.join('\n\n')),
+        ],
+        if (content.education.isNotEmpty) ...[
+          const SizedBox(height: 18),
+          _ResumeSection(
+              title: 'Education', content: content.education.join('\n\n')),
+        ],
+        if (content.skills.isNotEmpty) ...[
+          const SizedBox(height: 18),
+          _ResumeSection(title: 'Skills', content: content.skills),
+        ],
+        const SizedBox(height: 18),
+        const Text(
           'This preview summarizes the resume available for download.',
           style: TextStyle(
             fontSize: 11,
@@ -478,8 +657,8 @@ class _ResumePage extends StatelessWidget {
             fontStyle: FontStyle.italic,
           ),
         ),
-        SizedBox(height: 12),
-        Text(
+        const SizedBox(height: 12),
+        const Text(
           'Share opens the browser share sheet when supported. Download saves the PDF using the browser default download location.',
           style: TextStyle(
             fontSize: 11,
