@@ -68,8 +68,8 @@ class AboutSectionSkeleton extends StatelessWidget {
                   children: [
                     Expanded(
                         flex: 5,
-                        child:
-                            _AboutStorySkeleton(shimmer: shimmer, mobile: false)),
+                        child: _AboutStorySkeleton(
+                            shimmer: shimmer, mobile: false)),
                     const SizedBox(width: 40),
                     Expanded(
                         flex: 7,
@@ -121,8 +121,7 @@ class WorkSectionSkeleton extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ShimmerBox(
-              width: mobile ? 230 : 260, height: 34, animation: shimmer),
+          ShimmerBox(width: mobile ? 230 : 260, height: 34, animation: shimmer),
           const SizedBox(height: AppSpacing.sm),
           ShimmerBox(width: 320, height: 15, animation: shimmer),
           const SizedBox(height: AppSpacing.lg),
@@ -184,8 +183,7 @@ class WorkSectionSkeleton extends StatelessWidget {
                       left: width / 2 - extent - 93.5,
                       top: 72,
                       child: card(.85)),
-                  Positioned(
-                      left: width / 2 - 110, top: 52, child: card(1)),
+                  Positioned(left: width / 2 - 110, top: 52, child: card(1)),
                   Positioned(
                       left: width / 2 + extent - 93.5,
                       top: 72,
@@ -195,36 +193,36 @@ class WorkSectionSkeleton extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Center(
-                child:
-                    ShimmerBox(width: 44, height: 12, animation: shimmer)),
+                child: ShimmerBox(width: 44, height: 12, animation: shimmer)),
             const SizedBox(height: 8),
             Center(
-                child:
-                    ShimmerBox(width: 160, height: 11, animation: shimmer)),
+                child: ShimmerBox(width: 160, height: 11, animation: shimmer)),
           ] else
             LayoutBuilder(builder: (context, constraints) {
-              final projectsFrame = Expanded(
-                  flex: 12,
-                  child: _TerminalFrameSkeleton(
-                      shimmer: shimmer, height: 320));
-              final blogFrame = Expanded(
-                  flex: 9,
-                  child:
-                      _TerminalFrameSkeleton(shimmer: shimmer, height: 320));
+              // Terminal frames flex horizontally only when side-by-side;
+              // the stacked variant lives in the page's unbounded scroll, so
+              // Expanded children would be a layout error there.
+              Widget stacked() => Column(children: [
+                    _TerminalFrameSkeleton(shimmer: shimmer, height: 320),
+                    const SizedBox(height: AppSpacing.md),
+                    _TerminalFrameSkeleton(shimmer: shimmer, height: 320),
+                  ]);
               if (constraints.maxWidth < 880) {
-                return Column(children: [
-                  projectsFrame,
-                  const SizedBox(height: AppSpacing.md),
-                  blogFrame,
-                ]);
+                return stacked();
               }
               return IntrinsicHeight(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    projectsFrame,
+                    Expanded(
+                        flex: 12,
+                        child: _TerminalFrameSkeleton(
+                            shimmer: shimmer, height: 320)),
                     const SizedBox(width: AppSpacing.md),
-                    blogFrame,
+                    Expanded(
+                        flex: 9,
+                        child: _TerminalFrameSkeleton(
+                            shimmer: shimmer, height: 320)),
                   ],
                 ),
               );
@@ -244,6 +242,7 @@ class ContactSectionSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SectionSkeleton(builder: (context, shimmer) {
       final isMobile = Responsive.isMobile(context);
+      final padding = isMobile ? AppSpacing.md : AppSpacing.xxl;
       Widget intro = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -260,52 +259,67 @@ class ContactSectionSkeleton extends StatelessWidget {
       Widget actions = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            for (var i = 0; i < 3; i++) ...[
-              if (i > 0) const SizedBox(width: AppSpacing.sm),
-              ShimmerBox(
-                  width: 132,
-                  height: 48,
-                  radius: AppRadius.full,
-                  animation: shimmer),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              for (var i = 0; i < 3; i++)
+                ShimmerBox(
+                    width: 132,
+                    height: 48,
+                    radius: AppRadius.full,
+                    animation: shimmer),
             ],
-          ]),
+          ),
           const SizedBox(height: AppSpacing.lg),
           ShimmerBox(width: 280, height: 13, animation: shimmer),
         ],
       );
-      if (isMobile) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            intro,
-            const SizedBox(height: AppSpacing.xl),
-            const SizedBox(height: 240),
-            const SizedBox(height: AppSpacing.xl),
-            actions,
-          ],
-        );
-      }
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const Expanded(flex: 12, child: SizedBox(height: 420)),
-          const SizedBox(width: AppSpacing.xxl),
-          Expanded(
-            flex: 10,
-            child: SizedBox(
-              height: 420,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  intro,
-                  const Spacer(),
-                  actions,
-                ],
-              ),
+      Widget body = isMobile
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                intro,
+                const SizedBox(height: AppSpacing.xl),
+                const SizedBox(height: 240),
+                const SizedBox(height: AppSpacing.xl),
+                actions,
+              ],
+            )
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Expanded(flex: 12, child: SizedBox(height: 420)),
+                const SizedBox(width: AppSpacing.xxl),
+                Expanded(
+                  flex: 10,
+                  child: SizedBox(
+                    height: 420,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        intro,
+                        const Spacer(),
+                        actions,
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+      // Matches the real page geometry so the skeleton is not full-bleed.
+      return SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(padding, isMobile ? 96 : 128, padding,
+              isMobile ? AppSpacing.xl : AppSpacing.xxl),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1160),
+              child: body,
             ),
           ),
-        ],
+        ),
       );
     });
   }
@@ -321,8 +335,7 @@ class _AboutStorySkeleton extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ShimmerBox(
-            width: mobile ? 190 : 230, height: 30, animation: shimmer),
+        ShimmerBox(width: mobile ? 190 : 230, height: 30, animation: shimmer),
         const SizedBox(height: 14),
         for (var i = 0; i < (mobile ? 2 : 5); i++)
           Padding(
@@ -333,10 +346,7 @@ class _AboutStorySkeleton extends StatelessWidget {
                 animation: shimmer),
           ),
         ShimmerBox(
-            width: 110,
-            height: 32,
-            radius: AppRadius.full,
-            animation: shimmer),
+            width: 110, height: 32, radius: AppRadius.full, animation: shimmer),
         if (!mobile) ...[
           const SizedBox(height: 28),
           ShimmerBox(width: 90, height: 18, animation: shimmer),
@@ -406,23 +416,31 @@ class _FeederRowSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: 54,
-      child: Row(
-        children: [
-          for (var i = 0; i < 4; i++) ...[
-            if (i > 0) const SizedBox(width: 16),
-            SizedBox(
-              width: 104,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ShimmerBox(width: 24, height: 24, animation: shimmer),
-                  const SizedBox(height: 5),
-                  ShimmerBox(width: 70, height: 11, animation: shimmer),
-                ],
-              ),
-            ),
-          ],
-        ],
+      // Mirrors the real feeder: an unbounded chip row clipped at the frame
+      // edge, so narrow viewports never trip a RenderFlex overflow.
+      child: ClipRect(
+        child: OverflowBox(
+          maxWidth: double.infinity,
+          alignment: Alignment.centerLeft,
+          child: Row(
+            children: [
+              for (var i = 0; i < 4; i++) ...[
+                if (i > 0) const SizedBox(width: 16),
+                SizedBox(
+                  width: 104,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ShimmerBox(width: 24, height: 24, animation: shimmer),
+                      const SizedBox(height: 5),
+                      ShimmerBox(width: 70, height: 11, animation: shimmer),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -454,13 +472,13 @@ class _TerminalFrameSkeleton extends StatelessWidget {
                 for (var i = 0; i < 3; i++) ...[
                   if (i > 0) const SizedBox(width: 5),
                   ShimmerBox(
-                      width: 9,
-                      height: 9,
-                      circle: true,
-                      animation: shimmer),
+                      width: 9, height: 9, circle: true, animation: shimmer),
                 ],
                 const SizedBox(width: AppSpacing.sm),
-                ShimmerBox(width: 140, height: 14, animation: shimmer),
+                Expanded(
+                  child: ShimmerBox(
+                      width: double.infinity, height: 14, animation: shimmer),
+                ),
               ]),
             ),
           ),

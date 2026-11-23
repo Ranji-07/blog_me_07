@@ -103,33 +103,58 @@ class _ContactScreenState extends State<ContactScreen> {
                             _ContactActions(content: content),
                           ],
                         )
-                      : Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            const Expanded(
-                              flex: 12,
-                              child: SizedBox(height: 420),
-                            ),
-                            const SizedBox(width: AppSpacing.xxl),
-                            Expanded(
-                              flex: 10,
-                              child: SizedBox(
-                                height: 420,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _ContactIntro(
-                                      titleSize: titleSize,
-                                      isMobile: false,
-                                    ),
-                                    const Spacer(),
-                                    _ContactActions(content: content),
-                                  ],
-                                ),
+                      : LayoutBuilder(builder: (context, constraints) {
+                          // The right column keeps its designed 420px stance
+                          // while it is wide enough for the contact links to
+                          // pair up two per row. Narrower desktop widths
+                          // (small tablets in landscape) stack the links
+                          // three rows tall, so the column sizes naturally
+                          // there instead of clipping.
+                          final rightWidth =
+                              (constraints.maxWidth - AppSpacing.xxl) * 10 / 22;
+                          final roomy = rightWidth >= 400;
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              const Expanded(
+                                flex: 12,
+                                child: SizedBox(height: 420),
                               ),
-                            ),
-                          ],
-                        ),
+                              const SizedBox(width: AppSpacing.xxl),
+                              Expanded(
+                                flex: 10,
+                                child: roomy
+                                    ? SizedBox(
+                                        height: 420,
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            _ContactIntro(
+                                              titleSize: titleSize,
+                                              isMobile: false,
+                                            ),
+                                            const Spacer(),
+                                            _ContactActions(content: content),
+                                          ],
+                                        ),
+                                      )
+                                    : Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          _ContactIntro(
+                                            titleSize: titleSize,
+                                            isMobile: false,
+                                          ),
+                                          const SizedBox(height: 48),
+                                          _ContactActions(content: content),
+                                        ],
+                                      ),
+                              ),
+                            ],
+                          );
+                        }),
                 ),
               ),
             ),

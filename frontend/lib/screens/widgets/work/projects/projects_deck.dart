@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:portfolio/common/widgets/escape_dismiss.dart';
 import 'package:portfolio/models/project.dart';
 import 'package:portfolio/services/about_motion_preference.dart';
 import 'package:portfolio/services/about_scroll_lock.dart';
@@ -189,15 +190,17 @@ class _ProjectsDeckState extends State<ProjectsDeck>
                   reverseDuration: Duration(milliseconds: 250)),
           builder: (sheetContext) {
             _sheetRoute = ModalRoute.of(sheetContext);
-            return ProjectDetailSheet(
-                project: project,
-                reducedMotion: reduced,
-                onOpened: () {
-                  if (!mounted) return;
-                  _tap.reset();
-                  _hintDismissed = true;
-                  setState(() => _glowId = null);
-                });
+            return EscapeDismiss(
+              child: ProjectDetailSheet(
+                  project: project,
+                  reducedMotion: reduced,
+                  onOpened: () {
+                    if (!mounted) return;
+                    _tap.reset();
+                    _hintDismissed = true;
+                    setState(() => _glowId = null);
+                  }),
+            );
           });
       await _sheetRoute?.completed;
     } finally {
