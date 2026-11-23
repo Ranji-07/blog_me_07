@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:portfolio/common/loading/section_skeletons.dart';
 import 'package:portfolio/core/app_theme.dart';
 import 'package:portfolio/core/responsive.dart';
 import 'package:portfolio/models/journey_content.dart';
@@ -12,8 +13,10 @@ import 'package:portfolio/services/portfolio_api.dart';
 /// a second copy being mounted by a nested work widget.
 class JourneyPage extends StatefulWidget {
   final Map<String, dynamic>? cachedContent;
+  final ValueChanged<bool>? onProjectSheetVisibilityChanged;
 
-  const JourneyPage({super.key, this.cachedContent});
+  const JourneyPage(
+      {super.key, this.cachedContent, this.onProjectSheetVisibilityChanged});
 
   @override
   State<JourneyPage> createState() => _JourneyPageState();
@@ -106,10 +109,7 @@ class _JourneyPageState extends State<JourneyPage> {
             );
           }
           if (!snapshot.hasData) {
-            return const SizedBox(
-              height: 260,
-              child: Center(child: CircularProgressIndicator()),
-            );
+            return const WorkSectionSkeleton();
           }
 
           final content = snapshot.data!;
@@ -121,6 +121,8 @@ class _JourneyPageState extends State<JourneyPage> {
               WorkWorkspaceSection(
                 projects: content.projects,
                 blogEntries: content.blogEntries,
+                onProjectSheetVisibilityChanged:
+                    widget.onProjectSheetVisibilityChanged,
               ),
             ],
           );

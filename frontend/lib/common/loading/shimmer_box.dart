@@ -7,12 +7,18 @@ class ShimmerBox extends StatefulWidget {
   final bool circle;
   final double radius;
 
+  /// Shared sweep driver so a skeleton can animate every box from one
+  /// controller. When omitted, the box animates on its own and pauses
+  /// automatically for reduced-motion users.
+  final Animation<double>? animation;
+
   const ShimmerBox({
     super.key,
     required this.width,
     required this.height,
     this.circle = false,
     this.radius = AppRadius.sm,
+    this.animation,
   });
 
   @override
@@ -21,28 +27,43 @@ class ShimmerBox extends StatefulWidget {
 
 class _ShimmerBoxState extends State<ShimmerBox>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
+  AnimationController? _ownController;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat();
+    if (widget.animation == null) {
+      _ownController = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 1200),
+      );
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final controller = _ownController;
+    if (controller == null) return;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      controller.stop();
+    } else if (!controller.isAnimating) {
+      controller.repeat();
+    }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _ownController?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final t = AppTheme.of(context);
+    final animation = widget.animation ?? _ownController!;
     return AnimatedBuilder(
-      animation: _controller,
+      animation: animation,
       builder: (_, __) => Container(
         width: widget.width,
         height: widget.height,
@@ -51,8 +72,8 @@ class _ShimmerBoxState extends State<ShimmerBox>
           borderRadius:
               widget.circle ? null : BorderRadius.circular(widget.radius),
           gradient: LinearGradient(
-            begin: Alignment(-1.5 + (_controller.value * 3), 0),
-            end: Alignment(-0.5 + (_controller.value * 3), 0),
+            begin: Alignment(-1.5 + (animation.value * 3), 0),
+            end: Alignment(-0.5 + (animation.value * 3), 0),
             colors: [t.surface, t.border, t.surface],
           ),
         ),

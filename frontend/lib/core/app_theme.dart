@@ -22,8 +22,12 @@ class AppColors {
 
   static const Color button = Color(0xFFFFA85B);
   static const Color buttonSoft = Color(0x24FFA85B);
-  static const Color neonGreen = Color(0xFF7DFF6A);
+  static const Color success = Color(0xFF22C55E);
   static const Color danger = Color(0xFFFF6B6B);
+
+  /// Overlay surfaces (snack bars) sit above the shared page canvas, so they
+  /// alone may use a raised dark surface to separate from the page.
+  static const Color overlayDark = Color(0xFF131110);
 }
 
 class AppSpacing {
@@ -63,7 +67,6 @@ class AppThemeData {
       isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
   Color get button => AppColors.button;
   Color get buttonSoft => AppColors.buttonSoft;
-  Color get neonGreen => AppColors.neonGreen;
 
   TextStyle get display => GoogleFonts.outfit(
         fontSize: 52,
@@ -86,14 +89,14 @@ class AppThemeData {
         color: text,
       );
 
-  TextStyle get body => GoogleFonts.manrope(
+  TextStyle get body => GoogleFonts.inter(
         fontSize: 15,
         fontWeight: FontWeight.w400,
         color: textMuted,
         height: 1.6,
       );
 
-  TextStyle get label => GoogleFonts.manrope(
+  TextStyle get label => GoogleFonts.jetBrainsMono(
         fontSize: 13,
         fontWeight: FontWeight.w600,
         color: textMuted,
@@ -124,24 +127,33 @@ class AppTheme {
         ? ColorScheme.dark(
             surface: colors.card,
             primary: colors.button,
-            secondary: colors.neonGreen,
+            secondary: AppColors.success,
             error: AppColors.danger,
           )
         : ColorScheme.light(
             surface: colors.card,
             primary: colors.button,
-            secondary: colors.neonGreen,
+            secondary: AppColors.success,
             error: AppColors.danger,
           );
 
     return ThemeData(
       useMaterial3: true,
-      fontFamily: GoogleFonts.manrope().fontFamily,
+      fontFamily: GoogleFonts.inter().fontFamily,
       brightness: brightness,
       scaffoldBackgroundColor: colors.background,
       colorScheme: baseScheme,
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: colors.card,
+        behavior: SnackBarBehavior.floating,
+        // The page canvas and cards intentionally share one dark tone, so the
+        // snackbar needs a raised surface plus a border to stay visible.
+        backgroundColor: brightness == Brightness.dark
+            ? AppColors.overlayDark
+            : colors.card,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          side: BorderSide(color: colors.border),
+        ),
         contentTextStyle: TextStyle(color: colors.text),
       ),
       tooltipTheme: TooltipThemeData(

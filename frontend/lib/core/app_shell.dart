@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:portfolio/core/app_navigation.dart';
@@ -9,6 +10,7 @@ import 'package:portfolio/screens/contact_page.dart';
 import 'package:portfolio/screens/landing_page.dart';
 import 'package:portfolio/screens/journey_page.dart';
 import 'package:portfolio/screens/resume_dialog.dart';
+import 'package:portfolio/services/about_motion_preference.dart';
 import 'package:portfolio/services/admin_contact.dart';
 
 class AppShell extends StatefulWidget {
@@ -36,6 +38,8 @@ class _AppShellState extends State<AppShell> {
   Map<String, dynamic>? _portfolioContent;
   Timer? _resumeSuccessTimer;
   bool _showResumeDone = false;
+  bool _aboutPanelOpen = false;
+  bool _projectSheetOpen = false;
 
   @override
   void initState() {
@@ -85,7 +89,9 @@ class _AppShellState extends State<AppShell> {
     if (target == null) return;
     await Scrollable.ensureVisible(
       target,
-      duration: const Duration(milliseconds: 520),
+      duration: prefersReducedMotion(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 520),
       curve: Curves.easeInOutCubic,
       alignment: 0,
     );
@@ -123,6 +129,9 @@ class _AppShellState extends State<AppShell> {
           LayoutBuilder(
             builder: (context, constraints) => SingleChildScrollView(
               controller: _scrollController,
+              physics: _aboutPanelOpen || _projectSheetOpen
+                  ? const NeverScrollableScrollPhysics()
+                  : null,
               child: Column(
                 children: [
                   SizedBox(
@@ -139,7 +148,19 @@ class _AppShellState extends State<AppShell> {
                     valueListenable: _landingScrollProgress,
                     child: KeyedSubtree(
                       key: _sectionKeys[PortfolioSection.about],
-                      child: AboutScreen(cachedContent: _portfolioContent),
+                      child: AboutScreen(
+                        cachedContent: _portfolioContent,
+                        onPanelVisibilityChanged: (open) {
+                          if (mounted) setState(() => _aboutPanelOpen = open);
+                        },
+                        onPageScrollHandoff: (delta) {
+                          if (!_scrollController.hasClients) return;
+                          final destination = (_scrollController.offset + delta)
+                              .clamp(0.0,
+                                  _scrollController.position.maxScrollExtent);
+                          _scrollController.jumpTo(destination);
+                        },
+                      ),
                     ),
                     builder: (context, progress, child) => Opacity(
                       opacity: .76 + (.24 * progress),
@@ -151,7 +172,11 @@ class _AppShellState extends State<AppShell> {
                   ),
                   KeyedSubtree(
                     key: _sectionKeys[PortfolioSection.projects],
-                    child: JourneyPage(cachedContent: _portfolioContent),
+                    child: JourneyPage(
+                        cachedContent: _portfolioContent,
+                        onProjectSheetVisibilityChanged: (open) {
+                          if (mounted) setState(() => _projectSheetOpen = open);
+                        }),
                   ),
                   ConstrainedBox(
                     key: _sectionKeys[PortfolioSection.contact],
@@ -177,6 +202,15 @@ class _AppShellState extends State<AppShell> {
               onResumeTap: _openResume,
               showResumeDone: _showResumeDone,
             ),
+          // Keep the blur inside the page route so the modal stays sharp.
+          if (_projectSheetOpen)
+            Positioned.fill(
+                child: IgnorePointer(
+                    child: ExcludeSemantics(
+              child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                  child: const SizedBox.expand()),
+            ))),
         ],
       ),
     );

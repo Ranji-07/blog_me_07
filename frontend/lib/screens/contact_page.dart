@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:portfolio/common/loading/section_skeletons.dart';
 import 'package:portfolio/common/social/social_links.dart';
 import 'package:portfolio/core/app_theme.dart';
 import 'package:portfolio/core/responsive.dart';
@@ -65,7 +66,7 @@ class _ContactScreenState extends State<ContactScreen> {
         future: _contentFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
+            return const ContactSectionSkeleton();
           }
           if (snapshot.hasError || !snapshot.hasData) {
             return Padding(
@@ -154,9 +155,12 @@ class _ContactIntro extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          "Let's Build Something",
-          style: t.display.copyWith(color: t.button, fontSize: titleSize),
+        Semantics(
+          header: true,
+          child: Text(
+            "Let's Build Something",
+            style: t.display.copyWith(color: t.button, fontSize: titleSize),
+          ),
         ),
         const SizedBox(height: AppSpacing.md),
         Text(
@@ -196,8 +200,8 @@ class _ContactActions extends StatelessWidget {
           ownerName: content.ownerName,
           buildYear: content.buildYear,
           builtWith: content.builtWith,
-          appVersion: '',
-          note: '',
+          appVersion: content.appVersion,
+          note: content.footerNote,
         ),
       ],
     );
