@@ -28,3 +28,11 @@ frontendref
 plan.md
 paper.md
 bd_phase.md
+
+# Blender
+blendcache*/
+inspection/
+*.blend1
+*.blend2
+*.bphys
+*.tmp
