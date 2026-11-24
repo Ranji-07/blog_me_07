@@ -21,11 +21,10 @@ frontend/*.log
 frontendref
 
 # Editor / OS
-.DS_Store
-Thumbs.db
 .idea/
-.agents
-.vscode
-.tmp
+.factory/
+.vscode/
+.tmp/
 plan.md
 paper.md
+bd_phase.md
